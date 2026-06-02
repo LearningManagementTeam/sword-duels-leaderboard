@@ -92,6 +92,92 @@ export async function importBranchesFromCsv(csvText?: string) {
   return { ok: true as const, count: rows.length };
 }
 
+/** June Area-wide: import participating branches + seed Round 1 entry rows. */
+export async function importParticipatingBranchesForJuneArea(csvText: string) {
+  const { email } = await requireAdmin();
+
+  if (!csvText?.trim()) {
+    return { ok: false as const, errors: ["CSV file is empty."] };
+  }
+
+  const { rows, errors } = parseBranchesCsv(csvText);
+  if (errors.length) return { ok: false as const, errors };
+  if (rows.length < 130) {
+    return {
+      ok: false as const,
+      errors: [
+        `June Area-wide needs at least 130 participating branches. Your file has ${rows.length}.`,
+      ],
+    };
+  }
+
+  const service = await createServiceClient();
+  const { error: branchError } = await service.from("branches").upsert(
+    rows.map((r) => ({
+      branch_code: r.branch_code,
+      branch_name: r.branch_name,
+      area: r.area,
+      region: r.region,
+    })),
+    { onConflict: "branch_code" }
+  );
+  if (branchError) {
+    return { ok: false as const, errors: [branchError.message] };
+  }
+
+  const { data: season } = await service
+    .from("seasons")
+    .select("id")
+    .eq("slug", "june_area")
+    .single();
+  if (!season) {
+    return { ok: false as const, errors: ["June season not found in database."] };
+  }
+
+  const { data: round } = await service
+    .from("rounds")
+    .select("id")
+    .eq("season_id", season.id)
+    .eq("round_number", 1)
+    .single();
+  if (!round) {
+    return { ok: false as const, errors: ["June Round 1 not found in database."] };
+  }
+
+  const { data: branches } = await service.from("branches").select("id");
+  const branchIds = (branches ?? []).map((b) => b.id);
+
+  if (branchIds.length > 0) {
+    const { error: seedError } = await service.from("round_results").upsert(
+      branchIds.map((branch_id) => ({
+        round_id: round.id,
+        branch_id,
+        points: 0,
+        wins: 0,
+        losses: 0,
+      })),
+      { onConflict: "round_id,branch_id" }
+    );
+    if (seedError) {
+      return { ok: false as const, errors: [seedError.message] };
+    }
+  }
+
+  await logAudit(email, "import_june_participants", "june_area", season.id, {
+    branch_count: rows.length,
+    round_id: round.id,
+    round_seeded: true,
+  });
+
+  revalidatePath("/", "layout");
+  return {
+    ok: true as const,
+    count: rows.length,
+    roundId: round.id,
+    message: `Imported ${rows.length} branches and prepared June Round 1 for data entry.`,
+  };
+}
+
 export async function saveRoundResults(
   roundId: string,
   results: Array<{

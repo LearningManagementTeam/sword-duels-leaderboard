@@ -1,3 +1,4 @@
+import { ImportParticipatingBranches } from "@/components/admin/ImportParticipatingBranches";
 import { ImportBranchesButton } from "@/components/admin/ImportBranchesButton";
 import { SetupBanner } from "@/components/SetupBanner";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
@@ -6,17 +7,30 @@ export default function AdminBranchesPage() {
   const configured = isSupabaseConfigured();
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Branches</h1>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold">Branches</h1>
+        <p className="mt-1 text-sm text-slate-400">
+          Import participating branches before you enter June Area-wide scores.
+        </p>
+      </div>
+
       {!configured && <SetupBanner />}
 
-      <p className="text-sm text-slate-400">
-        Import from <code className="text-amber-200">data/branches.csv</code>{" "}
-        (142 branches with area and region). Replace that file with your official
-        master list, then import again.
-      </p>
+      <ImportParticipatingBranches />
 
-      <ImportBranchesButton />
+      <details className="rounded-lg border border-slate-800 bg-slate-900/30 p-4">
+        <summary className="cursor-pointer text-sm text-slate-400">
+          Advanced: re-import bundled sample data (development only)
+        </summary>
+        <div className="mt-4 space-y-2">
+          <p className="text-xs text-slate-500">
+            Uses <code className="text-amber-200">data/branches.csv</code> from
+            the server — not your uploaded file.
+          </p>
+          <ImportBranchesButton />
+        </div>
+      </details>
     </div>
   );
 }
