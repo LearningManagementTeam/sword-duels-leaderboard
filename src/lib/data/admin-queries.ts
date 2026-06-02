@@ -90,3 +90,28 @@ export async function getRoundWithResults(roundId: string) {
     resultMap,
   };
 }
+
+export async function getBranchesForRepresentatives() {
+  if (!isSupabaseServiceConfigured()) {
+    return { branches: [], withReps: 0, total: 0 };
+  }
+  const service = await createServiceClient();
+  const { data, error } = await service
+    .from("branches")
+    .select(
+      "id, branch_code, branch_name, area, region, representative_1, representative_2"
+    )
+    .order("area")
+    .order("branch_name");
+
+  if (error) throw error;
+
+  const branches = data ?? [];
+  const withReps = branches.filter((b) => b.representative_1?.trim()).length;
+
+  return {
+    branches,
+    withReps,
+    total: branches.length,
+  };
+}

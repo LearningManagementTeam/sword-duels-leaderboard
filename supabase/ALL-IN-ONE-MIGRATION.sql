@@ -22,6 +22,9 @@ CREATE TABLE branches (
   branch_name TEXT NOT NULL,
   area TEXT NOT NULL,
   region region_type NOT NULL,
+  representative_1 TEXT,
+  representative_2 TEXT,
+  representatives_updated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

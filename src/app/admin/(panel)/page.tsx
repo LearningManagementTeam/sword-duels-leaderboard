@@ -39,6 +39,14 @@ export default async function AdminDashboardPage() {
             (142 in seed CSV)
           </li>
           <li>
+            <Link
+              href="/admin/representatives"
+              className="text-amber-400 hover:underline"
+            >
+              Enter branch representatives
+            </Link>
+          </li>
+          <li>
             <Link href="/admin/rounds" className="text-amber-400 hover:underline">
               Enter round results
             </Link>

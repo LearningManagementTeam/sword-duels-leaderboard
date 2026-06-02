@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { parseBranchesCsv } from "@/lib/branches-csv";
+import { parseRepresentativesCsv } from "@/lib/representatives-csv";
 import {
   aggregatePublishedResults,
   computeStandings,
@@ -175,6 +176,107 @@ export async function importParticipatingBranchesForJuneArea(csvText: string) {
     count: rows.length,
     roundId: round.id,
     message: `Imported ${rows.length} branches and prepared June Round 1 for data entry.`,
+  };
+}
+
+export async function saveBranchRepresentatives(
+  updates: Array<{
+    branch_id: string;
+    representative_1: string;
+    representative_2: string;
+  }>
+) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const now = new Date().toISOString();
+
+  for (const row of updates) {
+    const { error } = await service
+      .from("branches")
+      .update({
+        representative_1: row.representative_1.trim() || null,
+        representative_2: row.representative_2.trim() || null,
+        representatives_updated_at: now,
+      })
+      .eq("id", row.branch_id);
+
+    if (error) return { ok: false as const, errors: [error.message] };
+  }
+
+  await logAudit(email, "save_representatives", "branches", null, {
+    count: updates.length,
+  });
+  revalidatePath("/admin/representatives");
+  return { ok: true as const, count: updates.length };
+}
+
+export async function importRepresentativesFromCsv(csvText: string) {
+  const { email } = await requireAdmin();
+
+  if (!csvText?.trim()) {
+    return { ok: false as const, errors: ["CSV file is empty."] };
+  }
+
+  const { rows, errors: parseErrors } = parseRepresentativesCsv(csvText);
+  if (parseErrors.length) return { ok: false as const, errors: parseErrors };
+  if (!rows.length) {
+    return { ok: false as const, errors: ["No rows found in CSV."] };
+  }
+
+  const service = await createServiceClient();
+  const { data: branches } = await service
+    .from("branches")
+    .select("id, branch_code");
+
+  const codeToId = new Map(
+    (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b.id])
+  );
+
+  const notFound: string[] = [];
+  const now = new Date().toISOString();
+  let updated = 0;
+
+  for (const row of rows) {
+    const id = codeToId.get(row.branch_code.toLowerCase());
+    if (!id) {
+      notFound.push(row.branch_code);
+      continue;
+    }
+    const { error } = await service
+      .from("branches")
+      .update({
+        representative_1: row.representative_1,
+        representative_2: row.representative_2 || null,
+        representatives_updated_at: now,
+      })
+      .eq("id", id);
+
+    if (error) return { ok: false as const, errors: [error.message] };
+    updated++;
+  }
+
+  const resultErrors: string[] = [];
+  if (notFound.length) {
+    resultErrors.push(
+      `Unknown branch_code (import branches first): ${notFound.slice(0, 5).join(", ")}${notFound.length > 5 ? ` (+${notFound.length - 5} more)` : ""}`
+    );
+  }
+
+  await logAudit(email, "import_representatives", "branches", null, {
+    updated,
+    row_count: rows.length,
+  });
+  revalidatePath("/admin/representatives");
+
+  if (updated === 0) {
+    return { ok: false as const, errors: resultErrors };
+  }
+
+  return {
+    ok: true as const,
+    count: updated,
+    warnings: resultErrors,
+    message: `Updated representatives for ${updated} branches.`,
   };
 }
 

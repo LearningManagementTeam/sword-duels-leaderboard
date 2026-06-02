@@ -15,6 +15,8 @@ export interface Branch {
   branch_name: string;
   area: string;
   region: Region;
+  representative_1?: string | null;
+  representative_2?: string | null;
 }
 
 export interface Season {

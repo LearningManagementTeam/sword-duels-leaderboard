@@ -19,6 +19,13 @@ export default function AdminBranchesPage() {
 
       <ImportParticipatingBranches />
 
+      <p className="text-sm text-slate-400">
+        After branches are imported, assign representatives:{" "}
+        <a href="/admin/representatives" className="text-amber-400 hover:underline">
+          Admin → Representatives
+        </a>
+      </p>
+
       <details className="rounded-lg border border-slate-800 bg-slate-900/30 p-4">
         <summary className="cursor-pointer text-sm text-slate-400">
           Advanced: re-import bundled sample data (development only)
