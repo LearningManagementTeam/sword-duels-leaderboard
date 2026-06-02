@@ -1,11 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import {
+  getSupabasePublicEnv,
+  getSupabaseServiceEnv,
+  isSupabaseConfigured,
+  isSupabaseServiceConfigured,
+} from "./env";
+
+export { isSupabaseConfigured, isSupabaseServiceConfigured } from "./env";
 
 export async function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
-    throw new Error("Missing Supabase environment variables");
+  const { url, anonKey: key } = getSupabasePublicEnv();
+  if (!isSupabaseConfigured() || !url || !key) {
+    throw new Error("Missing or invalid Supabase environment variables");
   }
 
   const cookieStore = await cookies();
@@ -29,10 +36,9 @@ export async function createClient() {
 }
 
 export async function createServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error("Missing Supabase service role environment variables");
+  const { url, serviceRoleKey: key } = getSupabaseServiceEnv();
+  if (!isSupabaseServiceConfigured() || !url || !key) {
+    throw new Error("Missing or invalid Supabase service role environment variables");
   }
 
   const { createClient } = await import("@supabase/supabase-js");
@@ -41,9 +47,3 @@ export async function createServiceClient() {
   });
 }
 
-export function isSupabaseConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
-}

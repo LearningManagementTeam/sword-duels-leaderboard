@@ -14,10 +14,11 @@ import {
   createClient,
   createServiceClient,
   isSupabaseConfigured,
+  isSupabaseServiceConfigured,
 } from "@/lib/supabase/server";
 
 async function requireAdmin() {
-  if (!isSupabaseConfigured()) {
+  if (!isSupabaseServiceConfigured()) {
     throw new Error("Supabase is not configured");
   }
   const supabase = await createClient();

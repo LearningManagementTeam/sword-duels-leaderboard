@@ -1,8 +1,11 @@
-import { createServiceClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import {
+  createServiceClient,
+  isSupabaseServiceConfigured,
+} from "@/lib/supabase/server";
 import type { SeasonSlug } from "@/lib/scoring-config";
 
 export async function getAdminDashboard() {
-  if (!isSupabaseConfigured()) {
+  if (!isSupabaseServiceConfigured()) {
     return { seasons: [], branchCount: 0, rounds: [] };
   }
   const service = await createServiceClient();
@@ -24,7 +27,7 @@ export async function getAdminDashboard() {
 }
 
 export async function getRoundWithResults(roundId: string) {
-  if (!isSupabaseConfigured()) return null;
+  if (!isSupabaseServiceConfigured()) return null;
   const service = await createServiceClient();
 
   const { data: round } = await service

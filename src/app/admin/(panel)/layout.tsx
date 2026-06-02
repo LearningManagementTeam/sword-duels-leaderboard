@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { signOut } from "@/lib/actions/admin";
 
+export const dynamic = "force-dynamic";
+
 const links = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/branches", label: "Branches" },
