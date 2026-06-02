@@ -1,0 +1,123 @@
+-- Sword Duels Leaderboard — initial schema
+
+CREATE TYPE region_type AS ENUM ('luzon', 'ncr', 'vismin');
+CREATE TYPE season_slug AS ENUM ('june_area', 'july_region', 'august_finals');
+CREATE TYPE round_status AS ENUM ('draft', 'published');
+CREATE TYPE branch_status AS ENUM (
+  'active',
+  'advanced',
+  'eliminated',
+  'regional_finalist',
+  'champion'
+);
+
+CREATE TABLE branches (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  branch_code TEXT NOT NULL UNIQUE,
+  branch_name TEXT NOT NULL,
+  area TEXT NOT NULL,
+  region region_type NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE seasons (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug season_slug NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  advancement_count INT,
+  sort_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE rounds (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  season_id UUID NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+  round_number INT NOT NULL CHECK (round_number >= 1 AND round_number <= 10),
+  name TEXT NOT NULL,
+  status round_status NOT NULL DEFAULT 'draft',
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (season_id, round_number)
+);
+
+CREATE TABLE round_results (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  round_id UUID NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+  branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+  points NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (points >= 0),
+  wins INT NOT NULL DEFAULT 0 CHECK (wins >= 0),
+  losses INT NOT NULL DEFAULT 0 CHECK (losses >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (round_id, branch_id)
+);
+
+CREATE TABLE season_participants (
+  season_id UUID NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+  branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+  seeded_from_season_id UUID REFERENCES seasons(id),
+  PRIMARY KEY (season_id, branch_id)
+);
+
+CREATE TABLE published_standings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  season_id UUID NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+  branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+  rank INT NOT NULL,
+  total_points NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  round1_points NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  round2_points NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  round3_points NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  total_wins INT NOT NULL DEFAULT 0,
+  status branch_status NOT NULL DEFAULT 'active',
+  region_filter region_type,
+  published_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (season_id, branch_id, region_filter)
+);
+
+CREATE TABLE phase_locks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  season_id UUID NOT NULL REFERENCES seasons(id) ON DELETE CASCADE UNIQUE,
+  locked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  locked_by_email TEXT
+);
+
+CREATE TABLE admins (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_email TEXT NOT NULL,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT,
+  details JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_branches_area ON branches(area);
+CREATE INDEX idx_branches_region ON branches(region);
+CREATE INDEX idx_round_results_round ON round_results(round_id);
+CREATE INDEX idx_round_results_branch ON round_results(branch_id);
+CREATE INDEX idx_published_standings_season ON published_standings(season_id);
+CREATE INDEX idx_audit_log_created ON audit_log(created_at DESC);
+
+INSERT INTO seasons (slug, name, advancement_count, sort_order) VALUES
+  ('june_area', 'June — Area-wide', 24, 1),
+  ('july_region', 'July — Region-wide', 3, 2),
+  ('august_finals', 'August — Finals', 1, 3);
+
+-- Seed rounds for each season
+INSERT INTO rounds (season_id, round_number, name)
+SELECT s.id, n.num, 'Round ' || n.num
+FROM seasons s
+CROSS JOIN (SELECT generate_series(1, 3) AS num) n;
+
+CREATE OR REPLACE VIEW public_leaderboard_meta AS
+SELECT
+  s.slug AS season_slug,
+  MAX(ps.published_at) AS last_published_at
+FROM seasons s
+LEFT JOIN published_standings ps ON ps.season_id = s.id
+GROUP BY s.id, s.slug;

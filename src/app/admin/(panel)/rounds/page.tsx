@@ -1,0 +1,56 @@
+import Link from "next/link";
+import { getAdminDashboard } from "@/lib/data/admin-queries";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
+
+type RoundRow = {
+  id: string;
+  name: string;
+  status: string;
+  seasons: { name: string } | { name: string }[] | null;
+};
+
+export default async function AdminRoundsPage() {
+  const { rounds } = isSupabaseConfigured()
+    ? await getAdminDashboard()
+    : { rounds: [] as RoundRow[] };
+
+  const grouped = (rounds as RoundRow[]).reduce(
+    (acc, r) => {
+      const season = Array.isArray(r.seasons) ? r.seasons[0] : r.seasons;
+      const key = season?.name ?? "Unknown";
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(r);
+      return acc;
+    },
+    {} as Record<string, RoundRow[]>
+  );
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Rounds</h1>
+      <p className="text-sm text-slate-400">
+        Enter results per round. Save as draft, then publish when ready.
+      </p>
+
+      {Object.entries(grouped).map(([seasonName, seasonRounds]) => (
+        <section key={seasonName}>
+          <h2 className="mb-2 font-semibold text-amber-300">{seasonName}</h2>
+          <ul className="space-y-1">
+            {seasonRounds.map((r) => (
+                <li key={r.id}>
+                  <Link
+                    href={`/admin/rounds/${r.id}`}
+                    className="text-slate-200 hover:text-amber-300"
+                  >
+                    {r.name}
+                  </Link>{" "}
+                  <span className="text-xs text-slate-500">({r.status})</span>
+                </li>
+              )
+            )}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}

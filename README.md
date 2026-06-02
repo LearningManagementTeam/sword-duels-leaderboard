@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sword Duels Dynamic Leaderboard
 
-## Getting Started
+## New here? Start here (no coding)
 
-First, run the development server:
+**[Setup guide for beginners](docs/SETUP-FOR-BEGINNERS.md)** — step-by-step: what you do in Supabase and Vercel.
+
+- [Printable checklist](docs/CHECKLIST.md)
+- [Daily operations during the competition](docs/DAILY-OPERATIONS.md)
+- In Cursor, ask: *“Use the sword-duels-leaderboard skill to help me deploy.”*
+
+---
+
+Public leaderboard and central admin console for the June–August competition:
+
+- **June (Area-wide):** 130+ branches, 3 rounds, top **24** advance
+- **July (Regional):** 24 survivors by Luzon / NCR / VisMin, **1 champion per region**
+- **August (Finals):** 3 regional champions
+
+## Stack
+
+- [Next.js](https://nextjs.org/) 16 (App Router)
+- [Supabase](https://supabase.com/) (Postgres, Auth, RLS)
+- Tailwind CSS 4
+
+## Setup
+
+### 1. Supabase project
+
+**Non-developers:** follow [`docs/SETUP-FOR-BEGINNERS.md`](docs/SETUP-FOR-BEGINNERS.md) and run [`supabase/ALL-IN-ONE-MIGRATION.sql`](supabase/ALL-IN-ONE-MIGRATION.sql) once in the SQL Editor.
+
+**Developers:** run migrations in order, or use the all-in-one file above.
+
+3. Copy API keys to `.env.local` (see [`.env.local.example`](.env.local.example)) or Vercel env vars.
+
+### 2. App
 
 ```bash
+npm install
+cp .env.local.example .env.local
+# Edit .env.local with your keys
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. First admin user
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. In Supabase Dashboard → **Authentication** → **Users**, create a user (email + password).
+2. Run in SQL editor (replace email):
 
-## Learn More
+```sql
+INSERT INTO admins (user_id, email)
+SELECT id, email FROM auth.users WHERE email = 'your-admin@company.com';
+```
 
-To learn more about Next.js, take a look at the following resources:
+3. Sign in at [/admin/login](http://localhost:3000/admin/login).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 4. Seed branches
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Admin → **Branches** → **Import branches from CSV**  
+   Uses [`data/branches.csv`](data/branches.csv) (142 sample branches). Replace with your official list (same columns: `branch_code,branch_name,area,region`).
 
-## Deploy on Vercel
+Regenerate sample CSV:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+node scripts/generate-branches-csv.mjs
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Admin workflow
+
+1. **Enter results** — Admin → Rounds → pick round → enter points/wins/losses → **Save draft** or **Save & publish**.
+2. **Publish** recomputes cumulative standings on the public site.
+3. **Lock & advance** — After June ends, Admin → Advancement → lock June (seeds top 24 into July). Repeat after July for August.
+
+## Public routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Home |
+| `/june` | Area-wide standings (cut line at 24) |
+| `/july` | Regional hub |
+| `/july/luzon`, `/july/ncr`, `/july/vismin` | Per-region boards |
+| `/august` | Finals |
+| `/tv?phase=june` | Fullscreen TV mode (30s revalidate) |
+| `/api/export/june` | CSV export |
+
+## Scoring rules
+
+Documented in [`docs/mechanics.md`](docs/mechanics.md). Logic lives in [`src/lib/scoring.ts`](src/lib/scoring.ts) and [`src/lib/scoring-config.ts`](src/lib/scoring-config.ts).
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `node scripts/generate-branches-csv.mjs` | Regenerate sample branch CSV |
