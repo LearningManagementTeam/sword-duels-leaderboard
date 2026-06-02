@@ -21,10 +21,12 @@
 | Verify build | `npm run build` |
 | Regenerate sample CSV | `npm run generate:branches` |
 | Update mechanics / scoring | `docs/mechanics.md`, `src/lib/scoring*.ts` |
-| Merge SQL for owner | `supabase/ALL-IN-ONE-MIGRATION.sql` |
+| Supabase migrations (MCP) | skill **sword-duels-supabase**, `apply_migration` |
+| Merge SQL for owner (fallback) | `supabase/migrations/*.sql` |
 | Git push to GitHub | git + user approval |
 | Fix TypeScript/UI bugs | `src/` |
 | Convert Excel → branches.csv | `data/branches.csv` |
+| Representatives CSV | `ImportRepresentativesCsv.tsx` |
 | Extra admin SQL snippets | from `add-admin-TEMPLATE.sql` |
 
 ## Secrets rule

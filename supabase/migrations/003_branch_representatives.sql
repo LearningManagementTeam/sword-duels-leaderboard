@@ -1,4 +1,4 @@
--- Branch representatives (enter before competition starts)
+-- Branch representatives (editable anytime via admin)
 
 ALTER TABLE branches
   ADD COLUMN IF NOT EXISTS representative_1 TEXT,

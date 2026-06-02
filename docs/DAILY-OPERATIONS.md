@@ -7,7 +7,7 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 1. Admin → **Branches**
 2. **Download CSV template** → fill in Excel (130+ rows) → save as **CSV UTF-8**
 3. **Upload** → **Import for June Round 1**
-4. Admin → **Representatives** → enter names (or import CSV) → **Save all**
+4. Admin → **Representatives** → import CSV or edit table → **Save all** (update anytime)
 5. Admin → **Rounds** → **June — Round 1** → enter scores → publish
 
 ## Every round (June, July, August)

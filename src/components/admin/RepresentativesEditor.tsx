@@ -1,10 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import {
-  importRepresentativesFromCsv,
-  saveBranchRepresentatives,
-} from "@/lib/actions/admin";
+import { useMemo, useState } from "react";
+import { saveBranchRepresentatives } from "@/lib/actions/admin";
 import type { Branch } from "@/lib/types";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { Region } from "@/lib/scoring-config";
@@ -25,7 +22,6 @@ interface Props {
 }
 
 export function RepresentativesEditor({ branches, initialWithReps }: Props) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<RowState[]>(() =>
     branches.map((b) => ({
       branch_id: b.id,
@@ -103,38 +99,6 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
     }
   }
 
-  async function handleCsvImport() {
-    const file = fileRef.current?.files?.[0];
-    if (!file) {
-      setError(true);
-      setMessage("Choose a CSV file first.");
-      return;
-    }
-    setLoading(true);
-    setMessage("");
-    setError(false);
-    try {
-      const text = await file.text();
-      const result = await importRepresentativesFromCsv(text);
-      if (result.ok) {
-        setMessage(
-          result.warnings?.length
-            ? `${result.message} ${result.warnings.join(" ")}`
-            : result.message
-        );
-        window.location.reload();
-      } else {
-        setError(true);
-        setMessage(result.errors.join(" "));
-      }
-    } catch (e) {
-      setError(true);
-      setMessage(e instanceof Error ? e.message : "Import failed.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   if (branches.length === 0) {
     return (
       <p className="text-amber-200">
@@ -145,14 +109,22 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-white">Edit in table</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Update names anytime. Leave blank to clear a representative. Click
+          save when finished.
+        </p>
+      </div>
+
       <div className="rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-3 text-sm">
-        <span className="text-emerald-300 font-medium">{filledCount}</span>
+        <span className="font-medium text-emerald-300">{filledCount}</span>
         <span className="text-slate-400">
           {" "}
           of {rows.length} branches have a primary representative
         </span>
         {initialWithReps !== filledCount && (
-          <span className="text-slate-500"> (unsaved edits)</span>
+          <span className="text-slate-500"> (unsaved edits in table)</span>
         )}
       </div>
 
@@ -238,40 +210,6 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
       >
         {loading ? "Saving…" : "Save all representatives"}
       </button>
-
-      <details className="rounded-lg border border-slate-800 p-4">
-        <summary className="cursor-pointer text-sm text-slate-300">
-          Import representatives from CSV
-        </summary>
-        <div className="mt-4 space-y-3 text-sm text-slate-400">
-          <p>
-            Columns: <code>branch_code</code>, <code>representative_1</code>,{" "}
-            <code>representative_2</code> (optional). Use the same branch codes
-            as your branch import.
-          </p>
-          <a
-            href="/templates/representatives-import-template.csv"
-            download
-            className="inline-block text-amber-400 hover:underline"
-          >
-            Download representatives template
-          </a>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv"
-            className="block text-slate-400 file:mr-3 file:rounded file:border-0 file:bg-slate-700 file:px-3 file:py-1 file:text-sm"
-          />
-          <button
-            type="button"
-            disabled={loading}
-            onClick={handleCsvImport}
-            className="rounded-lg border border-slate-600 px-4 py-2 hover:bg-slate-800 disabled:opacity-50"
-          >
-            Import CSV
-          </button>
-        </div>
-      </details>
 
       {message && (
         <p
