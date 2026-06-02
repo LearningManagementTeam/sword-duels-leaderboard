@@ -55,6 +55,8 @@ export function ImportParticipatingBranches() {
         <p className="mt-1 text-sm text-slate-400">
           Upload your official branch list for Round 1. Requires at least 130
           branches. In Excel: <strong>File → Save As → CSV UTF-8</strong>.
+          If a branch name has a <strong>comma</strong> (e.g. TIMES SQUARE,
+          TALAMBAN), Excel must wrap that cell in quotes — or remove the comma.
         </p>
       </div>
 
