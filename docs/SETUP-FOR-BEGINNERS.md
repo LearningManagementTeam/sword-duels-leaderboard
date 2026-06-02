@@ -66,9 +66,16 @@ You will create **two free accounts**: Supabase (database) and Vercel (website).
 
 ### Step 1.4 — Create your admin login
 
+**Option A — Default team account (see [DEFAULT-ADMIN.md](./DEFAULT-ADMIN.md))**
+
+- Email: `learningmanagement2026@gmail.com`
+- Password: `learningmanagement2026` (change in Supabase after go-live)
+
+**Option B — Your own email**
+
 1. Left menu → **Authentication** → **Users**.
 2. Click **Add user** → **Create new user**.
-3. Enter **your work email** and a **password** (this is what you use at `/admin/login`).
+3. Enter **your work email** and a **password** (for `/admin/login`).
 4. Click **Create user**.
 
 ### Step 1.5 — Allow that user to access Admin
@@ -78,7 +85,7 @@ You will create **two free accounts**: Supabase (database) and Vercel (website).
 
 ```sql
 INSERT INTO admins (user_id, email)
-SELECT id, email FROM auth.users WHERE email = 'YOUR-EMAIL@company.com';
+SELECT id, email FROM auth.users WHERE email = 'learningmanagement2026@gmail.com';
 ```
 
 3. You should see **Success** (or “1 row” inserted).
