@@ -86,7 +86,7 @@ export function HomeSponsorLogoCarousel({
         ) : (
           <div className={`${SPONSOR_LOGO_FRAME_H} overflow-hidden`}>
             <div
-              className={`flex h-full w-max items-center gap-12 px-4 ${
+              className={`flex h-full w-max items-center gap-6 ${
                 reducedMotion ? "" : "animate-sponsor-marquee"
               } ${paused && !reducedMotion ? "[animation-play-state:paused]" : ""}`}
               style={
