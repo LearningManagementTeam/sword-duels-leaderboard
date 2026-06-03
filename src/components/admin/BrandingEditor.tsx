@@ -496,24 +496,16 @@ export function BrandingEditor({ initial }: Props) {
       <section className="sd-neon-panel space-y-4 p-6">
         <h2 className="font-semibold text-sd-glow">Partner logos (above Live ranks)</h2>
         <p className="text-sm text-sd-muted">
-          Up to 3 company logos in a compact slow carousel above the home standings
-          block. PNG or SVG with a transparent background works best —{" "}
-          {sponsorSpecs.maxSizeLabel}, {sponsorSpecs.recommendedLabel}.
+          Up to 3 company logos in a continuous marquee above Live ranks. Export every
+          logo at the same size —{" "}
+          <strong className="font-medium text-emerald-100/90">
+            {sponsorSpecs.recommendedLabel}
+          </strong>{" "}
+          — so they align evenly in the strip. {sponsorSpecs.maxSizeLabel} · PNG or SVG
+          with a transparent background.
         </p>
 
         <CarouselStatusBanner status={sponsorStatus} />
-
-        <p className="text-xs text-sd-muted/80">
-          Compare animation styles:{" "}
-          <a
-            href="/preview/partner-logo-animations"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="sd-link"
-          >
-            Partner logo animation preview →
-          </a>
-        </p>
 
         <div className="max-w-md">
           <p className="mb-2 text-xs uppercase tracking-wider text-sd-muted/70">
@@ -577,11 +569,17 @@ export function BrandingEditor({ initial }: Props) {
                     )}
                   </div>
                 ) : (
-                  <div className="flex h-16 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-500/25 bg-sd-deep/40 px-3 text-center">
-                    <span className="text-xs font-medium text-sd-muted/90">
+                  <div className="flex min-h-[6.5rem] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-500/25 bg-sd-deep/40 px-3 py-3 text-center">
+                    <span className="text-xs font-semibold tabular-nums text-sd-glow">
+                      {sponsorSpecs.recommendedLabel}
+                    </span>
+                    <span className="text-[10px] text-sd-muted/75">
+                      {sponsorSpecs.recommendedAspect} aspect · same height per logo
+                    </span>
+                    <span className="mt-0.5 text-xs font-medium text-sd-muted/90">
                       No logo yet
                     </span>
-                    {sponsorSpecs.emptyPlaceholderLines.map((line) => (
+                    {sponsorSpecs.emptyPlaceholderLines.slice(1).map((line) => (
                       <span
                         key={line}
                         className="text-[10px] leading-snug text-sd-muted/65"

@@ -16,13 +16,16 @@ export const SPONSOR_LOGO_UPLOAD_SPECS = {
   maxBytes: 1024 * 1024,
   maxSizeLabel: "1 MB per logo",
   accept: "image/png,image/jpeg,image/webp,image/svg+xml",
-  recommendedWidth: 400,
-  recommendedHeight: 160,
-  recommendedLabel: "400 × 160 (wide logo) recommended",
+  /** Target canvas — matches marquee strip (max ~160×40 CSS px). */
+  recommendedWidth: 320,
+  recommendedHeight: 80,
+  recommendedAspect: "4:1",
+  recommendedLabel: "320 × 80 px (4:1 wide)",
   emptyPlaceholderLines: [
-    "Recommended: wide PNG or SVG",
-    "Transparent background works best",
-    "Max 1 MB per logo",
+    "Recommended: 320 × 80 px",
+    "Wide PNG or SVG · 4:1 aspect ratio",
+    "Use the same height for every logo",
+    "Transparent background · max 1 MB",
   ] as const,
 } as const;
 
