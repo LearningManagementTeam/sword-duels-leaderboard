@@ -225,9 +225,12 @@ export function milestoneShowsContestantList(id: CompetitionMilestoneId): boolea
   return !MILESTONES_WITHOUT_CONTESTANT_LIST.has(id);
 }
 
-export function seasonSlugToPublicPath(slug: SeasonSlug): string {
-  if (slug === "june_area") return "/june";
-  if (slug === "july_region") return "/july";
+export function seasonSlugToPublicPath(
+  slug: SeasonSlug,
+  region: Region = "luzon"
+): string {
+  if (slug === "june_area") return `/june/${region}`;
+  if (slug === "july_region") return `/july/${region}`;
   return "/august";
 }
 
@@ -235,8 +238,7 @@ export function regionBoardPath(
   seasonSlug: SeasonSlug,
   region: Region
 ): string {
-  const base = seasonSlugToPublicPath(seasonSlug);
-  return seasonSlug === "august_finals" ? base : `${base}/${region}`;
+  return seasonSlugToPublicPath(seasonSlug, region);
 }
 
 export function getMilestoneDataHint(meta: CompetitionMilestoneMeta): {

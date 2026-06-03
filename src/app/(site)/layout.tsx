@@ -3,7 +3,6 @@ import { PublicNav } from "@/components/nav/PublicNav";
 import { SiteMain } from "@/components/nav/SiteMain";
 import { getCompetitionMap } from "@/lib/data/content-queries";
 import {
-  resolvePublicPhaseHref,
   resolvePublicStandingsHref,
   standingsNavLabel,
 } from "@/lib/public-standings-route";
@@ -15,7 +14,6 @@ export default async function SiteLayout({
 }) {
   const mapConfig = await getCompetitionMap();
   const standingsHref = resolvePublicStandingsHref(mapConfig);
-  const phaseHref = resolvePublicPhaseHref(mapConfig);
   const standingsLabel = standingsNavLabel(mapConfig);
 
   return (
@@ -23,7 +21,6 @@ export default async function SiteLayout({
       <ArBackdrop />
       <PublicNav
         standingsHref={standingsHref}
-        phaseHref={phaseHref}
         standingsLabel={standingsLabel}
       />
       <SiteMain>{children}</SiteMain>

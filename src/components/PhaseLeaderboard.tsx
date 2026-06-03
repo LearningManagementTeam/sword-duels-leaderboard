@@ -1,9 +1,6 @@
-import Link from "next/link";
 import { Suspense } from "react";
-import { PhaseHighlightsCarousel } from "@/components/home/PhaseHighlightsCarousel";
 import { StandingsContextBar } from "@/components/nav/StandingsContextBar";
 import { PhaseNav } from "@/components/PhaseNav";
-import { getPhaseHighlights } from "@/lib/phase-highlights";
 import { getRoundViewConfig } from "@/lib/leaderboard-display";
 import { LeaderboardSection } from "./LeaderboardSection";
 import { PhaseJourneyBar } from "./PhaseJourneyBar";
@@ -87,7 +84,6 @@ export async function PhaseLeaderboard({
   const basePath = isPreview ? "/preview" : "";
   const needsRegion = (phase === "june" || phase === "july") && perRound;
   const showBoard = !needsRegion || !!region;
-  const highlights = getPhaseHighlights(slug);
   const roundView = getRoundViewConfig(slug, latestPublishedRound, region);
 
   return (
@@ -107,7 +103,11 @@ export async function PhaseLeaderboard({
               Sample data · {rows.length} branches
             </p>
           </div>
-          <PhaseNav active={phase} basePath="/preview" />
+          <PhaseNav
+            active={phase}
+            basePath="/preview"
+            defaultRegion={region ?? "luzon"}
+          />
         </div>
       )}
       {!isPreview && (
@@ -121,26 +121,6 @@ export async function PhaseLeaderboard({
           basePath={basePath}
           showRegions={needsRegion && !!region}
         />
-      )}
-
-      {needsRegion && !region && (
-        <>
-          <PhaseHighlightsCarousel items={highlights} />
-          <div className="sd-glass rounded-xl p-4">
-            <p className="text-sm font-medium text-white">Choose a region</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(["luzon", "ncr", "vismin"] as Region[]).map((r) => (
-                <Link
-                  key={r}
-                  href={`${basePath}/${phase}/${r}`}
-                  className="sd-btn-primary rounded-lg px-4 py-2 text-sm"
-                >
-                  {REGION_LABELS[r]}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </>
       )}
 
       {showBoard && (
@@ -158,6 +138,7 @@ export async function PhaseLeaderboard({
               showArea={slug === "june_area"}
               showRegion={false}
               showRepresentatives
+              showBanner={false}
               seasonSlug={slug}
               latestPublishedRound={latestPublishedRound}
               lastPublished={lastPublished}

@@ -1,13 +1,36 @@
 import {
   getMilestoneMeta,
-  milestonePhaseTab,
   regionBoardPath,
   seasonSlugToPublicPath,
   type CompetitionMapConfig,
 } from "@/lib/competition-map";
 import { REGION_LABELS, type Region, type SeasonSlug } from "@/lib/scoring-config";
 
-const DEFAULT_REGION: Region = "luzon";
+export const DEFAULT_STANDINGS_REGION: Region = "luzon";
+
+const DEFAULT_REGION = DEFAULT_STANDINGS_REGION;
+
+export function defaultRegionFromHighlight(
+  regionHighlight: CompetitionMapConfig["regionHighlight"]
+): Region {
+  return regionHighlight === "all" ? DEFAULT_REGION : regionHighlight;
+}
+
+/** Default regional board for a phase (replaces bare `/june` / `/july` hub pages). */
+export function phaseRegionalBoardPath(
+  phase: "june" | "july",
+  regionHighlight?: CompetitionMapConfig["regionHighlight"]
+): string {
+  const region = defaultRegionFromHighlight(regionHighlight ?? "all");
+  return `/${phase}/${region}`;
+}
+
+export function previewPhaseRegionalBoardPath(
+  phase: "june" | "july",
+  regionHighlight?: CompetitionMapConfig["regionHighlight"]
+): string {
+  return `/preview${phaseRegionalBoardPath(phase, regionHighlight)}`;
+}
 
 /** Public board URL driven by Admin → Competition map milestone (not last CSV export). */
 export function resolvePublicStandingsHref(
@@ -46,18 +69,6 @@ export function resolvePublicStandingsHref(
   return seasonSlugToPublicPath("august_finals");
 }
 
-/** Phase hub URL (June / July / August landing) for the current map milestone. */
-export function resolvePublicPhaseHref(config: CompetitionMapConfig): string {
-  const tab = milestonePhaseTab(config.milestoneId);
-  return seasonSlugToPublicPath(
-    tab === "june"
-      ? "june_area"
-      : tab === "july"
-        ? "july_region"
-        : "august_finals"
-  );
-}
-
 export function parsePublicStandingsPath(href: string): {
   seasonSlug: SeasonSlug;
   region?: Region;
@@ -82,8 +93,8 @@ export function toPreviewPath(liveHref: string): string {
   if (liveHref === "/august" || liveHref.startsWith("/august?")) {
     return "/preview/august";
   }
-  if (liveHref === "/june") return "/preview/june";
-  if (liveHref === "/july") return "/preview/july";
+  if (liveHref === "/june") return "/preview/june/luzon";
+  if (liveHref === "/july") return "/preview/july/luzon";
   const regional = liveHref.match(/^\/(june|july)\/(luzon|ncr|vismin)/);
   if (regional) {
     return `/preview/${regional[1]}/${regional[2]}`;

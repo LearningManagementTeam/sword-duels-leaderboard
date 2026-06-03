@@ -28,6 +28,7 @@ interface Props {
   showRepresentatives?: boolean;
   tvMode?: boolean;
   showDetailToggle?: boolean;
+  showBanner?: boolean;
   compact?: boolean;
   seasonSlug?: SeasonSlug;
   latestPublishedRound?: number;
@@ -45,6 +46,7 @@ export function GamifiedLeaderboard({
   showRepresentatives = true,
   tvMode = false,
   showDetailToggle = true,
+  showBanner = true,
   compact = false,
   seasonSlug,
   latestPublishedRound = 0,
@@ -111,7 +113,7 @@ export function GamifiedLeaderboard({
         compact ? "space-y-3 p-3" : "space-y-6 p-4 sm:p-6"
       }`}
     >
-      {!compact && (
+      {!compact && showBanner && (
         <LeaderboardBanner
           subtitle={roundBannerSubtitle}
           title={latestPublishedRound > 0 ? roundBannerTitle : undefined}

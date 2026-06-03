@@ -19,23 +19,16 @@ import {
   parsePublicStandingsPath,
   resolvePublicStandingsHref,
 } from "@/lib/public-standings-route";
-import { resolveArenaHref } from "@/lib/full-board-cta";
+import {
+  buildScopeLabel,
+  resolveArenaHref,
+  resolveFullBoardCta,
+} from "@/lib/full-board-cta";
+import { branchCountLabel } from "@/lib/branch-targets";
 import { REGION_LABELS, SCORING_CONFIG } from "@/lib/scoring-config";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 const PREVIEW_ROWS = 5;
-
-const juneRegions = [
-  { href: "/june/luzon", label: "Luzon" },
-  { href: "/june/ncr", label: "NCR" },
-  { href: "/june/vismin", label: "VisMin" },
-] as const;
-
-const julyRegions = [
-  { href: "/july/luzon", label: "Luzon" },
-  { href: "/july/ncr", label: "NCR" },
-  { href: "/july/vismin", label: "VisMin" },
-] as const;
 
 interface Props {
   mapConfig: CompetitionMapConfig;
@@ -47,12 +40,14 @@ export async function HomeStandingsPreview({ mapConfig: config }: Props) {
   const { seasonSlug, region } = parsePublicStandingsPath(standingsHref);
   const seasonConfig = SCORING_CONFIG[seasonSlug];
   const branchCount = await getBranchCount();
+  const scopeLabel = buildScopeLabel(branchCount, branchCountLabel);
 
   let rows: Awaited<ReturnType<typeof getPublishedStandings>> = [];
   let latestRound = 0;
   let lastPublished: string | null = null;
-  let fullBoardHref = "/june/luzon";
+  let fullBoardHref = standingsHref;
 
+  let junePublishedRound = 0;
   if (isSupabaseConfigured()) {
     const season = await getSeasonBySlug(seasonSlug);
     if (season) {
@@ -63,7 +58,17 @@ export async function HomeStandingsPreview({ mapConfig: config }: Props) {
       }
       fullBoardHref = resolveArenaHref(seasonSlug, latestRound, region);
     }
+    const juneSeason = await getSeasonBySlug("june_area");
+    if (juneSeason) {
+      junePublishedRound = await getLatestPublishedRoundNumber(juneSeason.id);
+    }
   }
+
+  const { href: ctaHref, ctaLine, subtitle: ctaSubtitle } = resolveFullBoardCta(
+    config.milestoneId,
+    junePublishedRound,
+    scopeLabel
+  );
 
   const preview = rows.slice(0, PREVIEW_ROWS);
   const roundView = getRoundViewConfig(seasonSlug, latestRound, region);
@@ -103,8 +108,12 @@ export async function HomeStandingsPreview({ mapConfig: config }: Props) {
             </p>
           )}
         </div>
-        <Link href={standingsHref} className="sd-btn-primary rounded-xl px-4 py-2.5 text-sm">
-          Climb the board →
+        <Link
+          href={ctaHref}
+          className="sd-btn-primary flex flex-col items-end gap-0.5 rounded-xl px-4 py-2.5 text-sm"
+        >
+          <span>{ctaLine} →</span>
+          <span className="text-[10px] font-normal opacity-90">{ctaSubtitle}</span>
         </Link>
       </div>
 
@@ -164,36 +173,6 @@ export async function HomeStandingsPreview({ mapConfig: config }: Props) {
           )}
         </div>
       )}
-
-      <div className="flex flex-wrap gap-2 pt-1">
-        <span className="w-full text-[10px] font-semibold uppercase tracking-wider text-sd-muted/60">
-          Jump to a region
-        </span>
-        {juneRegions.map((r) => (
-          <Link
-            key={r.href}
-            href={r.href}
-            className="sd-glass rounded-lg px-3 py-1.5 text-xs text-sd-muted hover:text-sd-glow"
-          >
-            June · {r.label}
-          </Link>
-        ))}
-        {julyRegions.map((r) => (
-          <Link
-            key={r.href}
-            href={r.href}
-            className="sd-glass rounded-lg px-3 py-1.5 text-xs text-sd-muted hover:text-sd-glow"
-          >
-            July · {r.label}
-          </Link>
-        ))}
-        <Link
-          href="/august"
-          className="sd-glass rounded-lg px-3 py-1.5 text-xs text-sd-muted hover:text-sd-glow"
-        >
-          August · Finals
-        </Link>
-      </div>
     </section>
   );
 }

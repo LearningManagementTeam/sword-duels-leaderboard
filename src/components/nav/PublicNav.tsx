@@ -7,31 +7,25 @@ import { toPreviewPath } from "@/lib/public-standings-route";
 
 interface Props {
   standingsHref: string;
-  phaseHref: string;
   standingsLabel: string;
 }
 
-type NavId = "home" | "standings" | "phases" | "rules";
+type NavId = "home" | "standings" | "rules";
 
-const ITEMS: { id: NavId; label: string; hrefKey?: NavId }[] = [
+const ITEMS: { id: NavId; label: string }[] = [
   { id: "home", label: "Home" },
   { id: "standings", label: "Standings" },
-  { id: "phases", label: "Phases" },
   { id: "rules", label: "How to win" },
 ];
 
 function resolveHref(
   id: NavId,
   standingsHref: string,
-  phaseHref: string,
   isPreview: boolean
 ): string {
   if (id === "home") return isPreview ? "/preview" : "/";
   if (id === "standings") {
     return isPreview ? toPreviewPath(standingsHref) : standingsHref;
-  }
-  if (id === "phases") {
-    return isPreview ? toPreviewPath(phaseHref) : phaseHref;
   }
   return "/mechanics";
 }
@@ -41,20 +35,6 @@ function isActive(pathname: string, id: NavId, isPreview: boolean): boolean {
     return isPreview ? pathname === "/preview" : pathname === "/";
   }
   if (id === "rules") return pathname.startsWith("/mechanics");
-  if (id === "phases") {
-    if (isPreview) {
-      return (
-        pathname === "/preview/june" ||
-        pathname === "/preview/july" ||
-        pathname === "/preview/august"
-      );
-    }
-    return (
-      pathname === "/june" ||
-      pathname === "/july" ||
-      pathname === "/august"
-    );
-  }
   if (id === "standings") {
     if (isPreview) {
       return (
@@ -78,7 +58,6 @@ function NavLink({
   label,
   pathname,
   standingsHref,
-  phaseHref,
   standingsLabel,
   variant,
   isPreview,
@@ -87,13 +66,12 @@ function NavLink({
   label: string;
   pathname: string;
   standingsHref: string;
-  phaseHref: string;
   standingsLabel: string;
   variant: "mobile" | "desktop";
   isPreview: boolean;
 }) {
   const active = isActive(pathname, id, isPreview);
-  const href = resolveHref(id, standingsHref, phaseHref, isPreview);
+  const href = resolveHref(id, standingsHref, isPreview);
   const displayLabel =
     id === "standings" && variant === "desktop"
       ? isPreview
@@ -124,9 +102,7 @@ function NavLink({
       className={`${base} ${active ? activeClass : idleClass}`}
       aria-current={active ? "page" : undefined}
     >
-      {variant === "mobile" && (
-        <NavIcon id={id} active={active} />
-      )}
+      {variant === "mobile" && <NavIcon id={id} active={active} />}
       <span className={variant === "mobile" ? "leading-none" : undefined}>
         {displayLabel}
       </span>
@@ -147,14 +123,6 @@ function NavIcon({ id, active }: { id: NavId; active: boolean }) {
         <path d="M4 20V10M12 20V4M20 20v-6" />
       </svg>
     ),
-    phases: (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" aria-hidden>
-        <circle cx="6" cy="12" r="2" />
-        <circle cx="12" cy="12" r="2" />
-        <circle cx="18" cy="12" r="2" />
-        <path d="M8 12h2M14 12h2" />
-      </svg>
-    ),
     rules: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" aria-hidden>
         <path d="M6 4h12a1 1 0 0 1 1 1v14l-4-2-4 2-4-2-4 2V5a1 1 0 0 1 1-1Z" />
@@ -164,11 +132,7 @@ function NavIcon({ id, active }: { id: NavId; active: boolean }) {
   return icons[id];
 }
 
-export function PublicNav({
-  standingsHref,
-  phaseHref,
-  standingsLabel,
-}: Props) {
+export function PublicNav({ standingsHref, standingsLabel }: Props) {
   const pathname = usePathname() ?? "/";
   const isPreview = pathname.startsWith("/preview");
 
@@ -199,7 +163,6 @@ export function PublicNav({
               label={item.label}
               pathname={pathname}
               standingsHref={standingsHref}
-              phaseHref={phaseHref}
               standingsLabel={standingsLabel}
               variant="desktop"
               isPreview={isPreview}
@@ -220,7 +183,6 @@ export function PublicNav({
               label={item.label}
               pathname={pathname}
               standingsHref={standingsHref}
-              phaseHref={phaseHref}
               standingsLabel={standingsLabel}
               variant="mobile"
               isPreview={isPreview}

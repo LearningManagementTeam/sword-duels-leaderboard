@@ -6,7 +6,7 @@ export function PreviewBanner() {
       <p className="font-medium">Preview — sample data only, not official standings</p>
       <p className="mt-1 opacity-90">
         These scores are for demonstration. Live results appear on{" "}
-        <Link href="/june" className="sd-link underline">
+        <Link href="/june/luzon" className="sd-link underline">
           the official leaderboard
         </Link>
         .

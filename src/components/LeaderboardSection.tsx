@@ -17,6 +17,7 @@ interface Props {
   showRepresentatives?: boolean;
   tvMode?: boolean;
   showDetailToggle?: boolean;
+  showBanner?: boolean;
   seasonSlug?: SeasonSlug;
   latestPublishedRound?: number;
   lastPublished?: string | null;
@@ -27,6 +28,7 @@ export function LeaderboardSection({
   bannerSubtitle,
   tvMode = false,
   showDetailToggle = true,
+  showBanner = true,
   lastPublished = null,
   ...rest
 }: Props) {
@@ -42,6 +44,7 @@ export function LeaderboardSection({
         highlightCode={highlightCode}
         tvMode={tvMode}
         showDetailToggle={showDetailToggle}
+        showBanner={showBanner}
         {...rest}
       />
     </div>

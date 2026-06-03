@@ -1,5 +1,8 @@
-import { PhaseLeaderboard } from "@/components/PhaseLeaderboard";
+import { redirect } from "next/navigation";
+import { getCompetitionMap } from "@/lib/data/content-queries";
+import { previewPhaseRegionalBoardPath } from "@/lib/public-standings-route";
 
-export default function PreviewJulyPage() {
-  return <PhaseLeaderboard phase="july" slug="july_region" isPreview />;
+export default async function PreviewJulyPage() {
+  const config = await getCompetitionMap();
+  redirect(previewPhaseRegionalBoardPath("july", config.regionHighlight));
 }

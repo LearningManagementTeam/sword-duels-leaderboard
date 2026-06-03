@@ -1,6 +1,5 @@
 import { CollapsibleCompetitionMap } from "@/components/home/CollapsibleCompetitionMap";
 import { HomeCarouselSection } from "@/components/home/HomeCarouselSection";
-import { HomeFullLeaderboardCta } from "@/components/home/HomeFullLeaderboardCta";
 import { HomeStandingsPreview } from "@/components/home/HomeStandingsPreview";
 import { SetupBanner } from "@/components/SetupBanner";
 import { ShareCard } from "@/components/ShareCard";
@@ -23,8 +22,6 @@ export default async function HomePage() {
       <HomeStandingsPreview mapConfig={mapConfig} />
 
       {!configured && <SetupBanner />}
-
-      <HomeFullLeaderboardCta mapConfig={mapConfig} />
 
       <HomeCarouselSection branding={branding} />
 

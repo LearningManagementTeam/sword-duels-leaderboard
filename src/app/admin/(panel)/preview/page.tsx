@@ -79,12 +79,12 @@ export default function AdminPreviewPage() {
 
       <p className="text-xs text-sd-muted/60">
         Official public boards:{" "}
-        <Link href="/june" className="sd-link">
-          /june
+        <Link href="/june/luzon" className="sd-link">
+          /june/luzon
         </Link>
         ,{" "}
-        <Link href="/july" className="sd-link">
-          /july
+        <Link href="/july/luzon" className="sd-link">
+          /july/luzon
         </Link>
         ,{" "}
         <Link href="/august" className="sd-link">

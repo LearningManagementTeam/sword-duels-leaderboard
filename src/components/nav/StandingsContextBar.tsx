@@ -59,6 +59,9 @@ export function StandingsContextBar({
             )
           )}
           <p className="mt-0.5 text-xs text-sd-muted">{roundLine}</p>
+          {latestPublishedRound > 0 && (
+            <p className="text-[11px] text-sd-muted/70">{roundView.bannerTagline}</p>
+          )}
           {lastPublished && (
             <p className="text-[11px] text-sd-muted/60">
               Updated{" "}
@@ -72,7 +75,11 @@ export function StandingsContextBar({
       </div>
 
       <div className="mt-3 space-y-2">
-        <PhaseNav active={phase} basePath={basePath} />
+        <PhaseNav
+          active={phase}
+          basePath={basePath}
+          defaultRegion={region ?? "luzon"}
+        />
         {showRegions && (
           <div className="flex flex-wrap items-center gap-1.5">
             {regionLinks.map((l) => {

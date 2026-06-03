@@ -34,10 +34,10 @@ export default function PreviewHomePage() {
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Link href="/preview/july" className="sd-neon-panel block p-5 transition hover:shadow-lg hover:shadow-emerald-500/10">
+          <Link href="/preview/july/luzon" className="sd-neon-panel block p-5 transition hover:shadow-lg hover:shadow-emerald-500/10">
             <h3 className="font-semibold text-sd-glow">July preview</h3>
             <p className="mt-1 text-sm text-sd-muted">
-              8→4→2→1 per region · pick a region on the page
+              8→4→2→1 per region · Luzon, NCR, or VisMin
             </p>
           </Link>
           <Link href="/preview/august" className="sd-neon-panel block p-5 transition hover:shadow-lg hover:shadow-fuchsia-500/10">
