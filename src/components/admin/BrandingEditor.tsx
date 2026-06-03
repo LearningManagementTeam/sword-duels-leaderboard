@@ -11,10 +11,12 @@ import {
 } from "@/lib/actions/admin";
 import {
   CAROUSEL_SLOT_COUNT,
+  CAROUSEL_SLOTS,
   CAROUSEL_UPLOAD_SPECS,
   getActiveCarouselSlides,
   type BrandingConfig,
   type CarouselSlides,
+  type CarouselSlot,
 } from "@/lib/branding";
 import type { CarouselMutationResult } from "@/lib/branding-carousel";
 import {
@@ -32,7 +34,7 @@ type CarouselPhase = "idle" | "uploading" | "removing" | "success" | "error";
 
 type CarouselStatus = {
   phase: CarouselPhase;
-  slot?: 1 | 2 | 3;
+  slot?: CarouselSlot;
   message: string;
 };
 
@@ -60,7 +62,7 @@ async function postCarouselUpload(
   return data;
 }
 
-async function deleteCarouselSlot(slot: 1 | 2 | 3): Promise<CarouselMutationResult> {
+async function deleteCarouselSlot(slot: CarouselSlot): Promise<CarouselMutationResult> {
   const res = await fetch(`/api/admin/branding/carousel?slot=${slot}`, {
     method: "DELETE",
     credentials: "include",
@@ -123,7 +125,7 @@ export function BrandingEditor({ initial }: Props) {
   const [branding, setBranding] = useState(initial);
   const [alt, setAlt] = useState(initial.logo_alt);
   const [logoBusy, setLogoBusy] = useState(false);
-  const [carouselBusySlot, setCarouselBusySlot] = useState<1 | 2 | 3 | null>(
+  const [carouselBusySlot, setCarouselBusySlot] = useState<CarouselSlot | null>(
     null
   );
   const [carouselStatus, setCarouselStatus] = useState<CarouselStatus>({
@@ -131,26 +133,27 @@ export function BrandingEditor({ initial }: Props) {
     message: "",
   });
   const [slotLoadErrors, setSlotLoadErrors] = useState<
-    Partial<Record<1 | 2 | 3, boolean>>
+    Partial<Record<CarouselSlot, boolean>>
   >({});
   const [slotFileChecks, setSlotFileChecks] = useState<
-    Partial<Record<1 | 2 | 3, BrandingFileCheck>>
+    Partial<Record<CarouselSlot, BrandingFileCheck>>
   >({});
   const [logoFileCheck, setLogoFileCheck] = useState<
     BrandingFileCheck | undefined
   >();
   const [message, setMessage] = useState("");
-  const fileInputRefs = useRef<Record<1 | 2 | 3, HTMLInputElement | null>>({
+  const fileInputRefs = useRef<Record<CarouselSlot, HTMLInputElement | null>>({
     1: null,
     2: null,
     3: null,
+    4: null,
   });
 
   const carouselLocked = carouselBusySlot !== null;
   const activeSlides = getActiveCarouselSlides(branding);
   const specs = CAROUSEL_UPLOAD_SPECS;
 
-  function handleCarouselFileChange(slot: 1 | 2 | 3) {
+  function handleCarouselFileChange(slot: CarouselSlot) {
     const input = fileInputRefs.current[slot];
     const file = input?.files?.[0];
     const check = checkCarouselUploadFile(file);
@@ -170,7 +173,7 @@ export function BrandingEditor({ initial }: Props) {
     }
   }
 
-  async function handleCarouselUpload(slot: 1 | 2 | 3) {
+  async function handleCarouselUpload(slot: CarouselSlot) {
     if (carouselLocked) return;
 
     const input = fileInputRefs.current[slot];
@@ -225,7 +228,7 @@ export function BrandingEditor({ initial }: Props) {
     }
   }
 
-  async function handleRemoveCarousel(slot: 1 | 2 | 3) {
+  async function handleRemoveCarousel(slot: CarouselSlot) {
     if (carouselLocked) return;
     if (!confirm(`Remove photo ${slot} from the home carousel?`)) return;
 
@@ -321,7 +324,7 @@ export function BrandingEditor({ initial }: Props) {
     <div className="space-y-8">
       <p className="text-sm text-sd-muted">
         Page backgrounds use the built-in animated gradient mesh. Upload the hero logo
-        and up to three home carousel photos here. Only one carousel photo uploads at a
+        and up to {CAROUSEL_SLOT_COUNT} home carousel photos here. Only one carousel photo uploads at a
         time.
       </p>
 
@@ -350,8 +353,8 @@ export function BrandingEditor({ initial }: Props) {
           )}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          {([1, 2, 3] as const).map((slot) => {
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {CAROUSEL_SLOTS.map((slot) => {
             const url = branding.carousel_slides[slot - 1];
             const isThisSlotBusy = carouselBusySlot === slot;
             const fileCheck = slotFileChecks[slot];

@@ -42,6 +42,16 @@ export async function getBranches(): Promise<Branch[]> {
   return (data ?? []) as Branch[];
 }
 
+export async function getBranchCount(): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("branches")
+    .select("*", { count: "exact", head: true });
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function getSeasonParticipants(
   seasonId: string
 ): Promise<string[]> {

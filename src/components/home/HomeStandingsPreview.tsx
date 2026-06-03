@@ -2,6 +2,7 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCompetitionMap } from "@/lib/data/content-queries";
 import {
+  getBranchCount,
   getLatestPublishedRoundNumber,
   getLastPublishedAt,
   getPublishedStandings,
@@ -15,7 +16,7 @@ import {
 import { REGION_LABELS, SCORING_CONFIG } from "@/lib/scoring-config";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
-const PREVIEW_ROWS = 8;
+const PREVIEW_ROWS = 5;
 
 const juneRegions = [
   { href: "/june/luzon", label: "Luzon" },
@@ -33,8 +34,10 @@ export async function HomeStandingsPreview() {
   const config = await getCompetitionMap();
   const meta = getMilestoneMeta(config.milestoneId);
   const standingsHref = resolvePublicStandingsHref(config);
+  const fullBoardHref = "/compare/leaderboard";
   const { seasonSlug, region } = parsePublicStandingsPath(standingsHref);
   const seasonConfig = SCORING_CONFIG[seasonSlug];
+  const branchCount = await getBranchCount();
 
   let rows: Awaited<ReturnType<typeof getPublishedStandings>> = [];
   let latestRound = 0;
@@ -64,13 +67,20 @@ export async function HomeStandingsPreview() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sd-glow">
-            Live standings
+            The arena
           </p>
           <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">
-            {seasonConfig.name}
-            {regionLine ? ` · ${regionLine}` : ""}
+            Live ranks
           </h2>
-          <p className="mt-1 text-sm text-sd-muted">{meta.label}</p>
+          <p className="mt-1 text-sm text-sd-muted">
+            {seasonConfig.name}
+            {regionLine ? ` · ${regionLine}` : ""} — {meta.label}
+          </p>
+          {branchCount > 0 && (
+            <p className="mt-1 text-xs text-sd-muted/70">
+              {branchCount} branches competing
+            </p>
+          )}
           {lastPublished && (
             <p className="mt-1 text-xs text-sd-muted/70">
               Last updated{" "}
@@ -82,15 +92,15 @@ export async function HomeStandingsPreview() {
           )}
         </div>
         <Link href={standingsHref} className="sd-btn-primary rounded-xl px-4 py-2.5 text-sm">
-          View full board →
+          Climb the board →
         </Link>
       </div>
 
       {preview.length === 0 ? (
         <div className="sd-glass rounded-xl px-4 py-6 text-center text-sm text-sd-muted">
           {latestRound === 0
-            ? "Standings will appear here once the first round is published."
-            : "No standings to show yet for this board."}
+            ? "Round 1 kicks off soon — the leaderboard opens after the first publish."
+            : "The board is warming up — check back after the next round drops."}
         </div>
       ) : (
         <div className="sd-glass-strong overflow-hidden rounded-xl">
@@ -127,9 +137,9 @@ export async function HomeStandingsPreview() {
           </ul>
           {rows.length > PREVIEW_ROWS && (
             <p className="border-t border-emerald-500/10 px-4 py-2 text-center text-xs text-sd-muted">
-              Showing top {PREVIEW_ROWS} of {rows.length} —{" "}
-              <Link href={standingsHref} className="sd-link">
-                see all ranks
+              Top {PREVIEW_ROWS} of {rows.length} —{" "}
+              <Link href={fullBoardHref} className="sd-link">
+                see the full arena
               </Link>
             </p>
           )}
@@ -138,7 +148,7 @@ export async function HomeStandingsPreview() {
 
       <div className="flex flex-wrap gap-2 pt-1">
         <span className="w-full text-[10px] font-semibold uppercase tracking-wider text-sd-muted/60">
-          Jump to region
+          Jump to a region
         </span>
         {juneRegions.map((r) => (
           <Link

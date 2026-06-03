@@ -5,6 +5,7 @@ import {
   parseBrandingBody,
   type BrandingConfig,
   type CarouselSlides,
+  type CarouselSlot,
 } from "@/lib/branding";
 import { brandingAssetUrl } from "@/lib/branding-storage";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -25,7 +26,7 @@ const CAROUSEL_EXT_MIME: Record<string, string> = {
   webp: "image/webp",
 };
 
-export type CarouselSlot = 1 | 2 | 3;
+export type { CarouselSlot } from "@/lib/branding";
 
 export type CarouselMutationResult = {
   ok: true;
@@ -38,8 +39,8 @@ type ServiceClient = Awaited<ReturnType<typeof createServiceClient>>;
 
 export function parseCarouselSlot(raw: FormDataEntryValue | null): CarouselSlot {
   const n = Number(raw);
-  if (n === 1 || n === 2 || n === 3) return n;
-  throw new Error("Invalid carousel slot (use 1, 2, or 3).");
+  if (n === 1 || n === 2 || n === 3 || n === 4) return n;
+  throw new Error("Invalid carousel slot (use 1, 2, 3, or 4).");
 }
 
 function carouselFileExtension(file: File): string | undefined {

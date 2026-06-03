@@ -51,10 +51,10 @@ function areaForIndex(i: number): string {
   return `Area ${areaNum}`;
 }
 
-/** 142 sample branches matching data/branches.csv distribution */
+/** 135 sample branches matching data/branches.csv distribution */
 export const DEMO_BRANCHES: DemoBranch[] = (() => {
   const rows: DemoBranch[] = [];
-  for (let i = 1; i <= 142; i++) {
+  for (let i = 1; i <= 135; i++) {
     const region: Region =
       i % 3 === 0 ? "vismin" : i % 3 === 1 ? "luzon" : "ncr";
 

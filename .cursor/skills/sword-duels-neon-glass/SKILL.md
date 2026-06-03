@@ -57,7 +57,7 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 | Home hub | `HomeStandingsHub` (single standings block), `HomeLastPublished`, `HomeCarouselSection` |
 | Competition map | `CompetitionMapPanel`, `CompetitionMapDisplay`, `CompetitionMapTrack` (mobile phase stepper), Admin → `/admin/competition` |
 | Carousel (text ticker) | `src/components/ui/SdCarousel.tsx` — phase/status strips on hubs only (not home) |
-| Home photo carousel | `HomePhotoCarousel` — 3 admin uploads in Branding (max 3MB each) |
+| Home photo carousel | `HomePhotoCarousel` — 4 admin uploads in Branding (max 3MB each) |
 | Preview / TV | Live `/tv` and `/preview/tv` both use `TvLeaderboardView` + `GamifiedLeaderboard` |
 | Hero logo | `HeroLogo` + `BrandingImage` (never raw `next/image` for `/api/branding/storage/*`) |
 | Branding files | `src/lib/branding-storage.ts` → `/api/branding/storage/[path]`; `next.config.ts` `images.localPatterns` |

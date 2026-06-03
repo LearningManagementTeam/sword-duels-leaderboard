@@ -12,7 +12,7 @@
 
 Public leaderboard and central admin console for the June–August competition:
 
-- **June (Area-wide):** 130+ branches, 3 rounds, top **24** advance
+- **June (Area-wide):** 135 branches (target), 3 rounds, top **24** advance
 - **July (Regional):** 24 survivors by Luzon / NCR / VisMin, **1 champion per region**
 - **August (Finals):** 3 regional champions
 
@@ -58,7 +58,7 @@ SELECT id, email FROM auth.users WHERE email = 'your-admin@company.com';
 ### 4. Seed branches
 
 1. Admin → **Branches** → **Import branches from CSV**  
-   Uses [`data/branches.csv`](data/branches.csv) (142 sample branches). Replace with your official list (same columns: `branch_code,branch_name,area,region`).
+   Uses [`data/branches.csv`](data/branches.csv) (135 sample branches). Replace with your official list (same columns: `branch_code,branch_name,area,region`).
 
 Regenerate sample CSV:
 

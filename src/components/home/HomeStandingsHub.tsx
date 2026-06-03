@@ -38,7 +38,7 @@ export function HomeStandingsHub() {
           Standings
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-sd-muted">
-          Three phases: June area-wide (130+ branches → top 24), July regional,
+          Three phases: June area-wide (branches battle for top 24), July regional,
           and August finals. Pick a phase, then a region when applicable.
         </p>
       </div>

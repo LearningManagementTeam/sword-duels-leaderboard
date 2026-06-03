@@ -10,7 +10,7 @@ export async function CollapsibleCompetitionMap() {
               Season journey
             </span>
             <span className="mt-0.5 block text-base text-sd-glow">
-              Show competition map
+              Show the path to the crown
             </span>
           </span>
           <span className="text-sd-muted transition group-open:rotate-180">

@@ -16,7 +16,7 @@ const ITEMS: { id: NavId; label: string; hrefKey?: NavId }[] = [
   { id: "home", label: "Home" },
   { id: "standings", label: "Standings" },
   { id: "phases", label: "Phases" },
-  { id: "rules", label: "Rules" },
+  { id: "rules", label: "How to win" },
 ];
 
 function resolveHref(

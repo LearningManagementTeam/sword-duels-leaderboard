@@ -28,17 +28,17 @@ export function CompetitionMapDisplay({ config, remaining }: Props) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300/80">
-            Quest log
+            Season quest
           </p>
           <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">
-            Season journey
+            The path to the crown
           </h2>
           <p className="mt-1 text-sm text-sd-muted">
-            June → July → August — follow the path as the competition unfolds
+            June → July → August — every round brings branches closer to glory
           </p>
         </div>
         <span className="animate-glow-pulse sd-glass rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-sd-glow ring-1 ring-emerald-400/30">
-          You are here
+          Current chapter
         </span>
       </div>
 

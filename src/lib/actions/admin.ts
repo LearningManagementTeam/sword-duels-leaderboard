@@ -1211,7 +1211,7 @@ export async function uploadCarouselSlide(formData: FormData) {
   return result;
 }
 
-export async function removeCarouselSlide(slot: 1 | 2 | 3) {
+export async function removeCarouselSlide(slot: import("@/lib/branding").CarouselSlot) {
   const { email } = await requireAdmin();
   const result = await removeCarouselSlideSlot(email, slot);
   await logAudit(email, "remove_carousel_slide", "site_content", BRANDING_CONTENT_SLUG, {

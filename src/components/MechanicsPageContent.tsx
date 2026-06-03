@@ -4,9 +4,10 @@ import type { MechanicsPublicBody } from "@/lib/mechanics-content";
 
 interface Props {
   content: MechanicsPublicBody;
+  branchCount?: number;
 }
 
-export function MechanicsPageContent({ content }: Props) {
+export function MechanicsPageContent({ content, branchCount = 0 }: Props) {
   return (
     <div className="space-y-10">
       {content.intro.trim() && (
@@ -24,7 +25,7 @@ export function MechanicsPageContent({ content }: Props) {
         </section>
       )}
 
-      <MechanicsAutoRules />
+      <MechanicsAutoRules branchCount={branchCount} />
 
       {content.custom_sections.map((section) => (
         <section key={section.id} id={`section-${section.id}`}>

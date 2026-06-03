@@ -18,7 +18,7 @@ Public viewers open the site to **see scores and who advanced** — not to expor
 1. **Results first** — On region/finals pages, the leaderboard table must appear within one mobile viewport when data exists.
 2. **Public vs admin** — No Export CSV, admin links, preview links, or setup instructions on public UI. Export API requires admin auth.
 3. **Tap budget** — Live standings reachable in ≤2 taps from home (bottom nav **Standings** = one tap).
-4. **Content order (home)** — Live standings preview → Branding (logo/carousel) → Season journey (collapsed by default) → Share.
+4. **Content order (home)** — Live standings preview → **Go to full leaderboard** CTA → Carousel → Season journey (collapsed) → Share. No hero logo on home.
 5. **Content order (board pages)** — Sticky phase/region bar → Leaderboard → Collapsible progress/status below.
 6. **Navigation** — Mobile: fixed bottom glass bar. Desktop: fixed top glass bar. Same four destinations only.
 7. **Smart Standings link** — Driven by `CompetitionMapConfig.milestoneId` via `resolvePublicStandingsHref()` (finals when map says August, etc.) — not “last CSV export” or arbitrary default.
@@ -33,7 +33,24 @@ Public viewers open the site to **see scores and who advanced** — not to expor
 | Phases | `resolvePublicPhaseHref(map)` | `/june`, `/july`, `/august` (exact) |
 | Rules | `/mechanics` | `/mechanics` |
 
-**Never in public nav:** Admin, Preview, TV, Export CSV.
+Label in nav: **How to win** (not “Rules”).
+
+## Gamified copy tone
+
+- Lead with **progress, rivalry, celebration** — not admin jargon.
+- Active verbs: “Climb the board”, “Survive the cut”, “Crown survivors”, “The arena”.
+- Empty states = **anticipation** (“Round 1 drops soon”), not failure (“No data”).
+- Avoid negative framing on public pages.
+- Branch counts: use `getBranchCount()` + `TARGET_BRANCH_COUNT` (135) from `src/lib/branch-targets.ts` — never hardcode 142 or 130+.
+
+## Full leaderboard compare (temporary)
+
+During layout review, home CTA links to `/compare/leaderboard` with three prototypes:
+- `/compare/leaderboard/three-columns` (A)
+- `/compare/leaderboard/stacked` (B1)
+- `/compare/leaderboard/unified` (B2)
+
+Promote winner to `/leaderboard` after owner confirms.
 
 ## Key files
 
@@ -43,6 +60,9 @@ Public viewers open the site to **see scores and who advanced** — not to expor
 | Nav shell | `src/components/nav/PublicNav.tsx` |
 | Sticky context | `src/components/nav/StandingsContextBar.tsx` |
 | Home preview | `src/components/home/HomeStandingsPreview.tsx` |
+| Full board CTA | `src/components/home/HomeFullLeaderboardCta.tsx` |
+| Layout compare | `src/components/leaderboard/FullLeaderboardCompare.tsx` |
+| Branch counts | `src/lib/branch-targets.ts`, `getBranchCount()` |
 | Board layout | `src/components/PhaseLeaderboard.tsx` |
 | Site layout | `src/app/(site)/layout.tsx` |
 | Map data | `getCompetitionMap()`, Admin → `/admin/competition` |

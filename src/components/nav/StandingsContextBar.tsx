@@ -29,8 +29,8 @@ export function StandingsContextBar({
 
   const roundLine =
     latestPublishedRound > 0
-      ? `After Round ${latestPublishedRound}`
-      : "No rounds published yet";
+      ? `After Round ${latestPublishedRound} — climb the board`
+      : "Round 1 drops soon — ranks appear after publish";
 
   return (
     <div className="sticky top-0 z-40 -mx-4 border-b border-emerald-500/15 bg-sd-deep/95 px-4 py-3 backdrop-blur-xl md:top-[3.25rem] md:mx-0 md:rounded-xl md:border md:border-emerald-500/20">

@@ -24,6 +24,7 @@ interface Props {
   showRepresentatives?: boolean;
   tvMode?: boolean;
   showDetailToggle?: boolean;
+  compact?: boolean;
   seasonSlug?: SeasonSlug;
   latestPublishedRound?: number;
   highlightCode?: string | null;
@@ -39,6 +40,7 @@ export function GamifiedLeaderboard({
   showRepresentatives = true,
   tvMode = false,
   showDetailToggle = true,
+  compact = false,
   seasonSlug,
   latestPublishedRound = 0,
   highlightCode = null,
@@ -84,10 +86,16 @@ export function GamifiedLeaderboard({
   const topThree = filtered.filter((r) => r.rank <= 3);
 
   return (
-    <div className="sd-glass-strong relative space-y-6 overflow-hidden rounded-2xl p-4 sm:p-6">
-      <LeaderboardBanner subtitle={bannerSubtitle} tvMode={tvMode} />
+    <div
+      className={`sd-glass-strong relative overflow-hidden rounded-2xl ${
+        compact ? "space-y-3 p-3" : "space-y-6 p-4 sm:p-6"
+      }`}
+    >
+      {!compact && (
+        <LeaderboardBanner subtitle={bannerSubtitle} tvMode={tvMode} />
+      )}
 
-      {!tvMode && (
+      {!tvMode && !compact && (
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <input
             type="search"
@@ -127,30 +135,34 @@ export function GamifiedLeaderboard({
       )}
 
       {filtered.length === 0 ? (
-        <p className="text-center text-sd-muted py-12">
-          No standings published yet.
+        <p className={`text-center text-sd-muted ${compact ? "py-6 text-sm" : "py-12"}`}>
+          Round 1 drops soon — ranks appear here after publish.
         </p>
       ) : (
         <>
-          <PodiumTopThree topThree={topThree} tvMode={tvMode} />
-          <GamifiedRankList
-            rows={filtered}
-            advancementCutoff={advancementCutoff}
-            cutLineLabel={defaultCutLabel}
-            highlightCode={highlightCode}
-            tvMode={tvMode}
-          />
+          {!compact && (
+            <PodiumTopThree topThree={topThree} tvMode={tvMode} />
+          )}
+          <div className={compact ? "max-h-[min(28rem,55vh)] overflow-y-auto pr-1" : undefined}>
+            <GamifiedRankList
+              rows={filtered}
+              advancementCutoff={advancementCutoff}
+              cutLineLabel={defaultCutLabel}
+              highlightCode={highlightCode}
+              tvMode={tvMode}
+            />
+          </div>
         </>
       )}
 
-      {!tvMode && (
+      {!tvMode && !compact && (
         <p className="text-xs text-sd-muted/80">
           Tie-breakers: {tieBreakers.join(" → ")} · Showing {filtered.length} of{" "}
           {rows.length}
         </p>
       )}
 
-      {showDetailToggle && !tvMode && filtered.length > 0 && (
+      {showDetailToggle && !tvMode && !compact && filtered.length > 0 && (
         <LeaderboardDetailToggle
           rows={rows}
           advancementCutoff={advancementCutoff}

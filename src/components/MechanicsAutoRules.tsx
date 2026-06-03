@@ -7,8 +7,8 @@ import {
   TIE_BREAKER_LABELS,
 } from "@/lib/mechanics-rules";
 
-export function MechanicsAutoRules() {
-  const phases = getPhaseOverviewRows();
+export function MechanicsAutoRules({ branchCount = 0 }: { branchCount?: number }) {
+  const phases = getPhaseOverviewRows(branchCount);
   const june = getJuneSurvivorTable();
   const july = getJulySurvivorTable();
   const caps = getRoundCapRows();

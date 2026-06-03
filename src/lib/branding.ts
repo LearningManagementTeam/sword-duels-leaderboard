@@ -2,7 +2,10 @@ import { normalizeBrandingAssetUrl } from "@/lib/branding-storage";
 
 export const BRANDING_CONTENT_SLUG = "branding";
 
-export const CAROUSEL_SLOT_COUNT = 3;
+export const CAROUSEL_SLOT_COUNT = 4;
+
+export const CAROUSEL_SLOTS = [1, 2, 3, 4] as const;
+export type CarouselSlot = (typeof CAROUSEL_SLOTS)[number];
 
 export const CAROUSEL_UPLOAD_SPECS = {
   maxBytes: 3 * 1024 * 1024,
@@ -23,6 +26,7 @@ export type CarouselSlides = [
   string | null,
   string | null,
   string | null,
+  string | null,
 ];
 
 export interface BrandingConfig {
@@ -34,11 +38,14 @@ export interface BrandingConfig {
 export const DEFAULT_BRANDING: BrandingConfig = {
   logo_url: null,
   logo_alt: "Sword Duels",
-  carousel_slides: [null, null, null],
+  carousel_slides: [null, null, null, null],
 };
 
 function normalizeCarouselSlides(raw: unknown): CarouselSlides {
-  const slots: CarouselSlides = [null, null, null];
+  const slots = Array.from(
+    { length: CAROUSEL_SLOT_COUNT },
+    () => null
+  ) as CarouselSlides;
   if (!Array.isArray(raw)) return slots;
   for (let i = 0; i < CAROUSEL_SLOT_COUNT && i < raw.length; i++) {
     const v = raw[i];

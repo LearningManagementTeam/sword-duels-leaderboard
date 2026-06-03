@@ -9,12 +9,17 @@ import {
   type SeasonSlug,
 } from "@/lib/scoring-config";
 
-export function getPhaseOverviewRows() {
+export function getPhaseOverviewRows(branchCount = 0) {
+  const participantCopy =
+    branchCount > 0
+      ? `All branches (${branchCount})`
+      : "All branches (target 135)";
+
   return [
     {
       phase: "June",
       season: "Area-wide",
-      participants: "All branches (130+)",
+      participants: participantCopy,
       rounds: "3 weekly",
       advancement: "8 per region after R3 → 24 to July",
       anchor: "june",

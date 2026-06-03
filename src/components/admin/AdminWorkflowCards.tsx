@@ -26,9 +26,9 @@ export function AdminWorkflowCards({ rounds }: Props) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div className="sd-neon-panel p-4">
-        <h3 className="font-semibold text-white">Weekly round</h3>
+        <h3 className="font-semibold text-white">Score the round</h3>
         <p className="mt-1 text-sm text-sd-muted">
-          Enter scores → save draft → preview → publish.
+          Enter points, preview the board, then publish — fans see ranks instantly.
         </p>
         <Link
           href="/admin/rounds"
@@ -39,10 +39,10 @@ export function AdminWorkflowCards({ rounds }: Props) {
       </div>
 
       <div className="sd-neon-panel p-4">
-        <h3 className="font-semibold text-white">Extra advancement</h3>
+        <h3 className="font-semibold text-white">Tie-breaker picks</h3>
         <p className="mt-1 text-sm text-sd-muted">
-          After publish, add branches that tied at the cut (e.g. many 10/10
-          scores).
+          After publish, crown branches that tied at the cut line and earned a
+          play-off spot.
         </p>
         {showAdvances && latestPublished ? (
           <Link
@@ -53,34 +53,35 @@ export function AdminWorkflowCards({ rounds }: Props) {
           </Link>
         ) : (
           <p className="mt-3 text-xs text-sd-muted/60">
-            Available after a June/July round is published.
+            Unlocks after a June or July round goes live.
           </p>
         )}
       </div>
 
       <div className="sd-neon-panel p-4">
-        <h3 className="font-semibold text-white">Home competition map</h3>
+        <h3 className="font-semibold text-white">Season journey</h3>
         <p className="mt-1 text-sm text-sd-muted">
-          After a major beat, set milestone and caption on the home journey map.
+          Move the milestone on the home map when the competition hits a big beat.
         </p>
         <Link
           href="/admin/competition"
           className="mt-3 inline-block rounded-lg border border-emerald-400/30 px-3 py-1.5 text-sm text-sd-glow hover:text-white"
         >
-          Update competition map
+          Update journey map
         </Link>
       </div>
 
       <div className="sd-neon-panel p-4">
-        <h3 className="font-semibold text-white">End of phase</h3>
+        <h3 className="font-semibold text-white">Phase finale</h3>
         <p className="mt-1 text-sm text-sd-muted">
-          Lock June or July after Round 3 is published for all regions.
+          Lock June or July after Round 3 is live in every region — send survivors
+          forward.
         </p>
         <Link
           href="/admin/advancement"
           className="mt-3 inline-block rounded-lg border border-emerald-400/30 px-3 py-1.5 text-sm text-sd-muted hover:text-white"
         >
-          Lock & advance
+          Crown survivors
         </Link>
       </div>
     </div>

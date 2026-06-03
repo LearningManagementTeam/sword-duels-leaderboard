@@ -11,7 +11,8 @@ import { DEMO_BRANCHES } from "./demo-branches";
 
 function seededPoints(branchIndex: number, round: number): number {
   const base = (branchIndex * 7919 + round * 104729) % 8500;
-  return Math.round((base / 100 + 15 + (142 - branchIndex) * 0.05) * 100) / 100;
+  const branchTotal = DEMO_BRANCHES.length;
+  return Math.round((base / 100 + 15 + (branchTotal - branchIndex) * 0.05) * 100) / 100;
 }
 
 function seededWins(branchIndex: number, round: number): number {

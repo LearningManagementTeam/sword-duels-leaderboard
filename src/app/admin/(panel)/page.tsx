@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminWorkflowCards } from "@/components/admin/AdminWorkflowCards";
 import { SetupBanner } from "@/components/SetupBanner";
+import { branchCountLabel } from "@/lib/branch-targets";
 import { getAdminDashboard } from "@/lib/data/admin-queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -39,28 +40,28 @@ export default async function AdminDashboardPage() {
         <ul className="list-inside list-disc text-sm text-sd-muted">
           <li>
             <Link href="/admin/branches" className="sd-link">
-              Import branches
+              Load the roster
             </Link>{" "}
-            (142 in seed CSV)
+            ({branchCountLabel(branchCount)})
           </li>
           <li>
             <Link href="/admin/representatives" className="sd-link">
-              Enter branch representatives
+              Assign branch champions
             </Link>
           </li>
           <li>
             <Link href="/admin/rounds" className="sd-link">
-              Enter round results
+              Score the round &amp; publish standings
             </Link>
           </li>
           <li>
             <Link href="/admin/advancement" className="sd-link">
-              Lock phase & advance
+              Crown survivors — advance phase
             </Link>
           </li>
           <li>
             <Link href="/admin/competition" className="sd-link">
-              Competition map (home)
+              Update the season journey map
             </Link>
           </li>
         </ul>
