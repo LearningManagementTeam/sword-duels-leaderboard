@@ -503,6 +503,18 @@ export function BrandingEditor({ initial }: Props) {
 
         <CarouselStatusBanner status={sponsorStatus} />
 
+        <p className="text-xs text-sd-muted/80">
+          Compare animation styles:{" "}
+          <a
+            href="/preview/partner-logo-animations"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sd-link"
+          >
+            Partner logo animation preview →
+          </a>
+        </p>
+
         <div className="max-w-md">
           <p className="mb-2 text-xs uppercase tracking-wider text-sd-muted/70">
             Home strip preview ({activeSponsorLogos.length} of 3 filled)

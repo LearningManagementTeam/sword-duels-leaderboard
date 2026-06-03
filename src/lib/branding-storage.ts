@@ -1,6 +1,6 @@
 /** Safe storage object names under the Supabase `branding` bucket. */
 const ALLOWED_PATH =
-  /^(carousel-[1-4]\.(png|jpe?g|webp)|logo\.(png|jpe?g|webp|svg))$/i;
+  /^(carousel-[1-4]\.(png|jpe?g|webp)|sponsor-logo-[1-3]\.(png|jpe?g|webp|svg)|logo\.(png|jpe?g|webp|svg))$/i;
 
 export function isAllowedBrandingPath(path: string): boolean {
   return ALLOWED_PATH.test(path);
@@ -35,7 +35,9 @@ export function extractBrandingStoragePath(url: string): string | null {
   if (supabaseMatch?.[1] && isAllowedBrandingPath(supabaseMatch[1])) {
     return supabaseMatch[1];
   }
-  const shortMatch = trimmed.match(/\/branding\/(carousel-[1-4]\.\w+|logo\.\w+)/i);
+  const shortMatch = trimmed.match(
+    /\/branding\/((?:carousel-[1-4]|sponsor-logo-[1-3]|logo)\.\w+)/i
+  );
   if (shortMatch?.[1] && isAllowedBrandingPath(shortMatch[1])) {
     return shortMatch[1];
   }

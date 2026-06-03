@@ -787,3 +787,22 @@ summary:focus-visible {
     justify-content: center;
   }
 }
+
+@keyframes sponsor-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-sponsor-marquee {
+  animation: sponsor-marquee linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sponsor-marquee {
+    animation: none;
+  }
+}
