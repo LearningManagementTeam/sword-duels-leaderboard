@@ -7,8 +7,13 @@ export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) {
-    if (request.nextUrl.pathname.startsWith("/admin") && request.nextUrl.pathname !== "/admin/login") {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
+    if (
+      request.nextUrl.pathname.startsWith("/admin") &&
+      request.nextUrl.pathname !== "/admin/login"
+    ) {
+      return NextResponse.redirect(
+        new URL("/admin/login?setup=1", request.url)
+      );
     }
     return response;
   }

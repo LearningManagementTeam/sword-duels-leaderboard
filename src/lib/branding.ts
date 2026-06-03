@@ -6,7 +6,15 @@ export const CAROUSEL_UPLOAD_SPECS = {
   maxBytes: 3 * 1024 * 1024,
   maxSizeLabel: "3 MB per photo",
   accept: "image/jpeg,image/png,image/webp",
+  recommendedWidth: 1920,
+  recommendedHeight: 1080,
   recommendedLabel: "1920 × 1080 (16:9) recommended",
+  /** Shown inside empty slot placeholder in Admin → Branding */
+  emptyPlaceholderLines: [
+    "Recommended: 1920 × 1080",
+    "16:9 landscape · JPG, PNG, or WebP",
+    "Max 3 MB per photo",
+  ] as const,
 } as const;
 
 export type CarouselSlides = [

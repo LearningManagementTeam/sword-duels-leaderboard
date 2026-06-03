@@ -53,13 +53,15 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 | Area | Files |
 |------|--------|
 | Tokens / CSS | `src/app/globals.css` |
-| Backdrop | `ArBackdrop` + `ArGradientScene` — modern mesh gradients + soft orbs (`.sd-gradient-scene__*` in `globals.css`) |
-| Competition map | `CompetitionMapPanel` (home), `CompetitionMapDisplay`, Admin → `/admin/competition`, `site_content` slug `competition_map` |
-| Carousel (text ticker) | `src/components/ui/SdCarousel.tsx` — phase/status strips only |
-| Home photo carousel | `HomePhotoCarousel` + `HomeCarouselSection` — 3 admin uploads in Branding |
+| Backdrop | `ArBackdrop` — `ArGradientScene` mesh + `ArElectricityLayer` green bolt/spark flashes (`.sd-electricity__*`) |
+| Home hub | `HomeStandingsHub` (single standings block), `HomeLastPublished`, `HomeCarouselSection` |
+| Competition map | `CompetitionMapPanel`, `CompetitionMapDisplay`, `CompetitionMapTrack` (mobile phase stepper), Admin → `/admin/competition` |
+| Carousel (text ticker) | `src/components/ui/SdCarousel.tsx` — phase/status strips on hubs only (not home) |
+| Home photo carousel | `HomePhotoCarousel` — 3 admin uploads in Branding (max 3MB each) |
+| Preview / TV | Live `/tv` and `/preview/tv` both use `TvLeaderboardView` + `GamifiedLeaderboard` |
 | Hero logo | `src/components/branding/HeroLogo.tsx` |
 | Leaderboard | `src/components/leaderboard/*`, `LeaderboardSection.tsx` |
-| Status | `src/components/StatusBadge.tsx` |
+| Status | `src/components/StatusBadge.tsx` — eliminated uses deep emerald/muted, not slate |
 | Journey | `src/components/PhaseJourneyBar.tsx` |
 | Shell | `SiteHeader.tsx`, `PhaseNav.tsx` |
 | Branding data | `getBranding()`, Admin → `/admin/branding` |
@@ -74,14 +76,16 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 
 ## Backdrop rules
 
-- No admin background upload; logo only in `BrandingConfig`
-- Use `ArGradientScene` mesh + blurred orbs; light vignette scrim in `ArBackdrop` (gradients must stay visible)
+- No admin `background_url` or page background upload (migration 009 retired); branding bucket 5MB is for **logo + carousel** only
+- `ArGradientScene` mesh + `ArElectricityLayer` green bolts/sparks; light vignette scrim in `ArBackdrop`
 - Respect `prefers-reduced-motion` (static gradient snapshot)
 
 ## Competition map rules
 
-- Admin sets `CompetitionMapConfig` milestone + caption; list from `getRemainingContestantsForMap()`
-- Home page only for public map; phase pages keep `PhaseJourneyBar`
+- **Home map** = manual milestone + caption (`CompetitionMapConfig`); **regional `PhaseJourneyBar`** = auto from published rounds
+- `milestoneShowsContestantList()` hides list on transitions (`june_to_july`, `july_to_august`, `pre_season`, `complete`) even if admin toggle on
+- Remaining list capped at 50 per region with link to full board; `suggestCompetitionMilestone()` uses latest publish across all phases
+- Mobile: `CompetitionMapTrack` uses June | July | August tabs instead of wide horizontal scroll
 
 ## Carousel rules (`SdCarousel`)
 

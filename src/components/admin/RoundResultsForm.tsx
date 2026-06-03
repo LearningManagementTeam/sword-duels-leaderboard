@@ -87,7 +87,9 @@ export function RoundResultsForm({
     try {
       await saveRoundResults(roundId, getDraftResults());
       await publishRound(roundId);
-      setMessage("Round published.");
+      setMessage(
+        "Round published. Consider updating the Competition map on the home page."
+      );
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Publish failed");
     } finally {

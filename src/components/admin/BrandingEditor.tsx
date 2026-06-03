@@ -26,14 +26,17 @@ interface Props {
 export function BrandingEditor({ initial }: Props) {
   const [branding, setBranding] = useState(initial);
   const [alt, setAlt] = useState(initial.logo_alt);
-  const [loading, setLoading] = useState(false);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [carouselBusySlot, setCarouselBusySlot] = useState<1 | 2 | 3 | null>(
+    null
+  );
   const [message, setMessage] = useState("");
 
   const activeSlides = getActiveCarouselSlides(branding);
 
   async function handleLogoUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
+    setLogoBusy(true);
     setMessage("");
     const form = e.currentTarget;
     const fd = new FormData(form);
@@ -47,7 +50,7 @@ export function BrandingEditor({ initial }: Props) {
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Upload failed");
     } finally {
-      setLoading(false);
+      setLogoBusy(false);
     }
   }
 
@@ -56,7 +59,8 @@ export function BrandingEditor({ initial }: Props) {
     slot: 1 | 2 | 3
   ) {
     e.preventDefault();
-    setLoading(true);
+    if (carouselBusySlot !== null) return;
+    setCarouselBusySlot(slot);
     setMessage("");
     const form = e.currentTarget;
     const fd = new FormData(form);
@@ -75,12 +79,12 @@ export function BrandingEditor({ initial }: Props) {
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Upload failed");
     } finally {
-      setLoading(false);
+      setCarouselBusySlot(null);
     }
   }
 
   async function handleRemoveCarousel(slot: 1 | 2 | 3) {
-    setLoading(true);
+    setCarouselBusySlot(slot);
     setMessage("");
     try {
       await removeCarouselSlide(slot);
@@ -93,12 +97,12 @@ export function BrandingEditor({ initial }: Props) {
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Remove failed");
     } finally {
-      setLoading(false);
+      setCarouselBusySlot(null);
     }
   }
 
   async function handleRemoveLogo() {
-    setLoading(true);
+    setLogoBusy(true);
     setMessage("");
     try {
       await removeBrandingLogo();
@@ -107,12 +111,12 @@ export function BrandingEditor({ initial }: Props) {
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Remove failed");
     } finally {
-      setLoading(false);
+      setLogoBusy(false);
     }
   }
 
   async function handleSaveAlt() {
-    setLoading(true);
+    setLogoBusy(true);
     setMessage("");
     try {
       await saveBrandingAlt(alt);
@@ -121,7 +125,7 @@ export function BrandingEditor({ initial }: Props) {
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Save failed");
     } finally {
-      setLoading(false);
+      setLogoBusy(false);
     }
   }
 
@@ -154,6 +158,7 @@ export function BrandingEditor({ initial }: Props) {
         <div className="grid gap-4 sm:grid-cols-3">
           {([1, 2, 3] as const).map((slot) => {
             const url = branding.carousel_slides[slot - 1];
+            const slotBusy = carouselBusySlot === slot;
             return (
               <div
                 key={slot}
@@ -172,8 +177,18 @@ export function BrandingEditor({ initial }: Props) {
                     />
                   </div>
                 ) : (
-                  <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed border-emerald-500/25 text-xs text-sd-muted">
-                    Empty
+                  <div className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-emerald-500/25 bg-sd-deep/40 px-3 py-4 text-center">
+                    <span className="text-xs font-medium text-sd-muted/90">
+                      No photo yet
+                    </span>
+                    {specs.emptyPlaceholderLines.map((line) => (
+                      <span
+                        key={line}
+                        className="text-[11px] leading-snug text-sd-muted/65"
+                      >
+                        {line}
+                      </span>
+                    ))}
                   </div>
                 )}
                 <form
@@ -188,16 +203,25 @@ export function BrandingEditor({ initial }: Props) {
                   />
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="sd-btn-primary w-full rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
+                    disabled={slotBusy}
+                    aria-busy={slotBusy}
+                    className={`w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                      slotBusy
+                        ? "cursor-wait bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep ring-2 ring-emerald-300/50"
+                        : "sd-btn-primary"
+                    }`}
                   >
-                    {url ? "Replace" : "Upload"}
+                    {slotBusy
+                      ? "Uploading…"
+                      : url
+                        ? "Replace"
+                        : "Upload"}
                   </button>
                 </form>
                 {url && (
                   <button
                     type="button"
-                    disabled={loading}
+                    disabled={slotBusy}
                     onClick={() => handleRemoveCarousel(slot)}
                     className="text-xs text-red-400 hover:text-red-300"
                   >
@@ -239,10 +263,10 @@ export function BrandingEditor({ initial }: Props) {
         />
         <button
           type="submit"
-          disabled={loading}
+          disabled={logoBusy}
           className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
-          {loading ? "Uploading…" : "Upload logo"}
+          {logoBusy ? "Uploading…" : "Upload logo"}
         </button>
       </form>
 
@@ -258,7 +282,7 @@ export function BrandingEditor({ initial }: Props) {
           />
           <button
             type="button"
-            disabled={loading}
+            disabled={logoBusy}
             onClick={handleSaveAlt}
             className="rounded-lg border border-fuchsia-400/30 px-4 py-2 text-sm text-sd-muted hover:text-white"
           >
@@ -270,7 +294,7 @@ export function BrandingEditor({ initial }: Props) {
       {branding.logo_url && (
         <button
           type="button"
-          disabled={loading}
+          disabled={logoBusy}
           onClick={handleRemoveLogo}
           className="text-sm text-red-400 hover:text-red-300"
         >

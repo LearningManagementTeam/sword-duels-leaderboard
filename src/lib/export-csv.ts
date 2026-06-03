@@ -13,7 +13,6 @@ export function standingsToCsv(rows: StandingRow[]): string {
     "round2_points",
     "round3_points",
     "total_points",
-    "total_wins",
     "eliminated_in_round",
     "status",
   ].join(",");
@@ -31,7 +30,6 @@ export function standingsToCsv(rows: StandingRow[]): string {
       fmt(r.round2_points),
       fmt(r.round3_points),
       r.total_points,
-      r.total_wins,
       r.eliminated_in_round ?? "",
       r.status,
     ].join(",")

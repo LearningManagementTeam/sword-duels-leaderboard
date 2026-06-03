@@ -180,14 +180,61 @@ export async function getRoundsForSeason(seasonId: string): Promise<Round[]> {
   return (data ?? []) as Round[];
 }
 
-export async function getAuditLog(limit = 50): Promise<AuditEntry[]> {
-  if (!isSupabaseConfigured()) return [];
+export type LatestPublishedRoundInfo = {
+  seasonSlug: SeasonSlug;
+  roundNumber: number;
+  publishedAt: string;
+};
+
+/** Season whose most recently published round is newest (by rounds.published_at). */
+export async function getLatestPublishedRoundInfo(): Promise<LatestPublishedRoundInfo | null> {
+  if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const slugs: SeasonSlug[] = ["june_area", "july_region", "august_finals"];
+  let best: LatestPublishedRoundInfo | null = null;
+
+  for (const seasonSlug of slugs) {
+    const season = await getSeasonBySlug(seasonSlug);
+    if (!season) continue;
+    const { data, error } = await supabase
+      .from("rounds")
+      .select("round_number, published_at")
+      .eq("season_id", season.id)
+      .eq("status", "published")
+      .not("published_at", "is", null)
+      .order("published_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data?.published_at) continue;
+    const publishedAt = data.published_at as string;
+    if (!best || publishedAt > best.publishedAt) {
+      best = {
+        seasonSlug,
+        roundNumber: data.round_number,
+        publishedAt,
+      };
+    }
+  }
+  return best;
+}
+
+export async function getAuditLog(
+  limit = 50,
+  actionPrefix?: string
+): Promise<AuditEntry[]> {
+  if (!isSupabaseConfigured()) return [];
+  const capped = Math.min(Math.max(limit, 1), 200);
+  const supabase = await createClient();
+  let query = supabase
     .from("audit_log")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(capped);
+  if (actionPrefix?.trim()) {
+    query = query.ilike("action", `${actionPrefix.trim()}%`);
+  }
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as AuditEntry[];
 }

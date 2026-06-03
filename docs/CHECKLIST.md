@@ -35,6 +35,9 @@ Print this page and tick each box when done.
 
 - [ ] Logged into Admin
 - [ ] Imported branches
+- [ ] Ran `010_competition_map.sql` if project existed before competition map feature
+- [ ] Set **Competition map** (Admin → Competition map) — milestone + caption
+- [ ] Uploaded home **carousel** photos (Admin → Branding) if ready
 - [ ] Published test round
 - [ ] Public June page shows standings
 - [ ] Shared public link with one colleague for test
@@ -43,6 +46,7 @@ Print this page and tick each box when done.
 
 - [ ] Official branch CSV imported
 - [ ] Team trained: draft → publish only when final
+- [ ] Team knows: update **Competition map** after major beats (not every score tweak)
 - [ ] June lock & advance done (after June)
 - [ ] July lock & advance done (after July)
 

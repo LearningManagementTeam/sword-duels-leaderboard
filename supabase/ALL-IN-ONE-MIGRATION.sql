@@ -260,7 +260,7 @@ ALTER TABLE published_standings
     )
   );
 
--- 009: Branding bucket 5MB for custom page backgrounds
+-- Branding bucket: 5MB for logo + home carousel photos (custom page backgrounds retired)
 UPDATE storage.buckets
 SET
   file_size_limit = 5242880,

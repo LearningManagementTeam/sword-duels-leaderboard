@@ -1,3 +1,4 @@
+import { ArElectricityLayer } from "@/components/ui/ArElectricityLayer";
 import { ArGradientScene } from "@/components/ui/ArGradientScene";
 
 export function ArBackdrop() {
@@ -7,6 +8,7 @@ export function ArBackdrop() {
       aria-hidden
     >
       <ArGradientScene />
+      <ArElectricityLayer />
 
       {/* Soft vignette for text contrast — keeps gradients visible */}
       <div

@@ -7,12 +7,11 @@ const migrations = [
   { file: "004_round_elimination.sql", note: "Per-round elimination columns" },
   { file: "005_manual_round_advances.sql", note: "Committee extra advancement picks" },
   { file: "006_site_content.sql", note: "Editable public mechanics content" },
-  { file: "007_branding_storage.sql", note: "Logo upload bucket + branding row" },
-  { file: "008_tie_breaker_status.sql", note: "Tie-breaker branch status + standings flag" },
   {
-    file: "009_branding_background_upload.sql",
-    note: "Branding bucket 5MB (legacy; backgrounds retired)",
+    file: "007_branding_storage.sql",
+    note: "Branding bucket (5MB logo + carousel) + branding row",
   },
+  { file: "008_tie_breaker_status.sql", note: "Tie-breaker branch status + standings flag" },
   {
     file: "010_competition_map.sql",
     note: "Home page competition map site_content row",
@@ -133,7 +132,11 @@ export default function AdminSystemPage() {
             <p className="mt-1 text-sd-muted">
               Weekly rounds: enter scores as draft → preview → publish. After
               publish, use advancement picks if many tied max scores. End of
-              phase: Lock & advance on the Advancement page.
+              phase: Lock & advance on the Advancement page. Home{" "}
+              <strong className="text-white">competition map</strong> vs regional
+              round bar: see{" "}
+              <code className="text-sd-glow">docs/DAILY-OPERATIONS.md</code>{" "}
+              (section “Two progress indicators”).
             </p>
           </div>
           <div>
@@ -154,6 +157,7 @@ export default function AdminSystemPage() {
             <h3 className="font-medium text-white">Repo docs</h3>
             <ul className="mt-1 list-inside list-disc text-sd-muted">
               <li>docs/DAILY-OPERATIONS.md</li>
+              <li>docs/OPERATOR-QUICK-REFERENCE.md</li>
               <li>docs/mechanics.md</li>
               <li>docs/SETUP-FOR-BEGINNERS.md</li>
             </ul>

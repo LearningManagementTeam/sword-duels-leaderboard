@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const ROTATE_MS = 5000;
+const SLIDE_MS = 600;
 
 interface Props {
   slides: string[];
@@ -14,9 +15,14 @@ export function HomePhotoCarousel({
   slides,
   label = "Featured photos",
 }: Props) {
-  const [index, setIndex] = useState(0);
+  const [pos, setPos] = useState(0);
+  const [noTransition, setNoTransition] = useState(false);
   const [paused, setPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+
+  const loop = slides.length > 1;
+  const trackSlides = loop ? [...slides, slides[0]] : slides;
+  const dotIndex = loop && pos === slides.length ? 0 : pos;
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -26,24 +32,41 @@ export function HomePhotoCarousel({
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  useEffect(() => {
-    if (slides.length <= 1 || paused || reducedMotion) return;
-    const id = window.setInterval(
-      () => setIndex((i) => (i + 1) % slides.length),
-      ROTATE_MS
-    );
-    return () => window.clearInterval(id);
-  }, [slides.length, paused, reducedMotion]);
+  const goNext = useCallback(() => {
+    if (!loop) return;
+    setPos((p) => (p >= slides.length ? 0 : p + 1));
+  }, [loop, slides.length]);
 
   useEffect(() => {
-    if (index >= slides.length) setIndex(0);
-  }, [index, slides.length]);
+    if (!loop || paused || reducedMotion) return;
+    const id = window.setInterval(goNext, ROTATE_MS);
+    return () => window.clearInterval(id);
+  }, [loop, paused, reducedMotion, goNext]);
+
+  useEffect(() => {
+    if (pos < trackSlides.length) return;
+    setPos(0);
+  }, [pos, trackSlides.length]);
+
+  const handleTransitionEnd = () => {
+    if (!loop || pos !== slides.length) return;
+    setNoTransition(true);
+    setPos(0);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setNoTransition(false));
+    });
+  };
+
+  const goTo = (target: number) => {
+    setNoTransition(false);
+    setPos(target);
+  };
 
   if (slides.length === 0) return null;
 
   return (
     <section
-      className="sd-neon-panel overflow-hidden p-3 sm:p-4"
+      className="sd-neon-panel mx-auto w-full max-w-[18rem] overflow-hidden p-2.5 sm:max-w-sm sm:p-3 md:max-w-md"
       aria-roledescription="carousel"
       aria-label={label}
       onMouseEnter={() => setPaused(true)}
@@ -51,44 +74,55 @@ export function HomePhotoCarousel({
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <div className="sd-inset relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-sd-deep">
-        {slides.map((src, i) => (
-          <div
-            key={src}
-            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-              i === index ? "opacity-100 z-10" : "opacity-0 z-0"
-            }`}
-            aria-hidden={i !== index}
-          >
-            <Image
-              src={src}
-              alt={`Featured photo ${i + 1} of ${slides.length}`}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 72rem"
-              priority={i === 0}
-            />
-          </div>
-        ))}
+      <div className="sd-inset relative aspect-[16/9] max-h-[10.5rem] overflow-hidden rounded-xl bg-sd-deep sm:max-h-[12rem] md:max-h-[13.5rem]">
         <div
-          className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-t from-sd-deep/50 via-transparent to-transparent"
+          className="flex h-full"
+          style={{
+            width: `${trackSlides.length * 100}%`,
+            transform: `translateX(-${(pos * 100) / trackSlides.length}%)`,
+            transition: noTransition
+              ? "none"
+              : `transform ${SLIDE_MS}ms ease-in-out`,
+          }}
+          onTransitionEnd={handleTransitionEnd}
+        >
+          {trackSlides.map((src, i) => (
+            <div
+              key={`${src}-${i}`}
+              className="relative h-full shrink-0 overflow-hidden"
+              style={{ width: `${100 / trackSlides.length}%` }}
+              aria-hidden={i !== pos}
+            >
+              <Image
+                src={src}
+                alt={`Featured photo ${(i % slides.length) + 1} of ${slides.length}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 288px, 448px"
+                priority={i === 0}
+              />
+            </div>
+          ))}
+        </div>
+        <div
+          className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-sd-deep/40 via-transparent to-transparent"
           aria-hidden
         />
       </div>
 
-      {slides.length > 1 && (
-        <div className="mt-3 flex items-center justify-center gap-2">
+      {loop && (
+        <div className="mt-2 flex items-center justify-center gap-2">
           {slides.map((_, i) => (
             <button
               key={i}
               type="button"
               aria-label={`Show photo ${i + 1} of ${slides.length}`}
-              aria-current={i === index ? "true" : undefined}
-              onClick={() => setIndex(i)}
-              className={`h-2.5 rounded-full transition-all ${
-                i === index
-                  ? "w-8 bg-gradient-to-r from-sd-lime to-emerald-400"
-                  : "w-2.5 bg-emerald-900/80 hover:bg-emerald-600/60"
+              aria-current={i === dotIndex ? "true" : undefined}
+              onClick={() => goTo(i)}
+              className={`h-2 rounded-full transition-all ${
+                i === dotIndex
+                  ? "w-6 bg-gradient-to-r from-sd-lime to-emerald-400"
+                  : "w-2 bg-emerald-900/80 hover:bg-emerald-600/60"
               }`}
             />
           ))}

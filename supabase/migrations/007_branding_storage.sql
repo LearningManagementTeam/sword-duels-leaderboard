@@ -10,7 +10,7 @@ VALUES (
   'branding',
   'branding',
   true,
-  2097152,
+  5242880,
   ARRAY['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']::text[]
 )
 ON CONFLICT (id) DO NOTHING;

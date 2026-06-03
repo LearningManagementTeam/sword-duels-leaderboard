@@ -8,6 +8,8 @@ import {
 } from "@/lib/actions/admin";
 import {
   COMPETITION_MILESTONES,
+  getMilestoneMeta,
+  milestoneShowsContestantList,
   type CompetitionMapConfig,
   type CompetitionMilestoneId,
   type RegionHighlight,
@@ -38,6 +40,10 @@ export function CompetitionMapEditor({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [tab, setTab] = useState<"edit" | "preview">("edit");
+
+  const meta = getMilestoneMeta(config.milestoneId);
+  const listAllowed = milestoneShowsContestantList(config.milestoneId);
+  const anyTruncated = remaining.groups.some((g) => g.truncated);
 
   async function handleSave() {
     setLoading(true);
@@ -81,10 +87,15 @@ export function CompetitionMapEditor({
 
   return (
     <div className="space-y-6">
+      <div className="rounded-xl border border-emerald-500/25 bg-emerald-950/25 px-4 py-3 text-sm text-emerald-100/90">
+        Caption is manual. Round bars on regional pages update automatically when
+        you publish. Remaining contestants on home refresh from published
+        standings.
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-sd-muted">
           Set where the competition is on the journey map shown on the home page.
-          Remaining contestants update automatically from published standings.
         </p>
         <div className="flex flex-wrap gap-2">
           <button
@@ -113,7 +124,15 @@ export function CompetitionMapEditor({
       </div>
 
       {tab === "preview" ? (
-        <CompetitionMapDisplay config={config} remaining={remaining} />
+        <div className="space-y-2">
+          {anyTruncated && (
+            <p className="text-xs text-amber-200/90 rounded-lg border border-amber-500/30 bg-amber-950/30 px-3 py-2">
+              Preview: at least one region has more than 50 remaining branches —
+              the home page will show the first 50 with a link to the full board.
+            </p>
+          )}
+          <CompetitionMapDisplay config={config} remaining={remaining} />
+        </div>
       ) : (
         <div className="sd-neon-panel space-y-5 p-6">
           <div>
@@ -122,12 +141,16 @@ export function CompetitionMapEditor({
             </label>
             <select
               value={config.milestoneId}
-              onChange={(e) =>
+              onChange={(e) => {
+                const milestoneId = e.target.value as CompetitionMilestoneId;
                 setConfig((c) => ({
                   ...c,
-                  milestoneId: e.target.value as CompetitionMilestoneId,
-                }))
-              }
+                  milestoneId,
+                  showContestantList: milestoneShowsContestantList(milestoneId)
+                    ? c.showContestantList
+                    : false,
+                }));
+              }}
               className="sd-input w-full max-w-lg px-3 py-2 text-sm"
             >
               {Object.entries(grouped).map(([group, items]) => (
@@ -155,6 +178,7 @@ export function CompetitionMapEditor({
                 }))
               }
               className="sd-input w-full max-w-xs px-3 py-2 text-sm"
+              disabled={!meta.usesRegions}
             >
               <option value="all">All regions</option>
               {REGIONS.map((r) => (
@@ -180,20 +204,33 @@ export function CompetitionMapEditor({
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-sd-muted">
-            <input
-              type="checkbox"
-              checked={config.showContestantList}
-              onChange={(e) =>
-                setConfig((c) => ({
-                  ...c,
-                  showContestantList: e.target.checked,
-                }))
-              }
-              className="rounded border-emerald-500/40"
-            />
-            Show remaining contestants list on home page
-          </label>
+          <div className="space-y-1">
+            <label
+              className={`flex items-center gap-2 text-sm ${
+                listAllowed ? "text-sd-muted" : "text-sd-muted/50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={config.showContestantList && listAllowed}
+                disabled={!listAllowed}
+                onChange={(e) =>
+                  setConfig((c) => ({
+                    ...c,
+                    showContestantList: e.target.checked,
+                  }))
+                }
+                className="rounded border-emerald-500/40 disabled:opacity-40"
+              />
+              Show remaining contestants list on home page
+            </label>
+            {!listAllowed && (
+              <p className="text-xs text-sd-muted/70 pl-6">
+                Not available for {meta.label} — no round cohort for this
+                milestone.
+              </p>
+            )}
+          </div>
 
           <div className="flex flex-wrap gap-2">
             <button
@@ -210,7 +247,7 @@ export function CompetitionMapEditor({
               onClick={handleSuggest}
               className="sd-btn-secondary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
             >
-              Suggest from latest June round
+              Suggest from latest published round
             </button>
           </div>
 

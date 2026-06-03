@@ -5,7 +5,8 @@ const styles: Record<BranchStatus, string> = {
   advanced: "bg-emerald-600/90 text-white",
   tie_breaker:
     "bg-fuchsia-500/25 text-fuchsia-100 ring-1 ring-fuchsia-400/70 animate-pulse",
-  eliminated: "bg-slate-800/80 text-slate-400",
+  eliminated:
+    "bg-emerald-950/80 text-emerald-200/50 ring-1 ring-emerald-800/40",
   regional_finalist:
     "bg-emerald-600/90 text-white ring-1 ring-[var(--sd-gold)]/50",
   champion: "bg-[var(--sd-gold)] text-sd-deep font-semibold",

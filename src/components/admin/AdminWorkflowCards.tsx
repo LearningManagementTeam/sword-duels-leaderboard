@@ -24,7 +24,7 @@ export function AdminWorkflowCards({ rounds }: Props) {
     (seasonName.includes("June") || seasonName.includes("July"));
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div className="sd-neon-panel p-4">
         <h3 className="font-semibold text-white">Weekly round</h3>
         <p className="mt-1 text-sm text-sd-muted">
@@ -56,6 +56,19 @@ export function AdminWorkflowCards({ rounds }: Props) {
             Available after a June/July round is published.
           </p>
         )}
+      </div>
+
+      <div className="sd-neon-panel p-4">
+        <h3 className="font-semibold text-white">Home competition map</h3>
+        <p className="mt-1 text-sm text-sd-muted">
+          After a major beat, set milestone and caption on the home journey map.
+        </p>
+        <Link
+          href="/admin/competition"
+          className="mt-3 inline-block rounded-lg border border-emerald-400/30 px-3 py-1.5 text-sm text-sd-glow hover:text-white"
+        >
+          Update competition map
+        </Link>
       </div>
 
       <div className="sd-neon-panel p-4">

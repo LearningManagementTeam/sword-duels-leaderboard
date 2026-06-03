@@ -212,3 +212,106 @@ export function parseCompetitionMapBody(raw: unknown): CompetitionMapConfig {
 export function milestoneIndex(id: CompetitionMilestoneId): number {
   return COMPETITION_MILESTONES.findIndex((m) => m.id === id);
 }
+
+const MILESTONES_WITHOUT_CONTESTANT_LIST = new Set<CompetitionMilestoneId>([
+  "pre_season",
+  "june_to_july",
+  "july_to_august",
+  "complete",
+]);
+
+/** Transition / setup milestones should not show live cohort lists. */
+export function milestoneShowsContestantList(id: CompetitionMilestoneId): boolean {
+  return !MILESTONES_WITHOUT_CONTESTANT_LIST.has(id);
+}
+
+export function seasonSlugToPublicPath(slug: SeasonSlug): string {
+  if (slug === "june_area") return "/june";
+  if (slug === "july_region") return "/july";
+  return "/august";
+}
+
+export function regionBoardPath(
+  seasonSlug: SeasonSlug,
+  region: Region
+): string {
+  const base = seasonSlugToPublicPath(seasonSlug);
+  return seasonSlug === "august_finals" ? base : `${base}/${region}`;
+}
+
+export function getMilestoneDataHint(meta: CompetitionMilestoneMeta): {
+  message: string;
+  linkHref?: string;
+  linkLabel?: string;
+} {
+  if (meta.id === "pre_season") {
+    return {
+      message: "Competition has not started — publish June Round 1 when ready.",
+      linkHref: "/june/luzon",
+      linkLabel: "Open June standings",
+    };
+  }
+  if (meta.id === "complete") {
+    return { message: "Season complete — finals results are on the August board." };
+  }
+  if (meta.group === "transition") {
+    const next =
+      meta.id === "june_to_july"
+        ? "July regional phase"
+        : "August finals";
+    return {
+      message: `Between phases — no single-round cohort. Publish ${next} standings when the phase begins.`,
+      linkHref: meta.id === "june_to_july" ? "/july/luzon" : "/august",
+      linkLabel: meta.id === "june_to_july" ? "Open July standings" : "Open August finals",
+    };
+  }
+  const phase =
+    meta.seasonSlug === "june_area"
+      ? "June"
+      : meta.seasonSlug === "july_region"
+        ? "July"
+        : "August";
+  const roundPart =
+    meta.round != null ? ` Round ${meta.round}` : "";
+  return {
+    message: `No published ${phase}${roundPart} standings yet, or everyone is eliminated.`,
+    linkHref: meta.seasonSlug
+      ? seasonSlugToPublicPath(meta.seasonSlug)
+      : undefined,
+    linkLabel: meta.seasonSlug
+      ? `Open ${phase} standings`
+      : undefined,
+  };
+}
+
+export type CompetitionMapPhaseTab = "june" | "july" | "august";
+
+export function milestonePhaseTab(
+  id: CompetitionMilestoneId
+): CompetitionMapPhaseTab {
+  const meta = getMilestoneMeta(id);
+  if (meta.group === "july" || meta.id === "july_to_august") return "july";
+  if (meta.group === "august" || meta.group === "end") return "august";
+  return "june";
+}
+
+export function milestonesForPhaseTab(
+  tab: CompetitionMapPhaseTab
+): CompetitionMilestoneMeta[] {
+  if (tab === "june") {
+    return COMPETITION_MILESTONES.filter(
+      (m) =>
+        m.group === "setup" ||
+        m.group === "june" ||
+        m.id === "june_to_july"
+    );
+  }
+  if (tab === "july") {
+    return COMPETITION_MILESTONES.filter(
+      (m) => m.group === "july" || m.id === "july_to_august"
+    );
+  }
+  return COMPETITION_MILESTONES.filter(
+    (m) => m.group === "august" || m.group === "end"
+  );
+}

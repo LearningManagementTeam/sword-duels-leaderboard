@@ -475,6 +475,108 @@ body {
   }
 }
 
+/* Green electricity flashes (ArElectricityLayer) */
+.sd-electricity {
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+.sd-electricity__bolt {
+  position: absolute;
+  top: var(--sd-bolt-top);
+  left: var(--sd-bolt-left);
+  width: 3rem;
+  height: 8.75rem;
+  transform: rotate(var(--sd-bolt-rot)) scale(var(--sd-bolt-scale));
+  transform-origin: center top;
+  opacity: 0;
+  animation: sd-electricity-bolt var(--sd-bolt-dur) ease-in-out infinite;
+  animation-delay: var(--sd-bolt-delay);
+  filter: drop-shadow(0 0 6px rgb(74 222 128 / 0.9))
+    drop-shadow(0 0 18px rgb(34 197 94 / 0.55));
+}
+
+.sd-electricity__svg {
+  width: 100%;
+  height: 100%;
+}
+
+.sd-electricity__spark {
+  position: absolute;
+  top: var(--sd-spark-top);
+  left: var(--sd-spark-left);
+  width: 4.5rem;
+  height: 2px;
+  transform: rotate(var(--sd-spark-rot));
+  transform-origin: center;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(163 230 53 / 0.9),
+    rgb(74 222 128 / 1),
+    rgb(163 230 53 / 0.9),
+    transparent
+  );
+  opacity: 0;
+  box-shadow: 0 0 10px rgb(74 222 128 / 0.8), 0 0 24px rgb(52 211 153 / 0.4);
+  animation: sd-electricity-spark var(--sd-spark-dur) ease-in-out infinite;
+  animation-delay: var(--sd-spark-delay);
+}
+
+@keyframes sd-electricity-bolt {
+  0%,
+  86%,
+  100% {
+    opacity: 0;
+  }
+  87% {
+    opacity: 0.35;
+  }
+  88% {
+    opacity: 1;
+  }
+  89% {
+    opacity: 0.25;
+  }
+  90% {
+    opacity: 0.85;
+  }
+  91% {
+    opacity: 0.15;
+  }
+  92% {
+    opacity: 0.6;
+  }
+  93% {
+    opacity: 0;
+  }
+}
+
+@keyframes sd-electricity-spark {
+  0%,
+  90%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--sd-spark-rot)) scaleX(0.6);
+  }
+  91% {
+    opacity: 0.9;
+    transform: rotate(var(--sd-spark-rot)) scaleX(1);
+  }
+  92% {
+    opacity: 0.2;
+    transform: rotate(var(--sd-spark-rot)) scaleX(0.85);
+  }
+  93% {
+    opacity: 0.75;
+    transform: rotate(var(--sd-spark-rot)) scaleX(1.05);
+  }
+  94% {
+    opacity: 0;
+    transform: rotate(var(--sd-spark-rot)) scaleX(0.7);
+  }
+}
+
 .sd-input {
   border: 1px solid rgb(74 222 128 / 0.25);
   background: rgb(4 26 18 / 0.9);
@@ -505,6 +607,8 @@ body {
 .sd-btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
 }
 
 .sd-btn-secondary {
@@ -646,8 +750,15 @@ body {
   .sd-cut-shimmer,
   .sd-gradient-scene__mesh,
   .sd-gradient-scene__orb,
-  .sd-gradient-scene__sheen {
+  .sd-gradient-scene__sheen,
+  .sd-electricity__bolt,
+  .sd-electricity__spark {
     animation: none !important;
+  }
+
+  .sd-electricity__bolt,
+  .sd-electricity__spark {
+    opacity: 0 !important;
   }
 
   .sd-carousel-track {

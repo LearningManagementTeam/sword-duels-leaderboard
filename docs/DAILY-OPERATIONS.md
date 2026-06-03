@@ -15,7 +15,16 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 
 Public mechanics: **How it works** on the site header → `/mechanics`
 
-The public site and admin panel share the same **neon glass** look (green + magenta accents) with a built-in animated AR-style background on every page.
+The public site and admin panel share the same **neon glass** look (green + magenta accents) with a built-in animated gradient + electricity backdrop on every page. Custom page background uploads are **not** used (retired).
+
+## Two progress indicators (do not confuse them)
+
+| Where | Who updates it | What it shows |
+|-------|----------------|---------------|
+| **Home — Competition map** | You, manually in Admin → **Competition map** | Headline “you are here” milestone + optional remaining-contestants list |
+| **Regional leaderboard — Round progress bar** | Automatic when you **publish** a round | Round R1/R2/R3 track for that phase and region |
+
+Update the **competition map** after major beats (phase transitions, finals week). You do **not** need to re-save the map when only scores change — the contestant list on home refreshes from published standings.
 
 ## Competition map (home)
 
@@ -78,7 +87,8 @@ Each round is one week. **That round’s score only** decides who advances (not 
 6. Optional: **Preview standings (draft)**.
 7. **Save & publish** when correct.
 8. Public site → pick **June or July** → pick **region** (Luzon / NCR / VisMin).
-9. Confirm badges: **Advancing to R2** / **Tie breaker — R1** / **Eliminated — R1**, and **—** for rounds not played.
+9. Optional: Admin → **Competition map** — set milestone and caption to match this week.
+10. Confirm badges: **Advancing to R2** / **Tie breaker — R1** / **Eliminated — R1**, and **—** for rounds not played.
 
 ### Many ties at 10/10 (or max score)?
 
@@ -136,10 +146,19 @@ Open e.g. `https://YOUR-SITE/tv?phase=june&region=luzon` (switch region tabs on 
 
 ## Database note (one-time)
 
-If upgrading an existing Supabase project, run in SQL Editor:
+If upgrading an existing Supabase project, run in SQL Editor (skip any you already ran):
 
-- `supabase/migrations/004_round_elimination.sql`
-- `supabase/migrations/005_manual_round_advances.sql` (committee extra advancement picks)
-- `supabase/migrations/006_site_content.sql` (editable public mechanics page)
-- `supabase/migrations/007_branding_storage.sql` (logo storage bucket + branding settings)
-- `supabase/migrations/008_tie_breaker_status.sql` (tie breaker status + column)
+| File | Purpose |
+|------|---------|
+| `004_round_elimination.sql` | Per-round elimination columns on standings |
+| `005_manual_round_advances.sql` | Committee extra advancement picks |
+| `006_site_content.sql` | Editable public mechanics content |
+| `007_branding_storage.sql` | Branding bucket (5MB) + logo/carousel settings row |
+| `008_tie_breaker_status.sql` | Tie-breaker status + column |
+| `010_competition_map.sql` | Home page competition map settings |
+
+**Note:** Migration `009` (custom page backgrounds) was removed from the repo — backgrounds are built-in only. If you already ran 009, it is harmless. Ensure the branding bucket allows 5MB (included in `ALL-IN-ONE-MIGRATION.sql` tail or re-run the bucket `UPDATE` there).
+
+Greenfield installs: run `supabase/ALL-IN-ONE-MIGRATION.sql` once.
+
+See also: [Operator quick reference](OPERATOR-QUICK-REFERENCE.md).

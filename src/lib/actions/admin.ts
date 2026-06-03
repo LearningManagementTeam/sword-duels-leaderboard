@@ -31,7 +31,11 @@ import {
   MECHANICS_CONTENT_SLUG,
   type MechanicsPublicBody,
 } from "@/lib/mechanics-content";
-import { getLatestPublishedRoundNumber, getSeasonBySlug } from "@/lib/data/queries";
+import {
+  getLatestPublishedRoundNumber,
+  getLatestPublishedRoundInfo,
+  getSeasonBySlug,
+} from "@/lib/data/queries";
 import type { StandingRow } from "@/lib/types";
 import {
   createClient,
@@ -950,7 +954,7 @@ export async function saveCompetitionMap(config: CompetitionMapConfig) {
   return { ok: true };
 }
 
-/** Pre-fill editor from latest published June round (best-effort). */
+/** Pre-fill editor from latest published round across all phases (best-effort). */
 export async function suggestCompetitionMilestone(): Promise<{
   milestoneId: CompetitionMilestoneId;
   publicCaption: string;
@@ -958,30 +962,91 @@ export async function suggestCompetitionMilestone(): Promise<{
   await requireAdmin();
 
   const june = await getSeasonBySlug("june_area");
-  if (!june) {
+  const july = await getSeasonBySlug("july_region");
+  const august = await getSeasonBySlug("august_finals");
+
+  const juneRound = june ? await getLatestPublishedRoundNumber(june.id) : 0;
+  const julyRound = july ? await getLatestPublishedRoundNumber(july.id) : 0;
+  const augustRound = august
+    ? await getLatestPublishedRoundNumber(august.id)
+    : 0;
+
+  if (juneRound <= 0 && julyRound <= 0 && augustRound <= 0) {
     return {
       milestoneId: "pre_season",
-      publicCaption: "Competition has not started yet.",
+      publicCaption: "Competition has not started yet — publish Round 1 when ready.",
     };
   }
 
-  const round = await getLatestPublishedRoundNumber(june.id);
-  if (round <= 0) {
+  if (juneRound >= 3 && julyRound <= 0) {
     return {
-      milestoneId: "pre_season",
-      publicCaption: "June Round 1 scores not published yet.",
+      milestoneId: "june_to_july",
+      publicCaption:
+        "You are here: June complete — July regional phase starting. Update caption when July R1 is published.",
     };
   }
 
-  const milestoneMap: Record<number, CompetitionMilestoneId> = {
-    1: "june_r1",
-    2: "june_r2",
-    3: "june_r3",
+  if (julyRound >= 3 && augustRound <= 0) {
+    return {
+      milestoneId: "july_to_august",
+      publicCaption:
+        "You are here: July complete — August finals starting. Update caption when August R1 is published.",
+    };
+  }
+
+  if (augustRound >= 3) {
+    return {
+      milestoneId: "complete",
+      publicCaption: "Competition complete — thank all branches for a great season.",
+    };
+  }
+
+  const latest = await getLatestPublishedRoundInfo();
+  if (!latest) {
+    return {
+      milestoneId: "pre_season",
+      publicCaption: "No published rounds found yet.",
+    };
+  }
+
+  const { seasonSlug, roundNumber: round } = latest;
+  const r = Math.min(round, 3);
+
+  if (seasonSlug === "june_area") {
+    const ids: Record<number, CompetitionMilestoneId> = {
+      1: "june_r1",
+      2: "june_r2",
+      3: "june_r3",
+    };
+    const milestoneId = ids[r] ?? "june_r3";
+    return {
+      milestoneId,
+      publicCaption: `You are here: after June Round ${round} — check regional standings for who advances.`,
+    };
+  }
+
+  if (seasonSlug === "july_region") {
+    const ids: Record<number, CompetitionMilestoneId> = {
+      1: "july_r1",
+      2: "july_r2",
+      3: "july_r3",
+    };
+    const milestoneId = ids[r] ?? "july_r3";
+    return {
+      milestoneId,
+      publicCaption: `You are here: after July Round ${round} — regional boards show survivors.`,
+    };
+  }
+
+  const ids: Record<number, CompetitionMilestoneId> = {
+    1: "august_r1",
+    2: "august_r2",
+    3: "august_r3",
   };
-  const milestoneId = milestoneMap[Math.min(round, 3)] ?? "june_r3";
+  const milestoneId = ids[r] ?? "august_r3";
   return {
     milestoneId,
-    publicCaption: `You are here: after June Round ${round} — check regional standings for who advances.`,
+    publicCaption: `You are here: after August Round ${round} — finals standings on the August board.`,
   };
 }
 

@@ -1,9 +1,23 @@
+import { Suspense } from "react";
+import { AuditLogFilters } from "@/components/admin/AuditLogFilters";
 import { SdDataTable } from "@/components/ui/SdDataTable";
 import { getAuditLog } from "@/lib/data/queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
-export default async function AuditPage() {
-  const entries = isSupabaseConfigured() ? await getAuditLog(100) : [];
+export default async function AuditPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ action?: string; limit?: string }>;
+}) {
+  const { action, limit: limitParam } = await searchParams;
+  const limit = Math.min(
+    Math.max(parseInt(limitParam ?? "100", 10) || 100, 1),
+    200
+  );
+  const actionPrefix = action?.trim() || undefined;
+  const entries = isSupabaseConfigured()
+    ? await getAuditLog(limit, actionPrefix)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -11,6 +25,10 @@ export default async function AuditPage() {
         <h1>Audit log</h1>
         <p>Admin actions only — not shown on the public site.</p>
       </div>
+
+      <Suspense fallback={null}>
+        <AuditLogFilters />
+      </Suspense>
 
       <SdDataTable>
         <thead>
