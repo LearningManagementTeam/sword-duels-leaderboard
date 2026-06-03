@@ -9,9 +9,16 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 | **Dashboard** | Workflow cards — weekly round, extra advancement, end of phase |
 | **Rounds** | Enter and publish scores |
 | **Mechanics** | Edit public “How it works” intro and announcements (rule tables auto-update) |
+| **Branding** | Upload logo for site header and leaderboard banner |
 | **System & stack** | Tech setup, migrations, architecture (IT / troubleshooting) |
 
 Public mechanics: **How it works** on the site header → `/mechanics`
+
+## Logo (one-time or when it changes)
+
+1. Admin → **Branding**
+2. Upload PNG, JPG, WebP, or SVG (max 2MB)
+3. Logo appears in the site header and on the public **LEADERBOARD** banner
 
 ## Before June (one-time)
 
@@ -113,3 +120,4 @@ If upgrading an existing Supabase project, run in SQL Editor:
 - `supabase/migrations/004_round_elimination.sql`
 - `supabase/migrations/005_manual_round_advances.sql` (committee extra advancement picks)
 - `supabase/migrations/006_site_content.sql` (editable public mechanics page)
+- `supabase/migrations/007_branding_storage.sql` (logo storage bucket + branding settings)

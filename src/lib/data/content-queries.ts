@@ -1,4 +1,10 @@
 import {
+  BRANDING_CONTENT_SLUG,
+  DEFAULT_BRANDING,
+  parseBrandingBody,
+  type BrandingConfig,
+} from "@/lib/branding";
+import {
   DEFAULT_MECHANICS_BODY,
   MECHANICS_CONTENT_SLUG,
   parseMechanicsBody,
@@ -22,4 +28,19 @@ export async function getMechanicsContent(): Promise<MechanicsPublicBody> {
 
   if (error || !data) return { ...DEFAULT_MECHANICS_BODY };
   return parseMechanicsBody(data.body);
+}
+
+export async function getBranding(): Promise<BrandingConfig> {
+  if (!isSupabaseServiceConfigured()) {
+    return { ...DEFAULT_BRANDING };
+  }
+  const service = await createServiceClient();
+  const { data, error } = await service
+    .from("site_content")
+    .select("body")
+    .eq("slug", BRANDING_CONTENT_SLUG)
+    .maybeSingle();
+
+  if (error || !data) return { ...DEFAULT_BRANDING };
+  return parseBrandingBody(data.body);
 }

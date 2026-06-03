@@ -3,6 +3,45 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+export function BranchHighlightBlock({
+  branchId,
+  branchCode,
+  highlightCode,
+  children,
+  className = "",
+}: {
+  branchId: string;
+  branchCode: string;
+  highlightCode: string | null;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isHighlighted =
+    highlightCode &&
+    branchCode.toLowerCase() === highlightCode.toLowerCase();
+
+  useEffect(() => {
+    if (isHighlighted && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [isHighlighted]);
+
+  return (
+    <div
+      ref={ref}
+      id={isHighlighted ? `branch-${branchId}` : undefined}
+      className={`${className} ${
+        isHighlighted
+          ? "animate-branch-pulse rounded-2xl ring-2 ring-sd-glow/80"
+          : ""
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function BranchHighlightRow({
   branchId,
   branchCode,
@@ -32,7 +71,7 @@ export function BranchHighlightRow({
       ref={ref}
       id={isHighlighted ? `branch-${branchId}` : undefined}
       className={`${rowClassName} ${
-        isHighlighted ? "animate-branch-pulse ring-2 ring-amber-400/80 ring-inset" : ""
+        isHighlighted ? "animate-branch-pulse ring-2 ring-sd-glow/80 ring-inset" : ""
       }`}
     >
       {children}
@@ -56,14 +95,14 @@ export function BranchHighlightControls() {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-      <span className="text-amber-200">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-sd-glow/40 bg-emerald-500/10 px-3 py-2 text-sm">
+      <span className="text-sd-muted">
         Highlighting branch: <strong>{highlight}</strong>
       </span>
       <button
         type="button"
         onClick={clearHighlight}
-        className="text-amber-300 underline hover:text-amber-200"
+        className="text-sd-glow underline hover:text-emerald-200"
       >
         Clear
       </button>

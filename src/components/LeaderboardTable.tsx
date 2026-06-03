@@ -31,10 +31,10 @@ interface Props {
 }
 
 function rankFlair(rank: number): string {
-  if (rank === 1) return "text-amber-300 font-bold ring-2 ring-amber-400/60 rounded-full px-2";
-  if (rank === 2) return "text-slate-200 font-bold ring-2 ring-slate-400/50 rounded-full px-2";
-  if (rank === 3) return "text-amber-600/90 font-bold ring-2 ring-amber-700/50 rounded-full px-2";
-  return "text-slate-300";
+  if (rank === 1) return "text-[var(--sd-gold)] font-bold ring-2 ring-[var(--sd-gold)]/60 rounded-full px-2";
+  if (rank === 2) return "text-emerald-100 font-bold ring-2 ring-emerald-400/50 rounded-full px-2";
+  if (rank === 3) return "text-sd-glow font-bold ring-2 ring-sd-glow/40 rounded-full px-2";
+  return "text-sd-muted";
 }
 
 export function LeaderboardTable({
@@ -120,13 +120,13 @@ export function LeaderboardTable({
             placeholder="Search branch name or code… (share: ?highlight=CODE)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="min-w-[200px] flex-1 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500"
+            className="sd-input min-w-[200px] flex-1 rounded-lg px-3 py-2 text-sm"
           />
           {showArea && (
             <select
               value={areaFilter}
               onChange={(e) => setAreaFilter(e.target.value)}
-              className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="sd-input rounded-lg px-3 py-2 text-sm"
             >
               <option value="">All areas</option>
               {areas.map((a) => (
@@ -139,7 +139,7 @@ export function LeaderboardTable({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white"
+            className="sd-input rounded-lg px-3 py-2 text-sm"
           >
             <option value="">All statuses</option>
             <option value="active">Active / advancing</option>
@@ -152,14 +152,14 @@ export function LeaderboardTable({
       )}
 
       {!tvMode && (
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-sd-muted">
           Tie-breakers: {tieBreakers.join(" → ")}
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-700">
+      <div className="overflow-x-auto rounded-xl border border-sd-glow/20">
         <table className={`w-full min-w-[640px] text-left ${textSize}`}>
-          <thead className="bg-slate-800/80 text-slate-300">
+          <thead className="bg-sd-panel/90 text-sd-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Rank</th>
               <th className="px-3 py-2 font-medium">Branch</th>
@@ -183,7 +183,7 @@ export function LeaderboardTable({
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={columnCount}
-                  className="px-3 py-8 text-center text-slate-400"
+                  className="px-3 py-8 text-center text-sd-muted"
                 >
                   No standings published yet.
                 </td>
@@ -210,10 +210,10 @@ export function LeaderboardTable({
                     <tr key={`cut-${row.branch_id}`}>
                       <td
                         colSpan={columnCount}
-                        className="border-y-2 border-amber-500/70 bg-amber-500/15 px-3 py-2 text-center text-xs font-semibold text-amber-200"
+                        className="border-y-2 border-sd-glow/50 bg-emerald-500/15 px-3 py-2 text-center text-xs font-semibold text-sd-glow"
                       >
                         {defaultCutLabel}
-                        <span className="mt-0.5 block font-normal text-amber-200/70">
+                        <span className="mt-0.5 block font-normal text-sd-muted">
                           Below this line — eliminated unless committee pick
                         </span>
                       </td>
@@ -284,7 +284,7 @@ export function LeaderboardTable({
                       {formatRoundPoints(row.round3_points)}
                     </td>
                     <td
-                      className={`${cellPad} text-right font-semibold tabular-nums text-amber-300`}
+                      className={`${cellPad} text-right font-semibold tabular-nums text-sd-glow`}
                     >
                       {row.total_points}
                     </td>
@@ -320,7 +320,7 @@ export function LeaderboardTable({
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-sd-muted/80">
         Showing {filtered.length} of {rows.length} branches
       </p>
     </div>

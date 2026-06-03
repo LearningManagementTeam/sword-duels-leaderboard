@@ -7,6 +7,7 @@ const migrations = [
   { file: "004_round_elimination.sql", note: "Per-round elimination columns" },
   { file: "005_manual_round_advances.sql", note: "Committee extra advancement picks" },
   { file: "006_site_content.sql", note: "Editable public mechanics content" },
+  { file: "007_branding_storage.sql", note: "Logo upload bucket + branding row" },
 ];
 
 const envVars = [

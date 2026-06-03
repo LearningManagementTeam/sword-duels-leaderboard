@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LeaderboardTable } from "@/components/LeaderboardTable";
+import { GamifiedLeaderboard } from "@/components/leaderboard/GamifiedLeaderboard";
+import type { BrandingConfig } from "@/lib/branding";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
 import type { StandingRow } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
@@ -10,6 +11,7 @@ import type { SeasonSlug } from "@/lib/scoring-config";
 const REGIONS: Region[] = ["luzon", "ncr", "vismin"];
 
 interface Props {
+  branding: BrandingConfig;
   phase: string;
   initialRegion: Region;
   rows: StandingRow[];
@@ -22,6 +24,7 @@ interface Props {
 }
 
 export function TvLeaderboardView({
+  branding,
   phase,
   initialRegion,
   rows,
@@ -37,14 +40,28 @@ export function TvLeaderboardView({
   const rotateSec = parseInt(searchParams.get("rotate") ?? "0", 10);
   const [region, setRegion] = useState<Region>(initialRegion);
 
-  const survivorRows = useMemo(
+  const displayRows = useMemo(
     () =>
       rows.filter(
-        (r) =>
-          r.status !== "eliminated" && r.rank <= advancementCutoff
+        (r) => r.status !== "eliminated" && r.rank <= advancementCutoff
       ),
     [rows, advancementCutoff]
   );
+
+  const subtitle =
+    phase === "august"
+      ? `August Finals${
+          lastPublished
+            ? ` · ${new Date(lastPublished).toLocaleString("en-PH", { timeStyle: "short", dateStyle: "short" })}`
+            : ""
+        }`
+      : `${phase.toUpperCase()} · ${REGION_LABELS[region]}${
+          latestPublishedRound > 0 ? ` · Round ${latestPublishedRound}` : ""
+        }${
+          lastPublished
+            ? ` · ${new Date(lastPublished).toLocaleString("en-PH", { timeStyle: "short", dateStyle: "short" })}`
+            : ""
+        }`;
 
   useEffect(() => {
     if (!rotateSec || rotateSec < 10 || phase === "august") return;
@@ -67,41 +84,21 @@ export function TvLeaderboardView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-4xl font-bold text-amber-400">
-            Sword Duels — {phase.toUpperCase()}
-            {phase !== "august" && (
-              <span className="ml-3 text-2xl text-amber-200/80">
-                {REGION_LABELS[region]}
-              </span>
-            )}
-          </h1>
-          {lastPublished && (
-            <p className="mt-2 text-lg text-slate-400">
-              Updated:{" "}
-              {new Date(lastPublished).toLocaleString("en-PH", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
-            </p>
-          )}
-        </div>
-        {rotateSec >= 10 && phase !== "august" && (
-          <p className="text-sm text-amber-200/80">
-            Auto-rotate regions every {rotateSec}s
-          </p>
-        )}
-      </div>
-
-      <LeaderboardTable
-        rows={survivorRows}
+      {rotateSec >= 10 && phase !== "august" && (
+        <p className="text-center text-sm text-sd-glow">
+          Auto-rotate regions every {rotateSec}s
+        </p>
+      )}
+      <GamifiedLeaderboard
+        branding={branding}
+        bannerSubtitle={subtitle}
+        rows={displayRows}
         advancementCutoff={advancementCutoff}
         cutLineLabel={cutLineLabel}
         showArea={showArea}
         showRepresentatives={false}
         tvMode
-        compact
+        showDetailToggle={false}
         seasonSlug={seasonSlug}
         latestPublishedRound={latestPublishedRound}
       />

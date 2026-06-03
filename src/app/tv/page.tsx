@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ArBackdrop } from "@/components/ui/ArBackdrop";
 import { TvLeaderboardView } from "@/components/tv/TvLeaderboardView";
+import { getBranding } from "@/lib/data/content-queries";
 import {
   getLatestPublishedRoundNumber,
   getLastPublishedAt,
@@ -34,6 +36,7 @@ export default async function TvPage({
     redirect("/");
   }
 
+  const branding = await getBranding();
   const season = await getSeasonBySlug(slug);
   const latestPublishedRound = season
     ? await getLatestPublishedRoundNumber(season.id)
@@ -62,7 +65,8 @@ export default async function TvPage({
   const rotateQuery = rotate ? `&rotate=${rotate}` : "";
 
   return (
-    <div className="fixed inset-0 z-50 overflow-auto bg-slate-950 p-6">
+    <div className="fixed inset-0 z-50 overflow-auto bg-sd-deep p-6">
+      <ArBackdrop />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
           {(["june", "july", "august"] as const).map((p) => (
@@ -71,8 +75,8 @@ export default async function TvPage({
               href={`/tv?phase=${p}${p !== "august" ? `&region=${region}` : ""}${rotateQuery}`}
               className={`rounded-lg px-3 py-1 capitalize ${
                 p === phase
-                  ? "bg-amber-500/20 text-amber-200"
-                  : "bg-slate-800 text-slate-300"
+                  ? "bg-sd-glow/20 text-sd-glow"
+                  : "bg-sd-panel text-sd-muted"
               }`}
             >
               {p}
@@ -87,8 +91,8 @@ export default async function TvPage({
                 href={`/tv?phase=${phase}&region=${r}${rotateQuery}`}
                 className={`rounded-lg px-3 py-1 ${
                   r === region
-                    ? "bg-amber-500/20 text-amber-200"
-                    : "bg-slate-800 text-slate-300"
+                    ? "bg-sd-glow/20 text-sd-glow"
+                    : "bg-sd-panel text-sd-muted"
                 }`}
               >
                 {REGION_LABELS[r]}
@@ -96,25 +100,26 @@ export default async function TvPage({
             ))}
             <Link
               href={`/tv?phase=${phase}&region=${region}&rotate=60`}
-              className="text-slate-500 hover:text-amber-300"
+              className="text-sd-muted hover:text-sd-glow"
             >
               Rotate 60s
             </Link>
             {rotate && (
               <Link
                 href={`/tv?phase=${phase}&region=${region}`}
-                className="text-slate-500 hover:text-amber-300"
+                className="text-sd-muted hover:text-sd-glow"
               >
                 Stop rotate
               </Link>
             )}
           </div>
         )}
-        <span className="text-slate-500">Auto-refresh 30s</span>
+        <span className="text-sd-muted">Auto-refresh 30s</span>
       </div>
 
-      <Suspense fallback={<p className="text-slate-400">Loading TV view…</p>}>
+      <Suspense fallback={<p className="text-sd-muted">Loading TV view…</p>}>
         <TvLeaderboardView
+          branding={branding}
           phase={phase}
           initialRegion={reg}
           rows={rows}

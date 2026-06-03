@@ -1,8 +1,25 @@
 @import "tailwindcss";
 
+@theme {
+  --color-sd-deep: #041a12;
+  --color-sd-panel: #0f3d2a;
+  --color-sd-panel-light: #14532d;
+  --color-sd-glow: #4ade80;
+  --color-sd-glow-bright: #34d399;
+  --color-sd-muted: #86efac;
+  --color-sd-surface: #f8fafc;
+  --color-sd-gold: #fbbf24;
+}
+
 :root {
-  --background: #020617;
-  --foreground: #f1f5f9;
+  --background: #041a12;
+  --foreground: #ecfdf5;
+  --sd-bg-deep: #041a12;
+  --sd-bg-panel: #0f3d2a;
+  --sd-green-glow: #4ade80;
+  --sd-green-muted: #86efac;
+  --sd-surface-light: #f8fafc;
+  --sd-gold: #fbbf24;
 }
 
 body {
@@ -13,10 +30,10 @@ body {
 @keyframes branch-pulse {
   0%,
   100% {
-    background-color: rgb(245 158 11 / 0.15);
+    background-color: rgb(74 222 128 / 0.12);
   }
   50% {
-    background-color: rgb(245 158 11 / 0.28);
+    background-color: rgb(74 222 128 / 0.28);
   }
 }
 
@@ -37,4 +54,34 @@ body {
 
 .animate-row-in {
   animation: row-fade-in 0.25s ease-out;
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgb(74 222 128 / 0.25);
+  }
+  50% {
+    box-shadow: 0 0 32px rgb(74 222 128 / 0.45);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2.5s ease-in-out infinite;
+}
+
+.sd-glass {
+  background: rgb(15 61 42 / 0.65);
+  border: 1px solid rgb(74 222 128 / 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.sd-input {
+  border: 1px solid rgb(74 222 128 / 0.25);
+  background: rgb(4 26 18 / 0.8);
+  color: var(--foreground);
+}
+
+.sd-input::placeholder {
+  color: rgb(134 239 172 / 0.45);
 }

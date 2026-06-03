@@ -1,50 +1,65 @@
+import Image from "next/image";
 import Link from "next/link";
+import type { BrandingConfig } from "@/lib/branding";
 
-export function SiteHeader() {
+interface Props {
+  branding: BrandingConfig;
+}
+
+export function SiteHeader({ branding }: Props) {
   return (
-    <header className="border-b border-amber-500/20 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 backdrop-blur">
+    <header className="relative border-b border-sd-glow/20 bg-gradient-to-r from-sd-deep via-sd-panel to-sd-deep backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
         <Link href="/" className="group flex items-center gap-3">
-          <span
-            className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/15 text-xl ring-1 ring-amber-500/30"
-            aria-hidden
-          >
-            ⚔️
-          </span>
+          {branding.logo_url ? (
+            <div className="relative h-10 w-10 shrink-0">
+              <Image
+                src={branding.logo_url}
+                alt={branding.logo_alt}
+                fill
+                className="object-contain"
+                unoptimized={branding.logo_url.endsWith(".svg")}
+              />
+            </div>
+          ) : (
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-dashed border-sd-glow/40 bg-emerald-950/50 text-lg ring-1 ring-sd-glow/20"
+              aria-hidden
+            >
+              ⚔
+            </span>
+          )}
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-white group-hover:text-amber-300">
-              Sword Duels
+            <h1 className="text-lg font-bold tracking-tight text-white group-hover:text-sd-glow">
+              {branding.logo_alt}
             </h1>
-            <p className="text-xs text-amber-200/70">Dynamic Leaderboard · 2026</p>
+            <p className="text-xs text-sd-muted">Dynamic Leaderboard · 2026</p>
           </div>
         </Link>
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <Link href="/" className="text-slate-300 hover:text-white">
+          <Link href="/" className="text-sd-muted hover:text-white">
             Leaderboard
           </Link>
-          <Link
-            href="/mechanics"
-            className="text-slate-400 hover:text-amber-200"
-          >
+          <Link href="/mechanics" className="text-sd-muted hover:text-sd-glow">
             How it works
           </Link>
           <Link
             href="/preview"
-            className="text-slate-400 hover:text-amber-200"
+            className="text-sd-muted hover:text-sd-glow"
             title="Sample leaderboards for demos"
           >
             Preview
           </Link>
           <Link
             href="/tv"
-            className="text-slate-400 hover:text-white"
+            className="text-sd-muted hover:text-white"
             title="TV / fullscreen mode"
           >
             TV mode
           </Link>
           <Link
             href="/admin"
-            className="rounded-md bg-slate-800 px-3 py-1.5 text-slate-200 ring-1 ring-slate-700 hover:bg-slate-700"
+            className="rounded-md bg-sd-panel px-3 py-1.5 text-sd-muted ring-1 ring-sd-glow/20 hover:bg-sd-panel-light hover:text-white"
           >
             Admin
           </Link>

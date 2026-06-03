@@ -23,8 +23,8 @@ export function PhaseNav({
             href={`${basePath}/${p.slug}`}
             className={`rounded-lg px-4 py-2 text-sm transition ${
               isActive
-                ? "bg-amber-500 text-slate-900 font-semibold"
-                : "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                ? "bg-sd-glow text-sd-deep font-semibold shadow-lg shadow-emerald-500/20"
+                : "sd-glass text-sd-muted hover:text-white"
             }`}
           >
             <span className="block font-medium">{p.label}</span>

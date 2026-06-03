@@ -38,7 +38,7 @@ export function PhaseJourneyBar({
   }
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-900/60 p-4">
+    <div className="sd-glass rounded-xl p-4">
       <div className="flex flex-wrap items-center gap-2">
         {rounds.map((n) => {
           const done = latestPublishedRound >= n;
@@ -54,7 +54,7 @@ export function PhaseJourneyBar({
                   done
                     ? "bg-emerald-600/30 text-emerald-300 ring-2 ring-emerald-500/50"
                     : current && latestPublishedRound > 0
-                      ? "bg-amber-500 text-slate-900 ring-2 ring-amber-400"
+                      ? "bg-sd-glow text-sd-deep ring-2 ring-sd-glow"
                       : upcoming
                         ? "bg-slate-800 text-slate-500"
                         : "bg-slate-800 text-slate-400 ring-1 ring-slate-600"

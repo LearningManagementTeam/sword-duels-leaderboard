@@ -16,7 +16,7 @@ export function MechanicsAutoRules() {
   return (
     <div className="space-y-10">
       <section id="phases">
-        <h2 className="text-xl font-semibold text-amber-300">Phases</h2>
+        <h2 className="text-xl font-semibold text-sd-glow">Phases</h2>
         <p className="mt-1 text-sm text-slate-500">
           Generated from system rules — updates automatically when competition
           config changes.
@@ -50,7 +50,7 @@ export function MechanicsAutoRules() {
       </section>
 
       <section id="june">
-        <h2 className="text-xl font-semibold text-amber-300">
+        <h2 className="text-xl font-semibold text-sd-glow">
           June — per-round regional elimination
         </h2>
         <p className="mt-2 text-sm text-slate-400">
@@ -86,7 +86,7 @@ export function MechanicsAutoRules() {
       </section>
 
       <section id="july">
-        <h2 className="text-xl font-semibold text-amber-300">
+        <h2 className="text-xl font-semibold text-sd-glow">
           July — per-round regional elimination
         </h2>
         <p className="mt-2 text-sm text-slate-400">
@@ -117,7 +117,7 @@ export function MechanicsAutoRules() {
       </section>
 
       <section id="august">
-        <h2 className="text-xl font-semibold text-amber-300">August</h2>
+        <h2 className="text-xl font-semibold text-sd-glow">August</h2>
         <p className="text-sm text-slate-400">
           Three regional champions compete in a single-day event. Scoring format
           to be confirmed.
@@ -126,7 +126,7 @@ export function MechanicsAutoRules() {
 
       {caps.length > 0 && (
         <section id="caps">
-          <h2 className="text-xl font-semibold text-amber-300">
+          <h2 className="text-xl font-semibold text-sd-glow">
             Round score caps
           </h2>
           <div className="mt-4 overflow-x-auto rounded-lg border border-slate-700">
@@ -155,7 +155,7 @@ export function MechanicsAutoRules() {
       )}
 
       <section id="tie-breakers">
-        <h2 className="text-xl font-semibold text-amber-300">Tie-breakers</h2>
+        <h2 className="text-xl font-semibold text-sd-glow">Tie-breakers</h2>
         <p className="mt-2 text-sm text-slate-400">
           For elimination cuts within a round:
         </p>
@@ -167,7 +167,7 @@ export function MechanicsAutoRules() {
       </section>
 
       <section id="statuses">
-        <h2 className="text-xl font-semibold text-amber-300">Status labels</h2>
+        <h2 className="text-xl font-semibold text-sd-glow">Status labels</h2>
         <div className="mt-4 overflow-x-auto rounded-lg border border-slate-700">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/80 text-slate-300">

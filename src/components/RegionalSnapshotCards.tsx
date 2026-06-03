@@ -57,10 +57,10 @@ export function RegionalSnapshotCards({
         {cards.map((c) => (
           <div
             key={c.label}
-            className="rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-3"
+            className="sd-glass rounded-lg px-4 py-3"
           >
             <p className="text-xs text-slate-500">{c.label}</p>
-            <p className="text-xl font-bold tabular-nums text-amber-300">
+            <p className="text-xl font-bold tabular-nums text-sd-glow">
               {c.value}
             </p>
           </div>

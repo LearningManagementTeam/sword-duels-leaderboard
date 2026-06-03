@@ -10,7 +10,7 @@ export function MechanicsPageContent({ content }: Props) {
   return (
     <div className="space-y-10">
       {content.intro.trim() && (
-        <section className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
+        <section className="rounded-xl border border-sd-glow/25 bg-emerald-500/5 p-5">
           <MarkdownContent source={content.intro} />
         </section>
       )}

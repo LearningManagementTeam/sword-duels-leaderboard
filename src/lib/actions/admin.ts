@@ -17,6 +17,12 @@ import {
 import { SCORING_CONFIG, REGIONS } from "@/lib/scoring-config";
 import type { ManualAdvance } from "@/lib/manual-advances";
 import {
+  BRANDING_CONTENT_SLUG,
+  DEFAULT_BRANDING,
+  parseBrandingBody,
+  type BrandingConfig,
+} from "@/lib/branding";
+import {
   MECHANICS_CONTENT_SLUG,
   type MechanicsPublicBody,
 } from "@/lib/mechanics-content";
@@ -901,5 +907,120 @@ export async function saveMechanicsContent(body: MechanicsPublicBody) {
 
   revalidatePath("/mechanics");
   revalidatePath("/admin/mechanics");
+  return { ok: true };
+}
+
+const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+const LOGO_MIME: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "image/svg+xml": "svg",
+};
+
+async function upsertBrandingBody(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  email: string,
+  patch: Partial<BrandingConfig>
+) {
+  const { data: existing } = await service
+    .from("site_content")
+    .select("body")
+    .eq("slug", BRANDING_CONTENT_SLUG)
+    .maybeSingle();
+
+  const current = existing?.body
+    ? parseBrandingBody(existing.body)
+    : { ...DEFAULT_BRANDING };
+
+  const body: BrandingConfig = {
+    logo_url: patch.logo_url !== undefined ? patch.logo_url : current.logo_url,
+    logo_alt: patch.logo_alt ?? current.logo_alt ?? DEFAULT_BRANDING.logo_alt,
+  };
+
+  const { error } = await service.from("site_content").upsert(
+    {
+      slug: BRANDING_CONTENT_SLUG,
+      body,
+      updated_at: new Date().toISOString(),
+      updated_by_email: email,
+    },
+    { onConflict: "slug" }
+  );
+  if (error) throw new Error(error.message);
+  return body;
+}
+
+export async function uploadBrandingLogo(formData: FormData) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const file = formData.get("file");
+
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Choose an image file to upload.");
+  }
+  if (file.size > LOGO_MAX_BYTES) {
+    throw new Error("Logo must be 2MB or smaller.");
+  }
+  const ext = LOGO_MIME[file.type];
+  if (!ext) {
+    throw new Error("Use PNG, JPG, WebP, or SVG.");
+  }
+
+  const path = `logo.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const { error: uploadErr } = await service.storage
+    .from("branding")
+    .upload(path, buffer, {
+      contentType: file.type,
+      upsert: true,
+    });
+  if (uploadErr) throw new Error(uploadErr.message);
+
+  const { data: urlData } = service.storage.from("branding").getPublicUrl(path);
+  const logoUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+
+  await upsertBrandingBody(service, email, { logo_url: logoUrl });
+
+  await logAudit(email, "upload_branding_logo", "site_content", BRANDING_CONTENT_SLUG, {
+    path,
+  });
+
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/branding");
+  return { ok: true, logo_url: logoUrl };
+}
+
+export async function removeBrandingLogo() {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+
+  const { data: list } = await service.storage.from("branding").list("", {
+    limit: 20,
+  });
+  if (list?.length) {
+    await service.storage
+      .from("branding")
+      .remove(list.map((o) => o.name));
+  }
+
+  await upsertBrandingBody(service, email, { logo_url: null });
+
+  await logAudit(email, "remove_branding_logo", "site_content", BRANDING_CONTENT_SLUG, {});
+
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/branding");
+  return { ok: true };
+}
+
+export async function saveBrandingAlt(logoAlt: string) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  await upsertBrandingBody(service, email, {
+    logo_alt: logoAlt.trim() || DEFAULT_BRANDING.logo_alt,
+  });
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/branding");
   return { ok: true };
 }

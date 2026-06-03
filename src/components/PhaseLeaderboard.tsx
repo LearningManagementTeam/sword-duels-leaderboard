@@ -6,16 +6,17 @@ import { PhaseNav } from "./PhaseNav";
 import { RegionalSnapshotCards } from "./RegionalSnapshotCards";
 import { PreviewBanner } from "./PreviewBanner";
 import { SetupBanner } from "./SetupBanner";
+import { getBranding } from "@/lib/data/content-queries";
 import {
   getLatestPublishedRoundNumber,
   getLastPublishedAt,
   getPublishedStandings,
   getSeasonBySlug,
 } from "@/lib/data/queries";
+import { REGION_LABELS } from "@/lib/scoring-config";
 import {
   getSurvivorCount,
   SCORING_CONFIG,
-  REGION_LABELS,
   usesPerRoundElimination,
 } from "@/lib/scoring-config";
 import type { Region, SeasonSlug } from "@/lib/scoring-config";
@@ -38,6 +39,7 @@ export async function PhaseLeaderboard({
   isPreview = false,
 }: Props) {
   const configured = isSupabaseConfigured();
+  const branding = await getBranding();
   const season =
     !isPreview && configured ? await getSeasonBySlug(slug) : null;
   const latestPublishedRound =
@@ -98,7 +100,7 @@ export async function PhaseLeaderboard({
         <div>
           <h2 className="text-2xl font-bold text-white">{config.name}</h2>
           {region && (
-            <p className="text-amber-300">{REGION_LABELS[region]} region</p>
+            <p className="text-sd-glow">{REGION_LABELS[region]} region</p>
           )}
           {perRound && latestPublishedRound > 0 && (
             <p className="mt-1 text-sm text-slate-400">
@@ -126,7 +128,7 @@ export async function PhaseLeaderboard({
           <div className="flex flex-wrap gap-2">
             <a
               href={exportPath}
-              className="rounded-lg border border-slate-600 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
+              className="rounded-lg border border-sd-glow/30 px-3 py-1.5 text-sm text-sd-muted hover:bg-sd-panel hover:text-white"
             >
               Export CSV
             </a>
@@ -148,7 +150,7 @@ export async function PhaseLeaderboard({
             <Link
               key={l.href}
               href={l.href}
-              className="rounded-lg bg-slate-800 px-4 py-2 text-sm hover:bg-slate-700"
+              className="rounded-lg sd-glass px-4 py-2 text-sm text-sd-muted hover:text-white"
             >
               {l.label}
             </Link>
@@ -182,6 +184,16 @@ export async function PhaseLeaderboard({
             }
           >
             <LeaderboardSection
+              branding={branding}
+              bannerSubtitle={
+                region
+                  ? `${config.name} · ${REGION_LABELS[region]}${
+                      latestPublishedRound > 0
+                        ? ` · After Round ${latestPublishedRound}`
+                        : ""
+                    }`
+                  : config.name
+              }
               rows={rows}
               advancementCutoff={cutoff}
               cutLineLabel={cutLineLabel}

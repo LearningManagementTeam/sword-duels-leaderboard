@@ -4,8 +4,8 @@ const styles: Record<BranchStatus, string> = {
   active: "bg-slate-700 text-slate-100",
   advanced: "bg-emerald-600/90 text-white",
   eliminated: "bg-slate-800 text-slate-400 line-through",
-  regional_finalist: "bg-amber-600/90 text-white",
-  champion: "bg-yellow-500 text-slate-900 font-semibold",
+  regional_finalist: "bg-emerald-600/90 text-white ring-1 ring-sd-gold/50",
+  champion: "bg-[var(--sd-gold)] text-sd-deep font-semibold",
 };
 
 export function statusLabel(
