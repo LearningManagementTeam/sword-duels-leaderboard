@@ -12,73 +12,66 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="sd-page-header">
+        <h1>Dashboard</h1>
+      </div>
       {!configured && <SetupBanner />}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-          <p className="text-sm text-slate-400">Branches</p>
-          <p className="text-2xl font-bold text-amber-300">{branchCount}</p>
+        <div className="sd-stat-card">
+          <p className="sd-stat-label">Branches</p>
+          <p className="sd-stat-value">{branchCount}</p>
         </div>
-        <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-          <p className="text-sm text-slate-400">Seasons</p>
-          <p className="text-2xl font-bold">{seasons.length}</p>
+        <div className="sd-stat-card">
+          <p className="sd-stat-label">Seasons</p>
+          <p className="sd-stat-value">{seasons.length}</p>
         </div>
-        <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-          <p className="text-sm text-slate-400">Rounds</p>
-          <p className="text-2xl font-bold">{rounds.length}</p>
+        <div className="sd-stat-card">
+          <p className="sd-stat-label">Rounds</p>
+          <p className="sd-stat-value">{rounds.length}</p>
         </div>
       </div>
 
       <AdminWorkflowCards rounds={rounds} />
 
-      <section>
-        <h2 className="mb-2 font-semibold">Quick links</h2>
-        <ul className="list-inside list-disc text-sm text-slate-300">
+      <section className="sd-neon-panel p-5">
+        <h2 className="mb-2 font-semibold text-sd-glow">Quick links</h2>
+        <ul className="list-inside list-disc text-sm text-sd-muted">
           <li>
-            <Link href="/admin/branches" className="text-amber-400 hover:underline">
+            <Link href="/admin/branches" className="sd-link">
               Import branches
             </Link>{" "}
             (142 in seed CSV)
           </li>
           <li>
-            <Link
-              href="/admin/representatives"
-              className="text-amber-400 hover:underline"
-            >
+            <Link href="/admin/representatives" className="sd-link">
               Enter branch representatives
             </Link>
           </li>
           <li>
-            <Link href="/admin/rounds" className="text-amber-400 hover:underline">
+            <Link href="/admin/rounds" className="sd-link">
               Enter round results
             </Link>
           </li>
           <li>
-            <Link
-              href="/admin/advancement"
-              className="text-amber-400 hover:underline"
-            >
+            <Link href="/admin/advancement" className="sd-link">
               Lock phase & advance
             </Link>
           </li>
         </ul>
       </section>
 
-      <section>
-        <h2 className="mb-2 font-semibold">Recent rounds</h2>
+      <section className="sd-neon-panel p-5">
+        <h2 className="mb-2 font-semibold text-sd-glow">Recent rounds</h2>
         <ul className="space-y-1 text-sm">
           {rounds.map((r) => {
             const season = Array.isArray(r.seasons) ? r.seasons[0] : r.seasons;
             return (
               <li key={r.id}>
-                <Link
-                  href={`/admin/rounds/${r.id}`}
-                  className="text-amber-400 hover:underline"
-                >
+                <Link href={`/admin/rounds/${r.id}`} className="sd-link">
                   {season?.name} — {r.name}
                 </Link>{" "}
-                <span className="text-slate-500">({r.status})</span>
+                <span className="text-sd-muted/60">({r.status})</span>
               </li>
             );
           })}

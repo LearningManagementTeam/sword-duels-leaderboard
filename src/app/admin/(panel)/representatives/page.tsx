@@ -12,12 +12,12 @@ export default async function RepresentativesPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Branch representatives</h1>
-        <p className="mt-1 text-sm text-slate-400">
+      <div className="sd-page-header">
+        <h1>Branch representatives</h1>
+        <p>
           Edit names in the table below anytime. For bulk setup, use the{" "}
           <strong>combined CSV</strong> on{" "}
-          <Link href="/admin/branches" className="text-amber-400 hover:underline">
+          <Link href="/admin/branches" className="sd-link">
             Admin → Branches
           </Link>{" "}
           (same file includes branch_code, branch_name, area, region, and

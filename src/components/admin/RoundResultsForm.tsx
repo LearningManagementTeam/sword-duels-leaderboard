@@ -258,7 +258,7 @@ export function RoundResultsForm({
           type="button"
           disabled={loading}
           onClick={handleSave}
-          className="rounded-lg border border-sd-glow/30 bg-sd-panel px-4 py-2 text-sm text-sd-muted hover:text-white disabled:opacity-50"
+          className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
           Save draft
         </button>
@@ -267,7 +267,7 @@ export function RoundResultsForm({
             type="button"
             disabled={loading}
             onClick={handlePublish}
-            className="rounded-lg bg-sd-glow px-4 py-2 text-sm font-medium text-sd-deep hover:bg-emerald-300 disabled:opacity-50"
+            className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
           >
             Save & publish
           </button>

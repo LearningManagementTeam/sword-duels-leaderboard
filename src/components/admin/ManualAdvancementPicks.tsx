@@ -77,14 +77,11 @@ export function ManualAdvancementPicks({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link
-          href={`/admin/rounds/${roundId}`}
-          className="text-sm text-slate-400 hover:text-white"
-        >
+      <div className="sd-page-header">
+        <Link href={`/admin/rounds/${roundId}`} className="sd-link text-sm">
           ← Back to {roundName}
         </Link>
-        <h1 className="mt-2 text-2xl font-bold">
+        <h1 className="mt-2">
           Manage advancement
           <InfoTip>
             The system keeps the top N per region automatically. Check extra
@@ -92,12 +89,12 @@ export function ManualAdvancementPicks({
             cut (e.g. many 10/10 scores). Save separately for each region.
           </InfoTip>
         </h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <p>
           After Round {roundNumber}, add extra branches per region that should
           still advance to Round {nextRound} (e.g. many tied perfect scores).
         </p>
         {mechanicsLabel && (
-          <p className="mt-2 text-sm text-amber-200">{mechanicsLabel}</p>
+          <p className="mt-2 text-sm text-sd-glow">{mechanicsLabel}</p>
         )}
       </div>
 
@@ -107,10 +104,10 @@ export function ManualAdvancementPicks({
             key={r}
             type="button"
             onClick={() => setRegion(r)}
-            className={`rounded-lg px-4 py-2 text-sm ${
+            className={`rounded-lg px-4 py-2 text-sm transition ${
               r === region
-                ? "bg-amber-500 text-slate-900 font-semibold"
-                : "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep"
+                : "sd-glass text-sd-muted hover:text-white"
             }`}
           >
             {REGION_LABELS[r]}
@@ -118,14 +115,14 @@ export function ManualAdvancementPicks({
         ))}
       </div>
 
-      <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-4 text-sm text-slate-300">
+      <div className="sd-neon-panel p-4 text-sm text-sd-muted">
         <p>
-          Automatic cut: top <strong>{data.survivorCut}</strong> in{" "}
+          Automatic cut: top <strong className="text-white">{data.survivorCut}</strong> in{" "}
           {REGION_LABELS[region]} advance.
           {maxPoints != null && data.maxScoreCount > 0 && (
             <>
               {" "}
-              <strong>{data.maxScoreCount}</strong> eliminated branch
+              <strong className="text-white">{data.maxScoreCount}</strong> eliminated branch
               {data.maxScoreCount === 1 ? "" : "es"} scored the max (
               {maxPoints}) and may need a manual pick.
             </>
@@ -133,18 +130,18 @@ export function ManualAdvancementPicks({
         </p>
       </div>
 
-      <section className="space-y-2">
-        <h2 className="font-semibold text-emerald-300">
+      <section className="sd-neon-panel space-y-2 p-4">
+        <h2 className="font-semibold text-sd-glow">
           Auto-advanced ({data.autoAdvanced.length})
         </h2>
-        <ul className="max-h-40 overflow-auto rounded-lg border border-slate-800 bg-slate-950/50 text-sm">
+        <ul className="sd-inset max-h-40 overflow-auto rounded-xl text-sm">
           {data.autoAdvanced.map((b) => (
             <li
               key={b.branch_id}
-              className="flex justify-between border-b border-slate-800/80 px-3 py-1.5"
+              className="flex justify-between border-b border-emerald-900/30 px-3 py-1.5 last:border-0"
             >
               <span>{b.branch_name}</span>
-              <span className="tabular-nums text-slate-400">
+              <span className="tabular-nums text-sd-muted/70">
                 {b.points} pts · rank {b.rank}
               </span>
             </li>
@@ -152,51 +149,53 @@ export function ManualAdvancementPicks({
         </ul>
       </section>
 
-      <section className="space-y-3">
+      <section className="sd-neon-panel space-y-3 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold text-amber-300">
+          <h2 className="font-semibold text-fuchsia-200">
             Also advance to Round {nextRound}
           </h2>
           {maxPoints != null && (
-            <label className="flex items-center gap-2 text-sm text-slate-400">
+            <label className="flex items-center gap-2 text-sm text-sd-muted">
               <input
                 type="checkbox"
                 checked={onlyMax}
                 onChange={(e) => setOnlyMax(e.target.checked)}
+                className="accent-emerald-500"
               />
               Show only max score ({maxPoints})
             </label>
           )}
         </div>
 
-        <ul className="max-h-[40vh] overflow-auto rounded-lg border border-slate-700">
+        <ul className="sd-inset max-h-[40vh] overflow-auto rounded-xl">
           {filteredExtra.length === 0 ? (
-            <li className="px-3 py-6 text-center text-slate-500">
+            <li className="px-3 py-6 text-center text-sd-muted/60">
               No eliminated branches to add in this region.
             </li>
           ) : (
             filteredExtra.map((b) => (
               <li
                 key={b.branch_id}
-                className="flex items-center gap-3 border-b border-slate-800 px-3 py-2 text-sm hover:bg-slate-800/50"
+                className="flex items-center gap-3 border-b border-emerald-900/20 px-3 py-2 text-sm hover:bg-emerald-500/5"
               >
                 <input
                   type="checkbox"
                   checked={selected[region].has(b.branch_id)}
                   onChange={() => toggle(b.branch_id)}
+                  className="accent-emerald-500"
                 />
                 <span className="flex-1">{b.branch_name}</span>
-                <span className="tabular-nums text-slate-400">
+                <span className="tabular-nums text-sd-muted/70">
                   {b.points} pts · rank {b.rank}
                   {b.isTieBreaker && (
-                    <span className="ml-1 text-cyan-300">· tie breaker</span>
+                    <span className="ml-1 text-fuchsia-300">· tie breaker</span>
                   )}
                 </span>
               </li>
             ))
           )}
         </ul>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-sd-muted/60">
           Selected: {selected[region].size} extra branch
           {selected[region].size === 1 ? "" : "es"}
         </p>
@@ -207,12 +206,12 @@ export function ManualAdvancementPicks({
           type="button"
           disabled={loading}
           onClick={handleSave}
-          className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-50"
+          className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
           {loading ? "Saving…" : `Save picks for ${REGION_LABELS[region]}`}
         </button>
       </div>
-      {message && <p className="text-sm text-amber-200">{message}</p>}
+      {message && <p className="text-sm text-sd-glow">{message}</p>}
     </div>
   );
 }

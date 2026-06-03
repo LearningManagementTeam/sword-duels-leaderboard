@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArBackdrop } from "@/components/ui/ArBackdrop";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import { PreviewBanner } from "@/components/PreviewBanner";
 import { getDemoStandings } from "@/lib/demo/generate-demo-standings";
@@ -30,15 +31,20 @@ export default async function PreviewTvPage({
       ? 1
       : getSurvivorCount(slug, 3, region as Region) ?? 32;
 
+  const pillActive =
+    "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep";
+  const pillIdle = "sd-glass text-sd-muted hover:text-white";
+
   return (
-    <div className="fixed inset-0 z-50 overflow-auto bg-slate-950 p-6">
-      <div className="mb-4 space-y-3">
+    <div className="fixed inset-0 z-50 overflow-auto p-6">
+      <ArBackdrop />
+      <div className="relative mb-4 space-y-3">
         <PreviewBanner />
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl font-bold text-amber-400">
+          <h1 className="text-3xl font-bold text-sd-glow">
             Sword Duels — {phase.toUpperCase()} (Preview)
             {slug !== "august_finals" && (
-              <span className="ml-2 text-xl text-amber-200/80">
+              <span className="ml-2 text-xl text-sd-muted">
                 {REGION_LABELS[region as Region]}
               </span>
             )}
@@ -48,10 +54,8 @@ export default async function PreviewTvPage({
               <Link
                 key={p}
                 href={`/preview/tv?phase=${p}&region=${region}`}
-                className={`rounded-lg px-3 py-1 ${
-                  p === phase
-                    ? "bg-amber-500/20 text-amber-200"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                className={`rounded-xl px-3 py-1.5 capitalize ${
+                  p === phase ? pillActive : pillIdle
                 }`}
               >
                 {p}
@@ -62,19 +66,14 @@ export default async function PreviewTvPage({
                 <Link
                   key={r}
                   href={`/preview/tv?phase=${phase}&region=${r}`}
-                  className={`rounded-lg px-3 py-1 ${
-                    r === region
-                      ? "bg-amber-500/20 text-amber-200"
-                      : "bg-slate-800 text-slate-300"
+                  className={`rounded-xl px-3 py-1.5 ${
+                    r === region ? pillActive : pillIdle
                   }`}
                 >
                   {REGION_LABELS[r]}
                 </Link>
               ))}
-            <Link
-              href="/preview"
-              className="rounded-lg bg-slate-800 px-3 py-1 text-slate-300 hover:bg-slate-700"
-            >
+            <Link href="/preview" className={`rounded-xl px-3 py-1.5 ${pillIdle}`}>
               Exit TV
             </Link>
           </div>

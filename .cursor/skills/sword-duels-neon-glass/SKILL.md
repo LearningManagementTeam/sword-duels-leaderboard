@@ -35,6 +35,16 @@ description: >-
 | `.sd-row-hover` | Leaderboard row hover lift |
 | `.sd-cut-shimmer` | Cut-line banner accent |
 | `.sd-input` | Admin form fields (extends `.sd-inset`) |
+| `.sd-btn-primary` | Lime glow CTA |
+| `.sd-btn-secondary` | Magenta accent button |
+| `.sd-btn-ghost` | Green outline button |
+| `.sd-btn-danger` | Destructive actions |
+| `.sd-stat-card` | Dashboard stat tiles |
+| `.sd-table` / `.sd-table-wrap` | Data tables |
+| `.sd-alert-warning` | Preview/setup banners (amber semantic) |
+| `.sd-alert-info` | Info callouts |
+| `.sd-page-header` | Page title + subtitle |
+| `.sd-link` | Text links (`text-sd-glow`) |
 
 Respect `prefers-reduced-motion`: animations disabled in globals.
 
@@ -43,7 +53,7 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 | Area | Files |
 |------|--------|
 | Tokens / CSS | `src/app/globals.css` |
-| Backdrop | `src/components/ui/ArBackdrop.tsx` |
+| Backdrop | `src/components/ui/ArBackdrop.tsx` — blurred `public/backgrounds/sd-wave-green.png` + dark scrim |
 | Carousel | `src/components/ui/SdCarousel.tsx` |
 | Hero logo | `src/components/branding/HeroLogo.tsx` |
 | Leaderboard | `src/components/leaderboard/*`, `LeaderboardSection.tsx` |
@@ -71,7 +81,9 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 
 **Do:** Reuse `sd-*` classes; one `backdrop-filter` layer per card; CSS animations over new libs; update this skill when adding primitives.
 
-**Don't:** White opaque pills on dark leaderboard; stack multiple blurs per row; change scoring/tie-breaker logic in UI-only tasks; add Swiper/Embla unless requested.
+**Don't:** White opaque pills on dark leaderboard; stack multiple blurs per row; change scoring/tie-breaker logic in UI-only tasks; add Swiper/Embla unless requested; add new `bg-slate-*` / `text-amber-*` for chrome (amber only inside `.sd-alert-warning`).
+
+**Wrappers:** [`SdButton.tsx`](src/components/ui/SdButton.tsx), [`SdCard.tsx`](src/components/ui/SdCard.tsx), [`SdDataTable.tsx`](src/components/ui/SdDataTable.tsx), [`AdminNav.tsx`](src/components/admin/AdminNav.tsx) for active admin tabs.
 
 ## Tie breaker styling
 

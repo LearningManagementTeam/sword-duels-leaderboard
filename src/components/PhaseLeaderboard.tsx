@@ -115,18 +115,18 @@ export async function PhaseLeaderboard({
             <p className="text-sd-glow">{REGION_LABELS[region]} region</p>
           )}
           {perRound && latestPublishedRound > 0 && (
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-sd-muted">
               Standings after Round {latestPublishedRound}
             </p>
           )}
           {isPreview ? (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-sd-muted/60">
               Sample data · {rows.length} branches
               {region ? ` · ${REGION_LABELS[region]}` : ""}
             </p>
           ) : (
             lastPublished && (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-sd-muted/60">
                 Last updated:{" "}
                 {new Date(lastPublished).toLocaleString("en-PH", {
                   dateStyle: "medium",
@@ -162,12 +162,12 @@ export async function PhaseLeaderboard({
             <Link
               key={l.href}
               href={l.href}
-              className="rounded-lg sd-glass px-4 py-2 text-sm text-sd-muted hover:text-white"
+              className="sd-glass rounded-lg px-4 py-2 text-sm text-sd-muted hover:text-sd-glow"
             >
               {l.label}
             </Link>
           ))}
-          <p className="w-full text-xs text-slate-500">
+          <p className="w-full text-xs text-sd-muted/60">
             Select a region to view its leaderboard and cut lines.
           </p>
         </div>
@@ -195,7 +195,7 @@ export async function PhaseLeaderboard({
           )}
           <Suspense
             fallback={
-              <p className="text-sm text-slate-500">Loading leaderboard…</p>
+              <p className="text-sm text-sd-muted/60">Loading leaderboard…</p>
             }
           >
             <LeaderboardSection

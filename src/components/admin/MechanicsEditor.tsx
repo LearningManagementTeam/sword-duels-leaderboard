@@ -68,7 +68,7 @@ export function MechanicsEditor({ initial }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-sd-muted">
           Edit intro and announcements. Tables below are generated from system
           rules and cannot be edited here.
         </p>
@@ -78,8 +78,8 @@ export function MechanicsEditor({ initial }: Props) {
             onClick={() => setTab("edit")}
             className={`rounded-lg px-3 py-1.5 text-sm ${
               tab === "edit"
-                ? "bg-amber-500 text-slate-900 font-medium"
-                : "bg-slate-800 text-slate-200"
+                ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep"
+                : "sd-glass text-sd-muted"
             }`}
           >
             Edit
@@ -89,8 +89,8 @@ export function MechanicsEditor({ initial }: Props) {
             onClick={() => setTab("preview")}
             className={`rounded-lg px-3 py-1.5 text-sm ${
               tab === "preview"
-                ? "bg-amber-500 text-slate-900 font-medium"
-                : "bg-slate-800 text-slate-200"
+                ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep"
+                : "sd-glass text-sd-muted"
             }`}
           >
             Preview
@@ -98,7 +98,7 @@ export function MechanicsEditor({ initial }: Props) {
           <Link
             href="/mechanics"
             target="_blank"
-            className="rounded-lg border border-slate-600 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
+            className="sd-btn-ghost rounded-lg px-3 py-1.5 text-sm text-sd-muted hover:bg-emerald-500/10"
           >
             View public page
           </Link>
@@ -108,18 +108,18 @@ export function MechanicsEditor({ initial }: Props) {
       {tab === "edit" ? (
         <div className="space-y-6">
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-300">Intro</span>
+            <span className="text-sm font-medium text-sd-muted">Intro</span>
             <textarea
               value={content.intro}
               onChange={(e) =>
                 setContent((c) => ({ ...c, intro: e.target.value }))
               }
               rows={4}
-              className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg sd-input px-3 py-2 text-sm text-white"
             />
           </label>
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-slate-300">
+            <span className="text-sm font-medium text-sd-muted">
               Announcements
             </span>
             <textarea
@@ -128,18 +128,18 @@ export function MechanicsEditor({ initial }: Props) {
                 setContent((c) => ({ ...c, announcements: e.target.value }))
               }
               rows={5}
-              className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg sd-input px-3 py-2 text-sm text-white"
               placeholder="Committee notes, schedule changes…"
             />
           </label>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-slate-200">Custom sections</h2>
+              <h2 className="font-semibold text-sd-muted">Custom sections</h2>
               <button
                 type="button"
                 onClick={addSection}
-                className="text-sm text-amber-400 hover:text-amber-300"
+                className="sd-link text-sm"
               >
                 + Add section
               </button>
@@ -147,14 +147,14 @@ export function MechanicsEditor({ initial }: Props) {
             {content.custom_sections.map((section) => (
               <div
                 key={section.id}
-                className="rounded-lg border border-slate-700 bg-slate-900/50 p-4 space-y-2"
+                className="sd-neon-panel/50 p-4 space-y-2"
               >
                 <input
                   value={section.title}
                   onChange={(e) =>
                     updateSection(section.id, { title: e.target.value })
                   }
-                  className="w-full rounded border border-slate-600 bg-slate-950 px-2 py-1 text-sm text-white"
+                  className="w-full rounded sd-input px-2 py-1 text-sm text-white"
                   placeholder="Section title"
                 />
                 <textarea
@@ -163,7 +163,7 @@ export function MechanicsEditor({ initial }: Props) {
                     updateSection(section.id, { body: e.target.value })
                   }
                   rows={4}
-                  className="w-full rounded border border-slate-600 bg-slate-950 px-2 py-1 text-sm text-white"
+                  className="w-full rounded sd-input px-2 py-1 text-sm text-white"
                 />
                 <button
                   type="button"
@@ -180,18 +180,18 @@ export function MechanicsEditor({ initial }: Props) {
             type="button"
             disabled={loading}
             onClick={handleSave}
-            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-50"
+            className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
           >
             {loading ? "Saving…" : "Save mechanics content"}
           </button>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-700 bg-slate-950 p-6">
+        <div className="sd-neon-panel p-6">
           <MechanicsPageContent content={content} />
         </div>
       )}
 
-      {message && <p className="text-sm text-amber-200">{message}</p>}
+      {message && <p className="text-sm text-sd-glow">{message}</p>}
     </div>
   );
 }

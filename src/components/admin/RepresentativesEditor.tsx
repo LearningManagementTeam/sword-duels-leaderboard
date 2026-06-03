@@ -101,7 +101,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
 
   if (branches.length === 0) {
     return (
-      <p className="text-amber-200">
+      <p className="text-sd-glow">
         Import participating branches first (Admin → Branches), then return here.
       </p>
     );
@@ -111,20 +111,20 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-white">Edit in table</h2>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-sd-muted">
           Update names anytime. Leave blank to clear a representative. Click
           save when finished.
         </p>
       </div>
 
-      <div className="rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-3 text-sm">
+      <div className="sd-neon-panel/50 px-4 py-3 text-sm">
         <span className="font-medium text-emerald-300">{filledCount}</span>
-        <span className="text-slate-400">
+        <span className="text-sd-muted">
           {" "}
           of {rows.length} branches have a primary representative
         </span>
         {initialWithReps !== filledCount && (
-          <span className="text-slate-500"> (unsaved edits in table)</span>
+          <span className="text-sd-muted/60"> (unsaved edits in table)</span>
         )}
       </div>
 
@@ -134,12 +134,12 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
           placeholder="Search branch or representative…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="min-w-[200px] flex-1 rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
+          className="min-w-[200px] flex-1 rounded-lg sd-input px-3 py-2 text-sm"
         />
         <select
           value={areaFilter}
           onChange={(e) => setAreaFilter(e.target.value)}
-          className="rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm"
+          className="rounded-lg sd-input px-3 py-2 text-sm"
         >
           <option value="">All areas</option>
           {areas.map((a) => (
@@ -150,9 +150,9 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
         </select>
       </div>
 
-      <div className="max-h-[50vh] overflow-auto rounded-lg border border-slate-700">
-        <table className="w-full min-w-[720px] text-sm">
-          <thead className="sticky top-0 bg-slate-800 text-slate-300">
+      <div className="sd-table-wrap sd-inset max-h-[50vh]">
+        <table className="sd-table min-w-[720px]">
+          <thead className="sticky top-0">
             <tr>
               <th className="px-2 py-2 text-left">Branch</th>
               <th className="px-2 py-2 text-left">Area</th>
@@ -163,13 +163,13 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
           </thead>
           <tbody>
             {filtered.map((row) => (
-              <tr key={row.branch_id} className="border-t border-slate-800">
+              <tr key={row.branch_id} className="border-t border-emerald-900/20">
                 <td className="px-2 py-1">
                   <div className="font-medium">{row.branch_name}</div>
-                  <div className="text-xs text-slate-500">{row.branch_code}</div>
+                  <div className="text-xs text-sd-muted/60">{row.branch_code}</div>
                 </td>
-                <td className="px-2 py-1 text-slate-400">{row.area}</td>
-                <td className="px-2 py-1 text-slate-400">
+                <td className="px-2 py-1 text-sd-muted">{row.area}</td>
+                <td className="px-2 py-1 text-sd-muted">
                   {REGION_LABELS[row.region]}
                 </td>
                 <td className="px-2 py-1">
@@ -179,7 +179,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
                       updateRow(row.branch_id, "representative_1", e.target.value)
                     }
                     placeholder="Primary name"
-                    className="w-full min-w-[140px] rounded border border-slate-600 bg-slate-950 px-2 py-1"
+                    className="w-full min-w-[140px] rounded sd-input px-2 py-1"
                   />
                 </td>
                 <td className="px-2 py-1">
@@ -189,7 +189,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
                       updateRow(row.branch_id, "representative_2", e.target.value)
                     }
                     placeholder="Optional"
-                    className="w-full min-w-[140px] rounded border border-slate-600 bg-slate-950 px-2 py-1"
+                    className="w-full min-w-[140px] rounded sd-input px-2 py-1"
                   />
                 </td>
               </tr>
@@ -198,7 +198,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
         </table>
       </div>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-sd-muted/60">
         Showing {filtered.length} of {rows.length} branches
       </p>
 
@@ -206,7 +206,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
         type="button"
         disabled={loading}
         onClick={handleSaveAll}
-        className="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-semibold text-slate-900 hover:bg-amber-400 disabled:opacity-50"
+        className="sd-btn-primary rounded-lg px-5 py-2.5 text-sm disabled:opacity-50"
       >
         {loading ? "Saving…" : "Save all representatives"}
       </button>

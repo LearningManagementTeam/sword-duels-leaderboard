@@ -1,5 +1,6 @@
 import { signInWithPassword } from "@/lib/actions/auth";
 import Link from "next/link";
+import { ArBackdrop } from "@/components/ui/ArBackdrop";
 
 export default async function AdminLoginPage({
   searchParams,
@@ -8,47 +9,43 @@ export default async function AdminLoginPage({
 }) {
   const { error } = await searchParams;
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-700 bg-slate-900 p-8">
+    <div className="relative flex min-h-screen items-center justify-center px-4">
+      <ArBackdrop />
+      <div className="sd-neon-panel relative w-full max-w-md space-y-6 p-8">
         <div>
           <h1 className="text-xl font-bold text-white">Admin sign in</h1>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-sd-muted">
             Central team only.{" "}
-            <Link href="/" className="text-amber-400 hover:underline">
+            <Link href="/" className="text-sd-glow hover:underline">
               Back to leaderboard
             </Link>
           </p>
         </div>
         {error && (
-          <p className="rounded-lg bg-red-950/50 px-3 py-2 text-sm text-red-200">
+          <p className="rounded-lg bg-red-950/50 px-3 py-2 text-sm text-red-200 ring-1 ring-red-500/30">
             {decodeURIComponent(error)}
           </p>
         )}
         <form action={signInWithPassword} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm text-slate-300">Email</label>
+            <label className="mb-1 block text-sm text-sd-muted">Email</label>
             <input
               name="email"
               type="email"
               required
-              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-white"
+              className="sd-input w-full px-3 py-2 text-sm"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-slate-300">
-              Password
-            </label>
+            <label className="mb-1 block text-sm text-sd-muted">Password</label>
             <input
               name="password"
               type="password"
               required
-              className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-white"
+              className="sd-input w-full px-3 py-2 text-sm"
             />
           </div>
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-amber-500 py-2 font-medium text-slate-900 hover:bg-amber-400"
-          >
+          <button type="submit" className="sd-btn-primary w-full rounded-lg py-2">
             Sign in
           </button>
         </form>

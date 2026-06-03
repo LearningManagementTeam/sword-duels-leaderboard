@@ -24,18 +24,19 @@ export default function AdvancementPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Phase advancement</h1>
+      <div className="sd-page-header">
+        <h1>Phase advancement</h1>
+        <p>
+          Run after publishing final standings for a phase. This records a phase
+          lock and copies advancing branches to the next season.{" "}
+          <InfoTip>
+            Use only after Round 3 is published for all regions. This step seeds
+            the next phase (June → July, July → August) and cannot be undone from
+            this screen.
+          </InfoTip>
+        </p>
+      </div>
       {!configured && <SetupBanner />}
-
-      <p className="text-sm text-slate-400">
-        Run after publishing final standings for a phase. This records a phase
-        lock and copies advancing branches to the next season.{" "}
-        <InfoTip>
-          Use only after Round 3 is published for all regions. This step seeds
-          the next phase (June → July, July → August) and cannot be undone from
-          this screen.
-        </InfoTip>
-      </p>
 
       <AdminCallout title="Before you lock">
         Confirm public boards show the correct survivors (8 per region after
@@ -44,14 +45,11 @@ export default function AdvancementPage() {
 
       <div className="space-y-4">
         {phases.map((phase) => (
-          <div
-            key={phase.slug}
-            className="rounded-lg border border-slate-700 bg-slate-900 p-4"
-          >
-            <h2 className="font-semibold text-amber-300">
+          <div key={phase.slug} className="sd-neon-panel p-4">
+            <h2 className="font-semibold text-sd-glow">
               {SCORING_CONFIG[phase.slug].name}
             </h2>
-            <p className="mt-1 text-sm text-slate-400">{phase.description}</p>
+            <p className="mt-1 text-sm text-sd-muted">{phase.description}</p>
             <form
               className="mt-3"
               action={async () => {
@@ -59,10 +57,7 @@ export default function AdvancementPage() {
                 await lockPhaseAndAdvance(phase.slug);
               }}
             >
-              <button
-                type="submit"
-                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400"
-              >
+              <button type="submit" className="sd-btn-ghost rounded-lg px-4 py-2 text-sm">
                 Lock & advance
               </button>
             </form>

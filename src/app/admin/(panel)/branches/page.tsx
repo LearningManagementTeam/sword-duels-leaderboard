@@ -8,9 +8,9 @@ export default function AdminBranchesPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Branches & participants</h1>
-        <p className="mt-1 text-sm text-slate-400">
+      <div className="sd-page-header">
+        <h1>Branches & participants</h1>
+        <p>
           Import all competing branches in one CSV — areas, regions, and
           optional representative names together.
         </p>
@@ -20,13 +20,13 @@ export default function AdminBranchesPage() {
 
       <ImportParticipatingBranches />
 
-      <details className="rounded-lg border border-slate-800 bg-slate-900/30 p-4">
-        <summary className="cursor-pointer text-sm text-slate-400">
+      <details className="sd-glass rounded-xl p-4">
+        <summary className="cursor-pointer text-sm text-sd-muted">
           Advanced: re-import bundled sample data (development only)
         </summary>
         <div className="mt-4 space-y-2">
-          <p className="text-xs text-slate-500">
-            Uses <code className="text-amber-200">data/branches.csv</code> from
+          <p className="text-xs text-sd-muted/60">
+            Uses <code className="text-sd-glow">data/branches.csv</code> from
             the server — not your uploaded file.
           </p>
           <ImportBranchesButton />

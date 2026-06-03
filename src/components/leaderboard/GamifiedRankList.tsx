@@ -72,7 +72,7 @@ export function GamifiedRankList({
                     ? "sd-glass border-fuchsia-400/50 ring-2 ring-fuchsia-400/40"
                     : inZone
                       ? "sd-glass border-emerald-400/40 ring-1 ring-emerald-400/30"
-                      : "sd-glass border-slate-600/30 opacity-85"
+                      : "sd-glass border-emerald-900/20 opacity-85"
                 }`}
               >
                 <span

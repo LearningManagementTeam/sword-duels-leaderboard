@@ -158,9 +158,9 @@ export function LeaderboardTable({
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-sd-glow/20">
-        <table className={`w-full min-w-[640px] text-left ${textSize}`}>
-          <thead className="bg-sd-panel/90 text-sd-muted">
+      <div className="sd-table-wrap sd-neon-panel p-2">
+        <table className={`sd-table min-w-[640px] ${textSize}`}>
+          <thead>
             <tr>
               <th className="px-3 py-2 font-medium">Rank</th>
               <th className="px-3 py-2 font-medium">Branch</th>
@@ -201,7 +201,7 @@ export function LeaderboardTable({
                   row.status !== "eliminated" &&
                   row.status !== "tie_breaker" &&
                   row.rank <= advancementCutoff;
-                const rowClasses = `border-t border-slate-800 animate-row-in ${
+                const rowClasses = `border-t border-emerald-900/20 animate-row-in ${
                   inSurvivorZone
                     ? "border-l-4 border-l-emerald-500/70 bg-emerald-950/25"
                     : ""
@@ -246,42 +246,42 @@ export function LeaderboardTable({
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-sd-muted/60">
                         {row.branch_code}
                       </div>
                     </td>
                     {showArea && (
-                      <td className={`${cellPad} text-slate-300`}>{row.area}</td>
+                      <td className={`${cellPad} text-sd-muted`}>{row.area}</td>
                     )}
                     {showRegion && (
-                      <td className={`${cellPad} text-slate-300`}>
+                      <td className={`${cellPad} text-sd-muted`}>
                         {REGION_LABELS[row.region as Region]}
                       </td>
                     )}
                     {showRepresentatives && !tvMode && (
-                      <td className={`${cellPad} text-slate-300`}>
+                      <td className={`${cellPad} text-sd-muted`}>
                         <div className="text-xs">
                           {row.representative_1 || "—"}
                         </div>
                         {row.representative_2 && (
-                          <div className="text-xs text-slate-500">
+                          <div className="text-xs text-sd-muted/60">
                             {row.representative_2}
                           </div>
                         )}
                       </td>
                     )}
                     <td
-                      className={`${cellPad} text-right tabular-nums text-slate-300`}
+                      className={`${cellPad} text-right tabular-nums text-sd-muted`}
                     >
                       {formatRoundPoints(row.round1_points)}
                     </td>
                     <td
-                      className={`${cellPad} text-right tabular-nums text-slate-300`}
+                      className={`${cellPad} text-right tabular-nums text-sd-muted`}
                     >
                       {formatRoundPoints(row.round2_points)}
                     </td>
                     <td
-                      className={`${cellPad} text-right tabular-nums text-slate-300`}
+                      className={`${cellPad} text-right tabular-nums text-sd-muted`}
                     >
                       {formatRoundPoints(row.round3_points)}
                     </td>

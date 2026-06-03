@@ -14,6 +14,8 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 
 Public mechanics: **How it works** on the site header → `/mechanics`
 
+The public site and admin panel share the same **neon glass** look (green + magenta accents, blurred wave background). Upload your logo under **Branding** to see the full-width hero on home and leaderboards.
+
 ## Logo (one-time or when it changes)
 
 1. Admin → **Branding**

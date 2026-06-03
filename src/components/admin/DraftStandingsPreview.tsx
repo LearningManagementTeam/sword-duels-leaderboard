@@ -62,22 +62,22 @@ export function DraftStandingsPreview({
         type="button"
         disabled={loading}
         onClick={handlePreview}
-        className="rounded-lg border border-amber-500/40 px-4 py-2 text-sm text-amber-200 hover:bg-amber-500/10 disabled:opacity-50"
+        className="sd-btn-secondary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
       >
         {loading ? "Loading preview…" : "Preview standings (draft)"}
       </button>
       {error && <p className="text-sm text-red-300">{error}</p>}
 
       {open && preview && (
-        <div className="space-y-4 rounded-xl border border-amber-500/30 bg-slate-900/50 p-4">
+        <div className="sd-alert-warning space-y-4 p-4">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-amber-200">
+            <p className="text-sm text-sd-glow">
               Draft preview — not published yet
             </p>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="text-xs text-slate-400 hover:text-white"
+              className="text-xs text-sd-muted hover:text-white"
             >
               Hide
             </button>
@@ -89,7 +89,7 @@ export function DraftStandingsPreview({
               const latest = rows[0]?.latest_published_round ?? 0;
               return (
                 <div key={region} className="space-y-2">
-                  <h3 className="text-sm font-medium text-slate-300">
+                  <h3 className="text-sm font-medium text-sd-muted">
                     {REGION_LABELS[region]}
                     {latest > 0 && ` · after Round ${latest}`}
                   </h3>

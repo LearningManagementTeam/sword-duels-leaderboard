@@ -11,7 +11,7 @@ function inlineFormat(text: string): string {
   s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   s = s.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="text-amber-300 underline hover:text-amber-200">$1</a>'
+    '<a href="$2" class="text-sd-glow underline hover:text-white">$1</a>'
   );
   return s;
 }
@@ -31,7 +31,7 @@ export function MarkdownContent({
     const lines = block.split("\n");
     if (lines.every((l) => /^[-*]\s+/.test(l.trim()))) {
       return (
-        <ul key={i} className="list-inside list-disc space-y-1 text-slate-300">
+        <ul key={i} className="list-inside list-disc space-y-1 text-sd-muted">
           {lines.map((line, j) => (
             <li
               key={j}
@@ -45,7 +45,7 @@ export function MarkdownContent({
     }
     if (lines.every((l) => /^\d+\.\s+/.test(l.trim()))) {
       return (
-        <ol key={i} className="list-inside list-decimal space-y-1 text-slate-300">
+        <ol key={i} className="list-inside list-decimal space-y-1 text-sd-muted">
           {lines.map((line, j) => (
             <li
               key={j}
@@ -60,7 +60,7 @@ export function MarkdownContent({
     return (
       <p
         key={i}
-        className="text-slate-300 leading-relaxed"
+        className="text-sd-muted leading-relaxed"
         dangerouslySetInnerHTML={{
           __html: inlineFormat(block.replace(/\n/g, " ")),
         }}

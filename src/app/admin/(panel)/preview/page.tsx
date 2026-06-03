@@ -51,9 +51,9 @@ const previewLinks = [
 export default function AdminPreviewPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Preview leaderboards</h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+      <div className="sd-page-header">
+        <h1>Preview leaderboards</h1>
+        <p>
           Open these links to show sample standings with branch and representative
           names. Preview data never touches the live database.
         </p>
@@ -66,10 +66,10 @@ export default function AdminPreviewPage() {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="block rounded-xl border border-slate-700 bg-slate-900/50 p-4 hover:border-amber-500/50"
+              className="sd-neon-panel block p-4 transition hover:shadow-lg hover:shadow-emerald-500/10"
             >
-              <span className="font-medium text-amber-300">{link.label}</span>
-              <span className="mt-1 block text-xs text-slate-500">
+              <span className="font-medium text-sd-glow">{link.label}</span>
+              <span className="mt-1 block text-xs text-sd-muted/70">
                 {link.description}
               </span>
             </Link>
@@ -77,20 +77,17 @@ export default function AdminPreviewPage() {
         ))}
       </ul>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-sd-muted/60">
         Official public boards:{" "}
-        <Link href="/june" className="text-slate-400 underline hover:text-white">
+        <Link href="/june" className="sd-link">
           /june
         </Link>
         ,{" "}
-        <Link href="/july" className="text-slate-400 underline hover:text-white">
+        <Link href="/july" className="sd-link">
           /july
         </Link>
         ,{" "}
-        <Link
-          href="/august"
-          className="text-slate-400 underline hover:text-white"
-        >
+        <Link href="/august" className="sd-link">
           /august
         </Link>
       </p>

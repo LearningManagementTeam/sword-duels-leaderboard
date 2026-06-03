@@ -65,7 +65,7 @@ export default async function TvPage({
   const rotateQuery = rotate ? `&rotate=${rotate}` : "";
 
   return (
-    <div className="fixed inset-0 z-50 overflow-auto bg-sd-deep p-6">
+    <div className="fixed inset-0 z-50 overflow-auto p-6">
       <ArBackdrop />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
@@ -73,10 +73,10 @@ export default async function TvPage({
             <Link
               key={p}
               href={`/tv?phase=${p}${p !== "august" ? `&region=${region}` : ""}${rotateQuery}`}
-              className={`rounded-lg px-3 py-1 capitalize ${
+              className={`rounded-xl px-3 py-1.5 capitalize transition ${
                 p === phase
-                  ? "bg-sd-glow/20 text-sd-glow"
-                  : "bg-sd-panel text-sd-muted"
+                  ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep"
+                  : "sd-glass text-sd-muted hover:text-white"
               }`}
             >
               {p}
@@ -89,10 +89,10 @@ export default async function TvPage({
               <Link
                 key={r}
                 href={`/tv?phase=${phase}&region=${r}${rotateQuery}`}
-                className={`rounded-lg px-3 py-1 ${
+                className={`rounded-xl px-3 py-1.5 transition ${
                   r === region
-                    ? "bg-sd-glow/20 text-sd-glow"
-                    : "bg-sd-panel text-sd-muted"
+                    ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep"
+                    : "sd-glass text-sd-muted hover:text-white"
                 }`}
               >
                 {REGION_LABELS[r]}

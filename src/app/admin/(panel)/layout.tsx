@@ -1,19 +1,9 @@
 import Link from "next/link";
+import { AdminNav } from "@/components/admin/AdminNav";
+import { ArBackdrop } from "@/components/ui/ArBackdrop";
 import { signOut } from "@/lib/actions/admin";
 
 export const dynamic = "force-dynamic";
-
-const links = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/branches", label: "Branches" },
-  { href: "/admin/representatives", label: "Representatives" },
-  { href: "/admin/rounds", label: "Rounds" },
-  { href: "/admin/advancement", label: "Advancement" },
-  { href: "/admin/mechanics", label: "Mechanics" },
-  { href: "/admin/branding", label: "Branding" },
-  { href: "/admin/preview", label: "Preview" },
-  { href: "/admin/audit", label: "Audit log" },
-];
 
 export default function AdminLayout({
   children,
@@ -21,42 +11,42 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-sd-deep text-emerald-50">
-      <header className="border-b border-sd-glow/20 bg-sd-panel">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
-          <Link href="/admin" className="font-semibold text-sd-glow">
-            Admin · Sword Duels
-          </Link>
-          <nav className="flex flex-wrap gap-3 text-sm">
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-sd-muted hover:text-white"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/admin/system"
-              className="text-sm text-sd-muted/80 hover:text-sd-glow"
-            >
-              System & stack
+    <div className="relative min-h-screen text-emerald-50">
+      <ArBackdrop />
+      <header className="relative border-b border-transparent bg-sd-panel/75 backdrop-blur-xl">
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-emerald-400/50 via-fuchsia-400/30 to-purple-500/40"
+          aria-hidden
+        />
+        <div className="mx-auto max-w-6xl space-y-3 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Link href="/admin" className="font-semibold text-sd-glow">
+              Admin · Sword Duels
             </Link>
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="text-sm text-sd-muted hover:text-white"
+            <div className="flex items-center gap-3">
+              <Link
+                href="/admin/system"
+                className="text-sm text-sd-muted/80 hover:text-sd-glow"
               >
-                Sign out
-              </button>
-            </form>
+                System & stack
+              </Link>
+              <Link href="/" className="text-sm text-sd-muted hover:text-white">
+                Public site
+              </Link>
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="text-sm text-sd-muted hover:text-white"
+                >
+                  Sign out
+                </button>
+              </form>
+            </div>
           </div>
+          <AdminNav />
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className="relative mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
   );
 }

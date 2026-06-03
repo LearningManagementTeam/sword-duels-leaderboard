@@ -8,11 +8,11 @@ export default async function AdminMechanicsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Public mechanics page</h1>
-        <p className="mt-1 text-sm text-slate-400">
+      <div className="sd-page-header">
+        <h1>Public mechanics page</h1>
+        <p>
           Edits appear on{" "}
-          <a href="/mechanics" className="text-amber-400 hover:underline">
+          <a href="/mechanics" className="sd-link">
             /mechanics
           </a>
           . Phase tables and caps are auto-generated from scoring rules.{" "}

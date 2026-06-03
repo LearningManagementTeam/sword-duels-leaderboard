@@ -74,8 +74,8 @@ export function PhaseJourneyBar({
                     : current && latestPublishedRound > 0
                       ? "bg-sd-lime text-sd-deep ring-2 ring-fuchsia-400/40 shadow-[0_0_12px_rgb(163_230_53/0.4)]"
                       : upcoming
-                        ? "bg-slate-900/80 text-slate-500"
-                        : "bg-slate-900/80 text-slate-400 ring-1 ring-slate-600"
+                        ? "sd-inset text-sd-muted/60"
+                        : "sd-inset text-sd-muted ring-1 ring-emerald-900/40"
                 }`}
               >
                 R{n}
@@ -85,7 +85,7 @@ export function PhaseJourneyBar({
                   className={`hidden h-0.5 w-6 sm:block ${
                     latestPublishedRound > n
                       ? "bg-gradient-to-r from-emerald-500 to-fuchsia-500/60"
-                      : "bg-slate-700"
+                      : "bg-emerald-950/60"
                   }`}
                 />
               )}
