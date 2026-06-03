@@ -1193,6 +1193,22 @@ function parseCarouselSlot(raw: FormDataEntryValue | null): 1 | 2 | 3 {
   throw new Error("Invalid carousel slot (use 1, 2, or 3).");
 }
 
+function carouselFileExtension(file: File): string | undefined {
+  const fromMime = CAROUSEL_MIME[file.type];
+  if (fromMime) return fromMime;
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".png")) return "png";
+  if (name.endsWith(".webp")) return "webp";
+  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "jpg";
+  return undefined;
+}
+
+export async function refreshBrandingConfig(): Promise<BrandingConfig> {
+  await requireAdmin();
+  const { getBranding } = await import("@/lib/data/content-queries");
+  return getBranding();
+}
+
 export async function uploadCarouselSlide(formData: FormData) {
   const { email } = await requireAdmin();
   const service = await createServiceClient();
@@ -1205,9 +1221,11 @@ export async function uploadCarouselSlide(formData: FormData) {
   if (file.size > CAROUSEL_MAX_BYTES) {
     throw new Error("Carousel photo must be 3MB or smaller.");
   }
-  const ext = CAROUSEL_MIME[file.type];
+  const ext = carouselFileExtension(file);
   if (!ext) {
-    throw new Error("Use JPG, PNG, or WebP for carousel photos.");
+    throw new Error(
+      "Use JPG, PNG, or WebP for carousel photos (iPhone HEIC is not supported — export as JPEG first)."
+    );
   }
 
   const path = `carousel-${slot}.${ext}`;
@@ -1245,7 +1263,7 @@ export async function uploadCarouselSlide(formData: FormData) {
   });
 
   revalidateBrandingSurfaces();
-  return { ok: true, slot, url };
+  return { ok: true, slot, url, carousel_slides: slides };
 }
 
 export async function removeCarouselSlide(slot: 1 | 2 | 3) {
@@ -1272,5 +1290,5 @@ export async function removeCarouselSlide(slot: 1 | 2 | 3) {
   });
 
   revalidateBrandingSurfaces();
-  return { ok: true };
+  return { ok: true, carousel_slides: slides };
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { HeroLogo } from "@/components/branding/HeroLogo";
 import { HomePhotoCarousel } from "@/components/home/HomePhotoCarousel";
 import { LeaderboardBanner } from "@/components/leaderboard/LeaderboardBanner";
 import {
+  refreshBrandingConfig,
   removeBrandingLogo,
   removeCarouselSlide,
   saveBrandingAlt,
@@ -17,10 +18,50 @@ import {
   CAROUSEL_UPLOAD_SPECS,
   getActiveCarouselSlides,
   type BrandingConfig,
+  type CarouselSlides,
 } from "@/lib/branding";
 
 interface Props {
   initial: BrandingConfig;
+}
+
+type CarouselPhase = "idle" | "uploading" | "removing" | "success" | "error";
+
+type CarouselStatus = {
+  phase: CarouselPhase;
+  slot?: 1 | 2 | 3;
+  message: string;
+};
+
+function applyCarouselSlides(
+  branding: BrandingConfig,
+  slides: CarouselSlides
+): BrandingConfig {
+  return { ...branding, carousel_slides: slides };
+}
+
+function CarouselStatusBanner({ status }: { status: CarouselStatus }) {
+  if (status.phase === "idle") return null;
+
+  const styles: Record<Exclude<CarouselPhase, "idle">, string> = {
+    uploading: "sd-alert-info border-emerald-500/30 text-emerald-100",
+    removing: "sd-alert-info border-emerald-500/30 text-emerald-100",
+    success: "sd-alert-info border-emerald-500/40 text-emerald-100",
+    error: "sd-alert-warning",
+  };
+
+  return (
+    <p
+      role="status"
+      aria-live="polite"
+      className={`rounded-xl px-4 py-3 text-sm ${styles[status.phase]}`}
+    >
+      {status.phase === "uploading" && (
+        <span className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent align-middle" />
+      )}
+      {status.message}
+    </p>
+  );
 }
 
 export function BrandingEditor({ initial }: Props) {
@@ -30,12 +71,136 @@ export function BrandingEditor({ initial }: Props) {
   const [carouselBusySlot, setCarouselBusySlot] = useState<1 | 2 | 3 | null>(
     null
   );
+  const [carouselStatus, setCarouselStatus] = useState<CarouselStatus>({
+    phase: "idle",
+    message: "",
+  });
   const [message, setMessage] = useState("");
+  const fileInputRefs = useRef<Record<1 | 2 | 3, HTMLInputElement | null>>({
+    1: null,
+    2: null,
+    3: null,
+  });
 
+  const carouselLocked = carouselBusySlot !== null;
   const activeSlides = getActiveCarouselSlides(branding);
+  const specs = CAROUSEL_UPLOAD_SPECS;
+
+  function validateCarouselFile(file: File): string | null {
+    if (file.size === 0) return "Choose a photo file first.";
+    if (file.size > specs.maxBytes) {
+      return `Photo must be ${specs.maxSizeLabel} or smaller.`;
+    }
+    const okMime =
+      specs.accept.split(",").includes(file.type) ||
+      /\.(jpe?g|png|webp)$/i.test(file.name);
+    if (!okMime) {
+      return "Use JPG, PNG, or WebP (export iPhone photos as JPEG if needed).";
+    }
+    return null;
+  }
+
+  async function syncBrandingFromServer() {
+    const fresh = await refreshBrandingConfig();
+    setBranding(fresh);
+    return fresh;
+  }
+
+  async function handleCarouselUpload(slot: 1 | 2 | 3) {
+    if (carouselLocked) return;
+
+    const input = fileInputRefs.current[slot];
+    const file = input?.files?.[0];
+    const validationError = file ? validateCarouselFile(file) : "Choose a photo file first.";
+    if (validationError) {
+      setCarouselStatus({
+        phase: "error",
+        slot,
+        message: validationError,
+      });
+      return;
+    }
+
+    setCarouselBusySlot(slot);
+    setCarouselStatus({
+      phase: "uploading",
+      slot,
+      message: `Uploading photo ${slot}… Please wait — other slots are locked until this finishes.`,
+    });
+    setMessage("");
+
+    const fd = new FormData();
+    fd.set("file", file!);
+    fd.set("slot", String(slot));
+
+    try {
+      const result = await uploadCarouselSlide(fd);
+      if (result.carousel_slides) {
+        setBranding((b) => applyCarouselSlides(b, result.carousel_slides));
+      } else if (result.url) {
+        setBranding((b) => {
+          const slides = [...b.carousel_slides] as CarouselSlides;
+          slides[slot - 1] = result.url;
+          return applyCarouselSlides(b, slides);
+        });
+      } else {
+        await syncBrandingFromServer();
+      }
+
+      if (input) input.value = "";
+
+      setCarouselStatus({
+        phase: "success",
+        slot,
+        message: `Photo ${slot} saved. Home carousel preview updated below.`,
+      });
+      setMessage(`Photo ${slot} uploaded.`);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Upload failed";
+      setCarouselStatus({ phase: "error", slot, message: text });
+      setMessage(text);
+    } finally {
+      setCarouselBusySlot(null);
+    }
+  }
+
+  async function handleRemoveCarousel(slot: 1 | 2 | 3) {
+    if (carouselLocked) return;
+    if (!confirm(`Remove photo ${slot} from the home carousel?`)) return;
+
+    setCarouselBusySlot(slot);
+    setCarouselStatus({
+      phase: "removing",
+      slot,
+      message: `Removing photo ${slot}…`,
+    });
+    setMessage("");
+
+    try {
+      const result = await removeCarouselSlide(slot);
+      if (result.carousel_slides) {
+        setBranding((b) => applyCarouselSlides(b, result.carousel_slides));
+      } else {
+        await syncBrandingFromServer();
+      }
+      setCarouselStatus({
+        phase: "success",
+        slot,
+        message: `Photo ${slot} removed.`,
+      });
+      setMessage(`Photo ${slot} removed.`);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Remove failed";
+      setCarouselStatus({ phase: "error", slot, message: text });
+      setMessage(text);
+    } finally {
+      setCarouselBusySlot(null);
+    }
+  }
 
   async function handleLogoUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (carouselLocked) return;
     setLogoBusy(true);
     setMessage("");
     const form = e.currentTarget;
@@ -54,54 +219,8 @@ export function BrandingEditor({ initial }: Props) {
     }
   }
 
-  async function handleCarouselUpload(
-    e: React.FormEvent<HTMLFormElement>,
-    slot: 1 | 2 | 3
-  ) {
-    e.preventDefault();
-    if (carouselBusySlot !== null) return;
-    setCarouselBusySlot(slot);
-    setMessage("");
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    fd.set("slot", String(slot));
-    try {
-      const result = await uploadCarouselSlide(fd);
-      if (result.url) {
-        setBranding((b) => {
-          const slides = [...b.carousel_slides] as BrandingConfig["carousel_slides"];
-          slides[slot - 1] = result.url;
-          return { ...b, carousel_slides: slides };
-        });
-      }
-      setMessage(`Photo ${slot} uploaded. Home carousel updated.`);
-      form.reset();
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setCarouselBusySlot(null);
-    }
-  }
-
-  async function handleRemoveCarousel(slot: 1 | 2 | 3) {
-    setCarouselBusySlot(slot);
-    setMessage("");
-    try {
-      await removeCarouselSlide(slot);
-      setBranding((b) => {
-        const slides = [...b.carousel_slides] as BrandingConfig["carousel_slides"];
-        slides[slot - 1] = null;
-        return { ...b, carousel_slides: slides };
-      });
-      setMessage(`Photo ${slot} removed.`);
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Remove failed");
-    } finally {
-      setCarouselBusySlot(null);
-    }
-  }
-
   async function handleRemoveLogo() {
+    if (carouselLocked) return;
     setLogoBusy(true);
     setMessage("");
     try {
@@ -116,6 +235,7 @@ export function BrandingEditor({ initial }: Props) {
   }
 
   async function handleSaveAlt() {
+    if (carouselLocked) return;
     setLogoBusy(true);
     setMessage("");
     try {
@@ -129,42 +249,58 @@ export function BrandingEditor({ initial }: Props) {
     }
   }
 
-  const specs = CAROUSEL_UPLOAD_SPECS;
-
   return (
     <div className="space-y-8">
       <p className="text-sm text-sd-muted">
         Page backgrounds use the built-in animated gradient mesh. Upload the hero logo
-        and up to three home carousel photos here.
+        and up to three home carousel photos here. Only one carousel photo uploads at a
+        time.
       </p>
 
       <section className="sd-neon-panel space-y-4 p-6">
         <h2 className="font-semibold text-sd-glow">Home photo carousel</h2>
         <p className="text-sm text-sd-muted">
-          One rotating carousel on the home page (replaces the old text tickers). Upload
-          up to {CAROUSEL_SLOT_COUNT} landscape photos — JPG, PNG, or WebP,{" "}
-          {specs.maxSizeLabel}. {specs.recommendedLabel}.
+          One rotating carousel on the home page. Upload up to {CAROUSEL_SLOT_COUNT}{" "}
+          landscape photos — JPG, PNG, or WebP, {specs.maxSizeLabel}.{" "}
+          {specs.recommendedLabel}.
         </p>
 
-        {activeSlides.length > 0 && (
-          <div className="max-w-2xl">
-            <p className="mb-2 text-xs uppercase tracking-wider text-sd-muted/70">
-              Preview
-            </p>
-            <HomePhotoCarousel slides={activeSlides} />
-          </div>
-        )}
+        <CarouselStatusBanner status={carouselStatus} />
+
+        <div className="max-w-2xl">
+          <p className="mb-2 text-xs uppercase tracking-wider text-sd-muted/70">
+            Carousel preview ({activeSlides.length} of {CAROUSEL_SLOT_COUNT} filled)
+          </p>
+          {activeSlides.length > 0 ? (
+            <HomePhotoCarousel slides={activeSlides} unoptimized />
+          ) : (
+            <div className="sd-inset flex aspect-video max-h-48 items-center justify-center rounded-xl px-4 text-center text-sm text-sd-muted">
+              {carouselLocked
+                ? "Preview will update when the current upload finishes…"
+                : "Upload at least one photo to see the home carousel preview."}
+            </div>
+          )}
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           {([1, 2, 3] as const).map((slot) => {
             const url = branding.carousel_slides[slot - 1];
-            const slotBusy = carouselBusySlot === slot;
+            const isThisSlotBusy = carouselBusySlot === slot;
             return (
               <div
                 key={slot}
-                className="sd-inset space-y-3 rounded-xl p-4"
+                className={`sd-inset space-y-3 rounded-xl p-4 transition ${
+                  isThisSlotBusy ? "ring-2 ring-sd-glow/50" : ""
+                }`}
               >
-                <p className="text-sm font-medium text-white">Photo {slot}</p>
+                <p className="text-sm font-medium text-white">
+                  Photo {slot}
+                  {isThisSlotBusy && (
+                    <span className="ml-2 text-xs font-normal text-sd-glow">
+                      Working…
+                    </span>
+                  )}
+                </p>
                 {url ? (
                   <div className="relative aspect-video overflow-hidden rounded-lg bg-sd-deep">
                     <Image
@@ -191,39 +327,45 @@ export function BrandingEditor({ initial }: Props) {
                     ))}
                   </div>
                 )}
-                <form
-                  onSubmit={(e) => handleCarouselUpload(e, slot)}
-                  className="space-y-2"
-                >
+                <div className="space-y-2">
                   <input
+                    ref={(el) => {
+                      fileInputRefs.current[slot] = el;
+                    }}
                     type="file"
-                    name="file"
                     accept={specs.accept}
-                    className="block w-full text-xs text-sd-muted"
+                    disabled={carouselLocked}
+                    className="block w-full text-xs text-sd-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    onChange={() => {
+                      if (carouselStatus.phase === "error" && carouselStatus.slot === slot) {
+                        setCarouselStatus({ phase: "idle", message: "" });
+                      }
+                    }}
                   />
                   <button
-                    type="submit"
-                    disabled={slotBusy}
-                    aria-busy={slotBusy}
-                    className={`w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                      slotBusy
+                    type="button"
+                    disabled={carouselLocked}
+                    aria-busy={isThisSlotBusy}
+                    onClick={() => handleCarouselUpload(slot)}
+                    className={`w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isThisSlotBusy
                         ? "cursor-wait bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep ring-2 ring-emerald-300/50"
                         : "sd-btn-primary"
                     }`}
                   >
-                    {slotBusy
+                    {isThisSlotBusy
                       ? "Uploading…"
                       : url
-                        ? "Replace"
-                        : "Upload"}
+                        ? "Replace photo"
+                        : "Upload photo"}
                   </button>
-                </form>
+                </div>
                 {url && (
                   <button
                     type="button"
-                    disabled={slotBusy}
+                    disabled={carouselLocked}
                     onClick={() => handleRemoveCarousel(slot)}
-                    className="text-xs text-red-400 hover:text-red-300"
+                    className="text-xs text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Remove photo {slot}
                   </button>
@@ -232,6 +374,13 @@ export function BrandingEditor({ initial }: Props) {
             );
           })}
         </div>
+
+        {carouselLocked && (
+          <p className="text-xs text-sd-muted/80">
+            Another carousel action is in progress — all carousel controls are locked
+            until it completes.
+          </p>
+        )}
       </section>
 
       <section className="sd-neon-panel space-y-3 p-6">
@@ -259,11 +408,12 @@ export function BrandingEditor({ initial }: Props) {
           type="file"
           name="file"
           accept="image/png,image/jpeg,image/webp,image/svg+xml"
-          className="block text-sm text-sd-muted"
+          disabled={logoBusy || carouselLocked}
+          className="block text-sm text-sd-muted disabled:opacity-50"
         />
         <button
           type="submit"
-          disabled={logoBusy}
+          disabled={logoBusy || carouselLocked}
           className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
           {logoBusy ? "Uploading…" : "Upload logo"}
@@ -278,13 +428,14 @@ export function BrandingEditor({ initial }: Props) {
           <input
             value={alt}
             onChange={(e) => setAlt(e.target.value)}
-            className="sd-input flex-1 min-w-[200px] px-3 py-2 text-sm"
+            disabled={carouselLocked}
+            className="sd-input flex-1 min-w-[200px] px-3 py-2 text-sm disabled:opacity-50"
           />
           <button
             type="button"
-            disabled={logoBusy}
+            disabled={logoBusy || carouselLocked}
             onClick={handleSaveAlt}
-            className="rounded-lg border border-fuchsia-400/30 px-4 py-2 text-sm text-sd-muted hover:text-white"
+            className="rounded-lg border border-fuchsia-400/30 px-4 py-2 text-sm text-sd-muted hover:text-white disabled:opacity-50"
           >
             Save alt text
           </button>
@@ -294,9 +445,9 @@ export function BrandingEditor({ initial }: Props) {
       {branding.logo_url && (
         <button
           type="button"
-          disabled={logoBusy}
+          disabled={logoBusy || carouselLocked}
           onClick={handleRemoveLogo}
-          className="text-sm text-red-400 hover:text-red-300"
+          className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
         >
           Remove logo
         </button>

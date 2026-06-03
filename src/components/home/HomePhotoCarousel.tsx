@@ -9,11 +9,14 @@ const SLIDE_MS = 600;
 interface Props {
   slides: string[];
   label?: string;
+  /** Admin preview: skip optimizer for fresh Supabase cache-bust URLs */
+  unoptimized?: boolean;
 }
 
 export function HomePhotoCarousel({
   slides,
   label = "Featured photos",
+  unoptimized = false,
 }: Props) {
   const [pos, setPos] = useState(0);
   const [noTransition, setNoTransition] = useState(false);
@@ -100,6 +103,7 @@ export function HomePhotoCarousel({
                 className="object-cover"
                 sizes="(max-width: 640px) 288px, 448px"
                 priority={i === 0}
+                unoptimized={unoptimized}
               />
             </div>
           ))}
