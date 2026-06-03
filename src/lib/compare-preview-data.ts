@@ -1,9 +1,20 @@
 import { previewBranchName } from "@/lib/compare-preview-names";
-import { getDemoJuneStandings } from "@/lib/demo/generate-demo-standings";
+import {
+  previewRoundLabel,
+  type PreviewRound,
+} from "@/lib/compare-preview-constants";
+import { getDemoJuneStandingsForRound } from "@/lib/demo/generate-demo-standings";
 import type { FullLeaderboardData } from "@/lib/full-leaderboard-data";
-import { buildJuneCutoffForRegion } from "@/lib/full-leaderboard-data";
+import { buildJuneCutoffForRegion } from "@/lib/june-cutoff";
 import { REGION_LABELS, REGIONS, type Region } from "@/lib/scoring-config";
 import type { StandingRow } from "@/lib/types";
+
+export type { PreviewRound } from "@/lib/compare-preview-constants";
+export {
+  PREVIEW_ROUNDS,
+  parsePreviewRound,
+} from "@/lib/compare-preview-constants";
+export { previewRoundLabel };
 
 const PREVIEW_REP2 = [
   "Alex Rivera",
@@ -16,7 +27,10 @@ const PREVIEW_REP2 = [
   "Casey Torres",
 ];
 
-function enrichPreviewRows(rows: StandingRow[]): StandingRow[] {
+function enrichPreviewRows(
+  rows: StandingRow[],
+  latestPublishedRound: PreviewRound
+): StandingRow[] {
   const regionCounters: Record<Region, number> = { luzon: 0, ncr: 0, vismin: 0 };
 
   return rows.map((row, rowIndex) => {
@@ -30,22 +44,26 @@ function enrichPreviewRows(rows: StandingRow[]): StandingRow[] {
       representative_2:
         row.representative_2 ||
         (rowIndex % 2 === 0 ? PREVIEW_REP2[rowIndex % PREVIEW_REP2.length] : null),
-      latest_published_round: 3,
+      latest_published_round: latestPublishedRound,
     };
   });
 }
 
 /**
- * Rich sample standings for /compare/leaderboard/* layout previews.
- * Always uses demo June data (after Round 3) with realistic branch names —
- * never live DB, so layouts always look fully populated.
+ * Sample June standings for layout previews at a specific published round.
  */
-export function getCompareLeaderboardPreviewData(): FullLeaderboardData {
-  const latestPublishedRound = 3;
+export function getCompareLeaderboardPreviewData(
+  round: PreviewRound = 3
+): FullLeaderboardData {
+  const latestPublishedRound = round;
   const phaseTitle = "June — Area-wide";
+  const roundName = previewRoundLabel(round);
 
   const byRegion = REGIONS.map((region) => {
-    const rows = enrichPreviewRows(getDemoJuneStandings(region));
+    const rows = enrichPreviewRows(
+      getDemoJuneStandingsForRound(region, round),
+      round
+    );
     const { cutoff, cutLineLabel } = buildJuneCutoffForRegion(
       region,
       latestPublishedRound
@@ -64,6 +82,6 @@ export function getCompareLeaderboardPreviewData(): FullLeaderboardData {
     unified: byRegion.flatMap((b) => b.rows),
     latestPublishedRound,
     isDemo: true,
-    phaseTitle,
+    phaseTitle: `${phaseTitle} · ${roundName}`,
   };
 }

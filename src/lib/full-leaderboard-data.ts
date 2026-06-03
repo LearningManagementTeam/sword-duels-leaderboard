@@ -1,11 +1,11 @@
 import { getDemoJuneStandings } from "@/lib/demo/generate-demo-standings";
+import { buildJuneCutoffForRegion } from "@/lib/june-cutoff";
 import {
   getLatestPublishedRoundNumber,
   getPublishedStandings,
   getSeasonBySlug,
 } from "@/lib/data/queries";
 import {
-  getSurvivorCount,
   REGION_LABELS,
   REGIONS,
   type Region,
@@ -29,26 +29,7 @@ export type FullLeaderboardData = {
   phaseTitle: string;
 };
 
-export function buildJuneCutoffForRegion(
-  region: Region,
-  latestPublishedRound: number
-): { cutoff: number; cutLineLabel?: string } {
-  if (latestPublishedRound <= 0) {
-    return { cutoff: 24 };
-  }
-  const cutoff =
-    getSurvivorCount("june_area", latestPublishedRound, region) ?? 32;
-  if (latestPublishedRound < 3) {
-    return {
-      cutoff,
-      cutLineLabel: `Cut line — top ${cutoff} advance to Round ${latestPublishedRound + 1}`,
-    };
-  }
-  return {
-    cutoff,
-    cutLineLabel: `Cut line — top ${cutoff} advance to July`,
-  };
-}
+export { buildJuneCutoffForRegion } from "@/lib/june-cutoff";
 
 export async function getFullLeaderboardJuneData(): Promise<FullLeaderboardData> {
   const phaseTitle = "June — Area-wide";

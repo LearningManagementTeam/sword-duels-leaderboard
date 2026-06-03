@@ -40,7 +40,7 @@ export async function HomeStandingsPreview() {
   const config = await getCompetitionMap();
   const meta = getMilestoneMeta(config.milestoneId);
   const standingsHref = resolvePublicStandingsHref(config);
-  const fullBoardHref = "/compare/leaderboard";
+  const fullBoardHref = "/june/leaderboard";
   const { seasonSlug, region } = parsePublicStandingsPath(standingsHref);
   const seasonConfig = SCORING_CONFIG[seasonSlug];
   const branchCount = await getBranchCount();
