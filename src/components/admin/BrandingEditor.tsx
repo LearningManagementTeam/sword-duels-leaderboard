@@ -1,14 +1,23 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { HeroLogo } from "@/components/branding/HeroLogo";
+import { HomePhotoCarousel } from "@/components/home/HomePhotoCarousel";
 import { LeaderboardBanner } from "@/components/leaderboard/LeaderboardBanner";
 import {
   removeBrandingLogo,
+  removeCarouselSlide,
   saveBrandingAlt,
   uploadBrandingLogo,
+  uploadCarouselSlide,
 } from "@/lib/actions/admin";
-import type { BrandingConfig } from "@/lib/branding";
+import {
+  CAROUSEL_SLOT_COUNT,
+  CAROUSEL_UPLOAD_SPECS,
+  getActiveCarouselSlides,
+  type BrandingConfig,
+} from "@/lib/branding";
 
 interface Props {
   initial: BrandingConfig;
@@ -19,6 +28,8 @@ export function BrandingEditor({ initial }: Props) {
   const [alt, setAlt] = useState(initial.logo_alt);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  const activeSlides = getActiveCarouselSlides(branding);
 
   async function handleLogoUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,6 +46,52 @@ export function BrandingEditor({ initial }: Props) {
       form.reset();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCarouselUpload(
+    e: React.FormEvent<HTMLFormElement>,
+    slot: 1 | 2 | 3
+  ) {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    fd.set("slot", String(slot));
+    try {
+      const result = await uploadCarouselSlide(fd);
+      if (result.url) {
+        setBranding((b) => {
+          const slides = [...b.carousel_slides] as BrandingConfig["carousel_slides"];
+          slides[slot - 1] = result.url;
+          return { ...b, carousel_slides: slides };
+        });
+      }
+      setMessage(`Photo ${slot} uploaded. Home carousel updated.`);
+      form.reset();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRemoveCarousel(slot: 1 | 2 | 3) {
+    setLoading(true);
+    setMessage("");
+    try {
+      await removeCarouselSlide(slot);
+      setBranding((b) => {
+        const slides = [...b.carousel_slides] as BrandingConfig["carousel_slides"];
+        slides[slot - 1] = null;
+        return { ...b, carousel_slides: slides };
+      });
+      setMessage(`Photo ${slot} removed.`);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Remove failed");
     } finally {
       setLoading(false);
     }
@@ -68,12 +125,90 @@ export function BrandingEditor({ initial }: Props) {
     }
   }
 
+  const specs = CAROUSEL_UPLOAD_SPECS;
+
   return (
     <div className="space-y-8">
       <p className="text-sm text-sd-muted">
-        Page backgrounds use the built-in animated AR landscape on all pages. Upload
-        only the logo here.
+        Page backgrounds use the built-in animated gradient mesh. Upload the hero logo
+        and up to three home carousel photos here.
       </p>
+
+      <section className="sd-neon-panel space-y-4 p-6">
+        <h2 className="font-semibold text-sd-glow">Home photo carousel</h2>
+        <p className="text-sm text-sd-muted">
+          One rotating carousel on the home page (replaces the old text tickers). Upload
+          up to {CAROUSEL_SLOT_COUNT} landscape photos — JPG, PNG, or WebP,{" "}
+          {specs.maxSizeLabel}. {specs.recommendedLabel}.
+        </p>
+
+        {activeSlides.length > 0 && (
+          <div className="max-w-2xl">
+            <p className="mb-2 text-xs uppercase tracking-wider text-sd-muted/70">
+              Preview
+            </p>
+            <HomePhotoCarousel slides={activeSlides} />
+          </div>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {([1, 2, 3] as const).map((slot) => {
+            const url = branding.carousel_slides[slot - 1];
+            return (
+              <div
+                key={slot}
+                className="sd-inset space-y-3 rounded-xl p-4"
+              >
+                <p className="text-sm font-medium text-white">Photo {slot}</p>
+                {url ? (
+                  <div className="relative aspect-video overflow-hidden rounded-lg bg-sd-deep">
+                    <Image
+                      src={url}
+                      alt={`Carousel slot ${slot}`}
+                      fill
+                      className="object-cover"
+                      sizes="200px"
+                      unoptimized
+                    />
+                  </div>
+                ) : (
+                  <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed border-emerald-500/25 text-xs text-sd-muted">
+                    Empty
+                  </div>
+                )}
+                <form
+                  onSubmit={(e) => handleCarouselUpload(e, slot)}
+                  className="space-y-2"
+                >
+                  <input
+                    type="file"
+                    name="file"
+                    accept={specs.accept}
+                    className="block w-full text-xs text-sd-muted"
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="sd-btn-primary w-full rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
+                  >
+                    {url ? "Replace" : "Upload"}
+                  </button>
+                </form>
+                {url && (
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => handleRemoveCarousel(slot)}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Remove photo {slot}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="sd-neon-panel space-y-3 p-6">
         <h2 className="font-semibold text-sd-glow">Hero logo preview</h2>

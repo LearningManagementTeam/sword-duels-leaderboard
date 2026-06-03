@@ -38,7 +38,7 @@
 }
 
 body {
-  background: var(--background);
+  background: transparent;
   color: var(--foreground);
 }
 
@@ -318,227 +318,160 @@ body {
     drop-shadow(0 0 28px rgb(217 70 239 / 0.2));
 }
 
-/* CSS-only AR landscape (ArLandscapeScene) */
-.sd-landscape__sky {
+/* Modern mesh gradient backdrop (ArGradientScene) */
+.sd-gradient-scene__base {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    180deg,
-    rgb(2 12 8) 0%,
-    rgb(4 26 18) 35%,
-    rgb(6 40 28) 70%,
-    rgb(4 26 18) 100%
+    145deg,
+    #010f0a 0%,
+    #041a12 22%,
+    #0a3d2a 48%,
+    #062318 72%,
+    #12061a 100%
   );
-  background-size: 100% 200%;
-  animation: sd-landscape-sky 24s ease-in-out infinite;
 }
 
-.sd-landscape__horizon-grid {
+.sd-gradient-scene__mesh {
   position: absolute;
-  left: -20%;
-  right: -20%;
-  top: 28%;
-  height: 42%;
-  opacity: 0.35;
-  background-image: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgb(74 222 128 / 0.12) 50%,
-      transparent 100%
+  inset: -20%;
+  opacity: 0.85;
+  background: radial-gradient(
+      ellipse 80% 55% at 15% 20%,
+      rgb(74 222 128 / 0.35) 0%,
+      transparent 55%
     ),
-    repeating-linear-gradient(
-      90deg,
-      rgb(74 222 128 / 0.08) 0,
-      rgb(74 222 128 / 0.08) 1px,
-      transparent 1px,
-      transparent 48px
+    radial-gradient(
+      ellipse 70% 50% at 85% 15%,
+      rgb(217 70 239 / 0.22) 0%,
+      transparent 50%
     ),
-    repeating-linear-gradient(
-      0deg,
-      rgb(74 222 128 / 0.06) 0,
-      rgb(74 222 128 / 0.06) 1px,
-      transparent 1px,
-      transparent 32px
+    radial-gradient(
+      ellipse 65% 45% at 50% 85%,
+      rgb(52 211 153 / 0.28) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 40% 35% at 70% 60%,
+      rgb(163 230 53 / 0.15) 0%,
+      transparent 50%
     );
-  transform: perspective(400px) rotateX(58deg);
-  transform-origin: center top;
-  animation: sd-landscape-horizon 40s linear infinite;
+  animation: sd-gradient-mesh 22s ease-in-out infinite alternate;
 }
 
-.sd-landscape__hill {
+.sd-gradient-scene__orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(40px);
   pointer-events: none;
+  will-change: transform;
 }
 
-.sd-landscape__hill--a {
-  left: -10%;
-  bottom: 18%;
-  width: 55%;
-  height: 28%;
-  background: rgb(20 83 45 / 0.45);
-  animation: sd-landscape-hill-a 18s ease-in-out infinite;
-}
-
-.sd-landscape__hill--b {
-  right: -5%;
-  bottom: 22%;
-  width: 45%;
-  height: 22%;
-  background: rgb(6 78 59 / 0.35);
-  animation: sd-landscape-hill-b 22s ease-in-out infinite;
-}
-
-.sd-landscape__hill--c {
-  left: 25%;
-  bottom: 12%;
-  width: 50%;
-  height: 18%;
-  background: rgb(88 28 135 / 0.12);
-  animation: sd-landscape-hill-c 20s ease-in-out infinite;
-}
-
-.sd-landscape__floor-grid {
-  position: absolute;
-  left: -30%;
-  right: -30%;
-  bottom: -5%;
-  height: 55%;
-  opacity: 0.5;
-  background-image: repeating-linear-gradient(
-      90deg,
-      rgb(74 222 128 / 0.15) 0,
-      rgb(74 222 128 / 0.15) 1px,
-      transparent 1px,
-      transparent 56px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgb(217 70 239 / 0.08) 0,
-      rgb(217 70 239 / 0.08) 1px,
-      transparent 1px,
-      transparent 40px
-    );
-  transform: perspective(320px) rotateX(72deg);
-  transform-origin: center bottom;
-  animation: sd-landscape-floor 28s linear infinite;
-}
-
-.sd-landscape__glow-line {
-  position: absolute;
-  height: 1px;
-  width: 70%;
-  max-width: 36rem;
-  border-radius: 9999px;
-  opacity: 0.5;
-}
-
-.sd-landscape__glow-line--green {
-  left: 10%;
-  top: 42%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(74 222 128 / 0.6),
-    transparent
+.sd-gradient-scene__orb--lime {
+  width: min(90vw, 42rem);
+  height: min(90vw, 42rem);
+  top: -18%;
+  left: -12%;
+  background: radial-gradient(
+    circle,
+    rgb(163 230 53 / 0.55) 0%,
+    rgb(74 222 128 / 0.2) 40%,
+    transparent 70%
   );
-  animation: sd-landscape-glow-green 8s ease-in-out infinite;
+  filter: blur(48px);
+  animation: sd-gradient-orb-lime 18s ease-in-out infinite;
 }
 
-.sd-landscape__glow-line--magenta {
-  right: 8%;
-  top: 48%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(217 70 239 / 0.5),
-    transparent
+.sd-gradient-scene__orb--teal {
+  width: min(85vw, 38rem);
+  height: min(85vw, 38rem);
+  bottom: -22%;
+  right: -8%;
+  background: radial-gradient(
+    circle,
+    rgb(45 212 191 / 0.45) 0%,
+    rgb(16 185 129 / 0.15) 45%,
+    transparent 70%
   );
-  animation: sd-landscape-glow-magenta 10s ease-in-out infinite;
+  filter: blur(56px);
+  animation: sd-gradient-orb-teal 24s ease-in-out infinite;
 }
 
-@keyframes sd-landscape-sky {
-  0%,
-  100% {
-    background-position: 0% 0%;
-  }
-  50% {
-    background-position: 0% 100%;
-  }
+.sd-gradient-scene__orb--magenta {
+  width: min(70vw, 32rem);
+  height: min(70vw, 32rem);
+  top: 35%;
+  right: -15%;
+  background: radial-gradient(
+    circle,
+    rgb(232 121 249 / 0.4) 0%,
+    rgb(168 85 247 / 0.12) 50%,
+    transparent 72%
+  );
+  filter: blur(52px);
+  animation: sd-gradient-orb-magenta 20s ease-in-out infinite;
 }
 
-@keyframes sd-landscape-horizon {
+.sd-gradient-scene__sheen {
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  background: linear-gradient(
+    125deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.03) 42%,
+    transparent 58%,
+    rgb(74 222 128 / 0.06) 100%
+  );
+  background-size: 200% 200%;
+  animation: sd-gradient-sheen 16s ease-in-out infinite;
+}
+
+@keyframes sd-gradient-mesh {
   0% {
-    transform: perspective(400px) rotateX(58deg) translateX(0);
+    transform: translate(0, 0) scale(1);
   }
   100% {
-    transform: perspective(400px) rotateX(58deg) translateX(-48px);
+    transform: translate(3%, -2%) scale(1.06);
   }
 }
 
-@keyframes sd-landscape-floor {
-  0% {
-    transform: perspective(320px) rotateX(72deg) translateX(0);
-  }
-  100% {
-    transform: perspective(320px) rotateX(72deg) translateX(56px);
-  }
-}
-
-@keyframes sd-landscape-hill-a {
+@keyframes sd-gradient-orb-lime {
   0%,
   100% {
-    transform: translateX(0) scale(1);
+    transform: translate(0, 0) scale(1);
   }
   50% {
-    transform: translateX(4%) scale(1.03);
+    transform: translate(8%, 6%) scale(1.08);
   }
 }
 
-@keyframes sd-landscape-hill-b {
+@keyframes sd-gradient-orb-teal {
   0%,
   100% {
-    transform: translateX(0);
+    transform: translate(0, 0) scale(1);
   }
   50% {
-    transform: translateX(-3%);
+    transform: translate(-6%, -5%) scale(1.05);
   }
 }
 
-@keyframes sd-landscape-hill-c {
+@keyframes sd-gradient-orb-magenta {
   0%,
   100% {
-    opacity: 0.12;
-    transform: translateY(0);
+    transform: translate(0, 0) scale(1);
   }
   50% {
-    opacity: 0.2;
-    transform: translateY(-2%);
+    transform: translate(-10%, 4%) scale(1.1);
   }
 }
 
-@keyframes sd-landscape-glow-green {
+@keyframes sd-gradient-sheen {
   0%,
   100% {
-    opacity: 0.35;
-    transform: translateX(0);
+    background-position: 0% 50%;
   }
   50% {
-    opacity: 0.65;
-    transform: translateX(24px);
-  }
-}
-
-@keyframes sd-landscape-glow-magenta {
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: translateX(0);
-  }
-  50% {
-    opacity: 0.55;
-    transform: translateX(-20px);
+    background-position: 100% 50%;
   }
 }
 
@@ -711,11 +644,9 @@ body {
   .sd-carousel-track,
   .animate-glow-pulse,
   .sd-cut-shimmer,
-  .sd-landscape__sky,
-  .sd-landscape__horizon-grid,
-  .sd-landscape__floor-grid,
-  .sd-landscape__hill,
-  .sd-landscape__glow-line {
+  .sd-gradient-scene__mesh,
+  .sd-gradient-scene__orb,
+  .sd-gradient-scene__sheen {
     animation: none !important;
   }
 

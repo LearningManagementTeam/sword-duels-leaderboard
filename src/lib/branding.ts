@@ -1,14 +1,41 @@
 export const BRANDING_CONTENT_SLUG = "branding";
 
+export const CAROUSEL_SLOT_COUNT = 3;
+
+export const CAROUSEL_UPLOAD_SPECS = {
+  maxBytes: 3 * 1024 * 1024,
+  maxSizeLabel: "3 MB per photo",
+  accept: "image/jpeg,image/png,image/webp",
+  recommendedLabel: "1920 × 1080 (16:9) recommended",
+} as const;
+
+export type CarouselSlides = [
+  string | null,
+  string | null,
+  string | null,
+];
+
 export interface BrandingConfig {
   logo_url: string | null;
   logo_alt: string;
+  carousel_slides: CarouselSlides;
 }
 
 export const DEFAULT_BRANDING: BrandingConfig = {
   logo_url: null,
   logo_alt: "Sword Duels",
+  carousel_slides: [null, null, null],
 };
+
+function normalizeCarouselSlides(raw: unknown): CarouselSlides {
+  const slots: CarouselSlides = [null, null, null];
+  if (!Array.isArray(raw)) return slots;
+  for (let i = 0; i < CAROUSEL_SLOT_COUNT && i < raw.length; i++) {
+    const v = raw[i];
+    slots[i] = typeof v === "string" && v.trim() ? v.trim() : null;
+  }
+  return slots;
+}
 
 export function parseBrandingBody(raw: unknown): BrandingConfig {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_BRANDING };
@@ -19,7 +46,16 @@ export function parseBrandingBody(raw: unknown): BrandingConfig {
       typeof o.logo_alt === "string" && o.logo_alt.trim()
         ? o.logo_alt.trim()
         : DEFAULT_BRANDING.logo_alt,
+    carousel_slides: normalizeCarouselSlides(o.carousel_slides),
   };
+}
+
+export function getActiveCarouselSlides(
+  branding: BrandingConfig
+): string[] {
+  return branding.carousel_slides.filter(
+    (url): url is string => typeof url === "string" && url.length > 0
+  );
 }
 
 export function branchInitials(name: string): string {

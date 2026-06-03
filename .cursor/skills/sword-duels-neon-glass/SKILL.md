@@ -53,9 +53,10 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 | Area | Files |
 |------|--------|
 | Tokens / CSS | `src/app/globals.css` |
-| Backdrop | `ArBackdrop` + `ArLandscapeScene` — CSS-only animated AR landscape (`.sd-landscape__*` in `globals.css`) + scrim/HUD |
+| Backdrop | `ArBackdrop` + `ArGradientScene` — modern mesh gradients + soft orbs (`.sd-gradient-scene__*` in `globals.css`) |
 | Competition map | `CompetitionMapPanel` (home), `CompetitionMapDisplay`, Admin → `/admin/competition`, `site_content` slug `competition_map` |
-| Carousel | `src/components/ui/SdCarousel.tsx` |
+| Carousel (text ticker) | `src/components/ui/SdCarousel.tsx` — phase/status strips only |
+| Home photo carousel | `HomePhotoCarousel` + `HomeCarouselSection` — 3 admin uploads in Branding |
 | Hero logo | `src/components/branding/HeroLogo.tsx` |
 | Leaderboard | `src/components/leaderboard/*`, `LeaderboardSection.tsx` |
 | Status | `src/components/StatusBadge.tsx` |
@@ -74,8 +75,8 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 ## Backdrop rules
 
 - No admin background upload; logo only in `BrandingConfig`
-- Animate with `transform` / `opacity` only on landscape layers; respect `prefers-reduced-motion`
-- Do not animate full-viewport `filter: blur()`
+- Use `ArGradientScene` mesh + blurred orbs; light vignette scrim in `ArBackdrop` (gradients must stay visible)
+- Respect `prefers-reduced-motion` (static gradient snapshot)
 
 ## Competition map rules
 

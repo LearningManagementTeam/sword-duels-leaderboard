@@ -986,11 +986,17 @@ export async function suggestCompetitionMilestone(): Promise<{
 }
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+const CAROUSEL_MAX_BYTES = 3 * 1024 * 1024;
 const LOGO_MIME: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",
   "image/svg+xml": "svg",
+};
+const CAROUSEL_MIME: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
 };
 
 function revalidateBrandingSurfaces() {
@@ -1017,6 +1023,10 @@ async function upsertBrandingBody(
   const body: BrandingConfig = {
     logo_url: patch.logo_url !== undefined ? patch.logo_url : current.logo_url,
     logo_alt: patch.logo_alt ?? current.logo_alt ?? DEFAULT_BRANDING.logo_alt,
+    carousel_slides:
+      patch.carousel_slides !== undefined
+        ? patch.carousel_slides
+        : current.carousel_slides,
   };
 
   const { error } = await service.from("site_content").upsert(
@@ -1108,6 +1118,94 @@ export async function saveBrandingAlt(logoAlt: string) {
   await upsertBrandingBody(service, email, {
     logo_alt: logoAlt.trim() || DEFAULT_BRANDING.logo_alt,
   });
+  revalidateBrandingSurfaces();
+  return { ok: true };
+}
+
+function parseCarouselSlot(raw: FormDataEntryValue | null): 1 | 2 | 3 {
+  const n = Number(raw);
+  if (n === 1 || n === 2 || n === 3) return n;
+  throw new Error("Invalid carousel slot (use 1, 2, or 3).");
+}
+
+export async function uploadCarouselSlide(formData: FormData) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const file = formData.get("file");
+  const slot = parseCarouselSlot(formData.get("slot"));
+
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Choose an image file to upload.");
+  }
+  if (file.size > CAROUSEL_MAX_BYTES) {
+    throw new Error("Carousel photo must be 3MB or smaller.");
+  }
+  const ext = CAROUSEL_MIME[file.type];
+  if (!ext) {
+    throw new Error("Use JPG, PNG, or WebP for carousel photos.");
+  }
+
+  const path = `carousel-${slot}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  await removeBrandingStorageFiles(service, `carousel-${slot}.`);
+
+  const { error: uploadErr } = await service.storage
+    .from("branding")
+    .upload(path, buffer, {
+      contentType: file.type,
+      upsert: true,
+    });
+  if (uploadErr) throw new Error(uploadErr.message);
+
+  const { data: urlData } = service.storage.from("branding").getPublicUrl(path);
+  const url = `${urlData.publicUrl}?v=${Date.now()}`;
+
+  const { data: existing } = await service
+    .from("site_content")
+    .select("body")
+    .eq("slug", BRANDING_CONTENT_SLUG)
+    .maybeSingle();
+  const current = existing?.body
+    ? parseBrandingBody(existing.body)
+    : { ...DEFAULT_BRANDING };
+  const slides = [...current.carousel_slides] as BrandingConfig["carousel_slides"];
+  slides[slot - 1] = url;
+
+  await upsertBrandingBody(service, email, { carousel_slides: slides });
+
+  await logAudit(email, "upload_carousel_slide", "site_content", BRANDING_CONTENT_SLUG, {
+    slot,
+    path,
+  });
+
+  revalidateBrandingSurfaces();
+  return { ok: true, slot, url };
+}
+
+export async function removeCarouselSlide(slot: 1 | 2 | 3) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+
+  await removeBrandingStorageFiles(service, `carousel-${slot}.`);
+
+  const { data: existing } = await service
+    .from("site_content")
+    .select("body")
+    .eq("slug", BRANDING_CONTENT_SLUG)
+    .maybeSingle();
+  const current = existing?.body
+    ? parseBrandingBody(existing.body)
+    : { ...DEFAULT_BRANDING };
+  const slides = [...current.carousel_slides] as BrandingConfig["carousel_slides"];
+  slides[slot - 1] = null;
+
+  await upsertBrandingBody(service, email, { carousel_slides: slides });
+
+  await logAudit(email, "remove_carousel_slide", "site_content", BRANDING_CONTENT_SLUG, {
+    slot,
+  });
+
   revalidateBrandingSurfaces();
   return { ok: true };
 }

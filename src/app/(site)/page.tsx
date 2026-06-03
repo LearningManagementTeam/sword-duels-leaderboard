@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { HeroLogo } from "@/components/branding/HeroLogo";
 import { CompetitionMapPanel } from "@/components/competition/CompetitionMapPanel";
-import {
-  HomeRegionCarousel,
-  HomeSeasonCarousel,
-} from "@/components/home/HomeCarousels";
+import { HomeCarouselSection } from "@/components/home/HomeCarouselSection";
 import { PhaseNav } from "@/components/PhaseNav";
 import { SetupBanner } from "@/components/SetupBanner";
 import { ShareCard } from "@/components/ShareCard";
@@ -33,8 +30,7 @@ export default async function HomePage() {
     <div className="space-y-8">
       <HeroLogo branding={branding} priority />
 
-      <HomeSeasonCarousel />
-      <HomeRegionCarousel />
+      <HomeCarouselSection />
 
       <CompetitionMapPanel />
 
