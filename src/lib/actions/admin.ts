@@ -1130,6 +1130,10 @@ async function upsertBrandingBody(
       patch.carousel_slides !== undefined
         ? patch.carousel_slides
         : current.carousel_slides,
+    sponsor_logos:
+      patch.sponsor_logos !== undefined
+        ? patch.sponsor_logos
+        : current.sponsor_logos,
   });
 
   const { error } = await service.from("site_content").upsert(

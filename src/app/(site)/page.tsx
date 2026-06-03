@@ -19,7 +19,7 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <HomeStandingsPreview mapConfig={mapConfig} />
+      <HomeStandingsPreview mapConfig={mapConfig} branding={branding} />
 
       {!configured && <SetupBanner />}
 

@@ -1,64 +1,69 @@
 import {
   BRANDING_CONTENT_SLUG,
-  CAROUSEL_UPLOAD_SPECS,
   DEFAULT_BRANDING,
   finalizeBrandingConfig,
   parseBrandingBody,
-  setCarouselSlideUrl,
+  setSponsorLogoUrl,
+  SPONSOR_LOGO_UPLOAD_SPECS,
   type BrandingConfig,
-  type CarouselSlides,
-  type CarouselSlot,
+  type SponsorLogoSlides,
+  type SponsorLogoSlot,
 } from "@/lib/branding";
 import { brandingAssetUrl } from "@/lib/branding-storage";
 import { revalidateBrandingPublicPaths } from "@/lib/branding-revalidate";
 import { createServiceClient } from "@/lib/supabase/server";
 
-import { checkCarouselUploadFile } from "@/lib/branding-upload-validation";
+import { checkSponsorLogoUploadFile } from "@/lib/branding-upload-validation";
 
-export const CAROUSEL_MAX_BYTES = CAROUSEL_UPLOAD_SPECS.maxBytes;
+export const SPONSOR_LOGO_MAX_BYTES = SPONSOR_LOGO_UPLOAD_SPECS.maxBytes;
 
-const CAROUSEL_MIME: Record<string, string> = {
+const SPONSOR_MIME: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",
+  "image/svg+xml": "svg",
 };
 
-const CAROUSEL_EXT_MIME: Record<string, string> = {
+const SPONSOR_EXT_MIME: Record<string, string> = {
   png: "image/png",
   jpg: "image/jpeg",
   webp: "image/webp",
+  svg: "image/svg+xml",
 };
 
-export type { CarouselSlot } from "@/lib/branding";
+export type { SponsorLogoSlot } from "@/lib/branding";
 
-export type CarouselMutationResult = {
+export type SponsorLogoMutationResult = {
   ok: true;
-  slot: CarouselSlot;
+  slot: SponsorLogoSlot;
   url: string | null;
-  carousel_slides: CarouselSlides;
+  sponsor_logos: SponsorLogoSlides;
 };
 
 type ServiceClient = Awaited<ReturnType<typeof createServiceClient>>;
 
-export function parseCarouselSlot(raw: FormDataEntryValue | null): CarouselSlot {
+export function parseSponsorLogoSlot(
+  raw: FormDataEntryValue | null
+): SponsorLogoSlot {
   const n = Number(raw);
-  if (n === 1 || n === 2 || n === 3 || n === 4) return n;
-  throw new Error("Invalid carousel slot (use 1, 2, 3, or 4).");
+  if (n === 1 || n === 2 || n === 3) return n;
+  throw new Error("Invalid sponsor logo slot (use 1, 2, or 3).");
 }
 
-function carouselFileExtension(file: File): string | undefined {
-  const fromMime = CAROUSEL_MIME[file.type];
+function sponsorFileExtension(file: File): string | undefined {
+  const fromMime = SPONSOR_MIME[file.type];
   if (fromMime) return fromMime;
   const name = file.name.toLowerCase();
   if (name.endsWith(".png")) return "png";
   if (name.endsWith(".webp")) return "webp";
+  if (name.endsWith(".svg")) return "svg";
   if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "jpg";
   return undefined;
 }
 
-function carouselContentType(file: File, ext: string): string {
-  if (file.type && CAROUSEL_MIME[file.type]) return file.type;
-  return CAROUSEL_EXT_MIME[ext] ?? "image/jpeg";
+function sponsorContentType(file: File, ext: string): string {
+  if (file.type && SPONSOR_MIME[file.type]) return file.type;
+  return SPONSOR_EXT_MIME[ext] ?? "image/png";
 }
 
 async function removeBrandingStorageFiles(
@@ -66,7 +71,7 @@ async function removeBrandingStorageFiles(
   prefix: string
 ) {
   const { data: list } = await service.storage.from("branding").list("", {
-    limit: 20,
+    limit: 30,
   });
   const toRemove =
     list?.filter((o) => o.name.startsWith(prefix)).map((o) => o.name) ?? [];
@@ -116,33 +121,31 @@ async function upsertBrandingBody(
   return body;
 }
 
-export async function uploadCarouselSlideFile(
+export async function uploadSponsorLogoFile(
   email: string,
-  slot: CarouselSlot,
+  slot: SponsorLogoSlot,
   file: File
-): Promise<CarouselMutationResult> {
-  const check = checkCarouselUploadFile(file);
+): Promise<SponsorLogoMutationResult> {
+  const check = checkSponsorLogoUploadFile(file);
   if (!check.ok) {
     throw new Error(check.message);
   }
 
-  const ext = carouselFileExtension(file);
+  const ext = sponsorFileExtension(file);
   if (!ext) {
-    throw new Error(
-      "Use JPG, PNG, or WebP (export iPhone HEIC as JPEG first)."
-    );
+    throw new Error("Use PNG, JPG, WebP, or SVG for partner logos.");
   }
 
   const service = await createServiceClient();
-  const path = `carousel-${slot}.${ext}`;
+  const path = `sponsor-logo-${slot}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  await removeBrandingStorageFiles(service, `carousel-${slot}.`);
+  await removeBrandingStorageFiles(service, `sponsor-logo-${slot}.`);
 
   const { error: uploadErr } = await service.storage
     .from("branding")
     .upload(path, buffer, {
-      contentType: carouselContentType(file, ext),
+      contentType: sponsorContentType(file, ext),
       upsert: true,
       cacheControl: "3600",
     });
@@ -158,21 +161,21 @@ export async function uploadCarouselSlideFile(
   const current = existing?.body
     ? parseBrandingBody(existing.body)
     : { ...DEFAULT_BRANDING };
-  const slides = setCarouselSlideUrl(current.carousel_slides, slot, url);
+  const logos = setSponsorLogoUrl(current.sponsor_logos, slot, url);
 
-  await upsertBrandingBody(service, email, { carousel_slides: slides });
+  await upsertBrandingBody(service, email, { sponsor_logos: logos });
   revalidateBrandingPublicPaths();
 
-  return { ok: true, slot, url, carousel_slides: slides };
+  return { ok: true, slot, url, sponsor_logos: logos };
 }
 
-export async function removeCarouselSlideSlot(
+export async function removeSponsorLogoSlot(
   email: string,
-  slot: CarouselSlot
-): Promise<CarouselMutationResult> {
+  slot: SponsorLogoSlot
+): Promise<SponsorLogoMutationResult> {
   const service = await createServiceClient();
 
-  await removeBrandingStorageFiles(service, `carousel-${slot}.`);
+  await removeBrandingStorageFiles(service, `sponsor-logo-${slot}.`);
 
   const { data: existing } = await service
     .from("site_content")
@@ -182,10 +185,10 @@ export async function removeCarouselSlideSlot(
   const current = existing?.body
     ? parseBrandingBody(existing.body)
     : { ...DEFAULT_BRANDING };
-  const slides = setCarouselSlideUrl(current.carousel_slides, slot, null);
+  const logos = setSponsorLogoUrl(current.sponsor_logos, slot, null);
 
-  await upsertBrandingBody(service, email, { carousel_slides: slides });
+  await upsertBrandingBody(service, email, { sponsor_logos: logos });
   revalidateBrandingPublicPaths();
 
-  return { ok: true, slot, url: null, carousel_slides: slides };
+  return { ok: true, slot, url: null, sponsor_logos: logos };
 }

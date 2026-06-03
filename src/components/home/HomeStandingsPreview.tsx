@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
+import { HomeSponsorLogoSection } from "@/components/home/HomeSponsorLogoSection";
 import {
   branchSubtext,
   formatHeroMetric,
   getRoundViewConfig,
   participantDisplayName,
 } from "@/lib/leaderboard-display";
+import type { BrandingConfig } from "@/lib/branding";
 import type { CompetitionMapConfig } from "@/lib/competition-map";
 import {
   getBranchCount,
@@ -35,6 +37,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 interface Props {
   mapConfig: CompetitionMapConfig;
+  branding: BrandingConfig;
 }
 
 type PreviewRow = {
@@ -67,7 +70,10 @@ async function loadHomePreviewRows(
   );
 }
 
-export async function HomeStandingsPreview({ mapConfig: config }: Props) {
+export async function HomeStandingsPreview({
+  mapConfig: config,
+  branding,
+}: Props) {
   const standingsHref = resolvePublicStandingsHref(config);
   const { seasonSlug } = parsePublicStandingsPath(standingsHref);
   const branchCount = await getBranchCount();
@@ -105,6 +111,9 @@ export async function HomeStandingsPreview({ mapConfig: config }: Props) {
 
   return (
     <section className="sd-neon-panel overflow-hidden p-6 sm:p-8">
+      <div className="mb-6 sm:mb-8">
+        <HomeSponsorLogoSection branding={branding} />
+      </div>
       <div className="mx-auto max-w-3xl space-y-6 text-center">
         <header className="space-y-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-sd-glow/90">

@@ -1,4 +1,4 @@
-import { CAROUSEL_UPLOAD_SPECS } from "@/lib/branding";
+import { CAROUSEL_UPLOAD_SPECS, SPONSOR_LOGO_UPLOAD_SPECS } from "@/lib/branding";
 
 export const LOGO_UPLOAD_SPECS = {
   maxBytes: 2 * 1024 * 1024,
@@ -114,6 +114,51 @@ export function checkLogoUploadFile(
       fileName,
       sizeLabel,
       message: "Use PNG, JPG, WebP, or SVG for the logo.",
+    };
+  }
+
+  return { ok: true, fileName, sizeLabel };
+}
+
+export function checkSponsorLogoUploadFile(
+  file: File | null | undefined
+): BrandingFileCheck {
+  if (!file || file.size === 0) {
+    return {
+      ok: false,
+      issue: "empty",
+      fileName: "",
+      sizeLabel: "0 B",
+      message: "Choose a logo file first.",
+    };
+  }
+
+  const sizeLabel = formatFileSizeLabel(file.size);
+  const fileName = file.name;
+
+  if (file.size > SPONSOR_LOGO_UPLOAD_SPECS.maxBytes) {
+    return {
+      ok: false,
+      issue: "too_large",
+      fileName,
+      sizeLabel,
+      message: `This logo is ${sizeLabel}. The limit is ${SPONSOR_LOGO_UPLOAD_SPECS.maxSizeLabel}. Compress it and choose it again.`,
+    };
+  }
+
+  if (
+    !checkImageType(
+      file,
+      SPONSOR_LOGO_UPLOAD_SPECS.accept,
+      /\.(png|jpe?g|webp|svg)$/i
+    )
+  ) {
+    return {
+      ok: false,
+      issue: "wrong_type",
+      fileName,
+      sizeLabel,
+      message: "Use PNG, JPG, WebP, or SVG for partner logos.",
     };
   }
 

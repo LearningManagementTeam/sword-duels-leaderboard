@@ -7,6 +7,25 @@ export const CAROUSEL_SLOT_COUNT = 4;
 export const CAROUSEL_SLOTS = [1, 2, 3, 4] as const;
 export type CarouselSlot = (typeof CAROUSEL_SLOTS)[number];
 
+export const SPONSOR_LOGO_SLOT_COUNT = 3;
+
+export const SPONSOR_LOGO_SLOTS = [1, 2, 3] as const;
+export type SponsorLogoSlot = (typeof SPONSOR_LOGO_SLOTS)[number];
+
+export const SPONSOR_LOGO_UPLOAD_SPECS = {
+  maxBytes: 1024 * 1024,
+  maxSizeLabel: "1 MB per logo",
+  accept: "image/png,image/jpeg,image/webp,image/svg+xml",
+  recommendedWidth: 400,
+  recommendedHeight: 160,
+  recommendedLabel: "400 × 160 (wide logo) recommended",
+  emptyPlaceholderLines: [
+    "Recommended: wide PNG or SVG",
+    "Transparent background works best",
+    "Max 1 MB per logo",
+  ] as const,
+} as const;
+
 export const CAROUSEL_UPLOAD_SPECS = {
   maxBytes: 3 * 1024 * 1024,
   maxSizeLabel: "3 MB per photo",
@@ -29,16 +48,20 @@ export type CarouselSlides = [
   string | null,
 ];
 
+export type SponsorLogoSlides = [string | null, string | null, string | null];
+
 export interface BrandingConfig {
   logo_url: string | null;
   logo_alt: string;
   carousel_slides: CarouselSlides;
+  sponsor_logos: SponsorLogoSlides;
 }
 
 export const DEFAULT_BRANDING: BrandingConfig = {
   logo_url: null,
   logo_alt: "Sword Duels",
   carousel_slides: [null, null, null, null],
+  sponsor_logos: [null, null, null],
 };
 
 function normalizeCarouselSlides(raw: unknown): CarouselSlides {
@@ -56,11 +79,27 @@ function normalizeCarouselSlides(raw: unknown): CarouselSlides {
   return slots;
 }
 
-/** Always persist a fixed 4-slot array (never a truncated 3-element JSON array). */
+function normalizeSponsorLogos(raw: unknown): SponsorLogoSlides {
+  const slots = Array.from(
+    { length: SPONSOR_LOGO_SLOT_COUNT },
+    () => null
+  ) as SponsorLogoSlides;
+  if (!Array.isArray(raw)) return slots;
+  for (let i = 0; i < SPONSOR_LOGO_SLOT_COUNT && i < raw.length; i++) {
+    const v = raw[i];
+    if (typeof v === "string" && v.trim()) {
+      slots[i] = normalizeBrandingAssetUrl(v.trim());
+    }
+  }
+  return slots;
+}
+
+/** Always persist fixed slot arrays (never truncated JSON). */
 export function finalizeBrandingConfig(config: BrandingConfig): BrandingConfig {
   return {
     ...config,
     carousel_slides: normalizeCarouselSlides(config.carousel_slides),
+    sponsor_logos: normalizeSponsorLogos(config.sponsor_logos),
   };
 }
 
@@ -74,6 +113,16 @@ export function setCarouselSlideUrl(
   return [...next] as CarouselSlides;
 }
 
+export function setSponsorLogoUrl(
+  slides: SponsorLogoSlides,
+  slot: SponsorLogoSlot,
+  url: string | null
+): SponsorLogoSlides {
+  const next = normalizeSponsorLogos(slides);
+  next[slot - 1] = url;
+  return [...next] as SponsorLogoSlides;
+}
+
 export function parseBrandingBody(raw: unknown): BrandingConfig {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_BRANDING };
   const o = raw as Record<string, unknown>;
@@ -85,6 +134,7 @@ export function parseBrandingBody(raw: unknown): BrandingConfig {
         ? o.logo_alt.trim()
         : DEFAULT_BRANDING.logo_alt,
     carousel_slides: normalizeCarouselSlides(o.carousel_slides),
+    sponsor_logos: normalizeSponsorLogos(o.sponsor_logos),
   };
 }
 
@@ -92,6 +142,12 @@ export function getActiveCarouselSlides(
   branding: BrandingConfig
 ): string[] {
   return branding.carousel_slides.filter(
+    (url): url is string => typeof url === "string" && url.length > 0
+  );
+}
+
+export function getActiveSponsorLogos(branding: BrandingConfig): string[] {
+  return branding.sponsor_logos.filter(
     (url): url is string => typeof url === "string" && url.length > 0
   );
 }

@@ -2,13 +2,20 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { saveRoundResults, publishRound } from "@/lib/actions/admin";
 import { DraftStandingsPreview } from "@/components/admin/DraftStandingsPreview";
+import {
+  AdminOperationPanel,
+  patchOperationStep,
+  type OperationStep,
+} from "@/components/admin/AdminOperationPanel";
 import { InfoTip } from "@/components/admin/InfoTip";
 import {
   checkPublishReadiness,
   formatPublishConfirmMessage,
 } from "@/lib/publish-readiness";
+import { seasonSlugToPublicPath } from "@/lib/competition-map";
 import {
   getRoundMechanics,
   requiredSurvivorsPerRegion,
@@ -44,6 +51,17 @@ interface Props {
   >;
 }
 
+function publishStandingsDetail(seasonSlug: SeasonSlug): string {
+  if (seasonSlug === "august_finals") {
+    return "Recomputes The Nationals championship board";
+  }
+  return "Recomputes Luzon, NCR, and VisMin boards with cut lines and statuses";
+}
+
+function publishRefreshDetail(): string {
+  return "Refreshes home, standings pages, and competition map data";
+}
+
 export function RoundResultsForm({
   roundId,
   roundName,
@@ -57,6 +75,7 @@ export function RoundResultsForm({
   supportsManualAdvances = false,
   initial,
 }: Props) {
+  const router = useRouter();
   const mechanics = getRoundMechanics(seasonSlug, roundNumber);
   const kind = mechanics?.kind ?? "quiz";
   const maxPoints =
@@ -68,7 +87,13 @@ export function RoundResultsForm({
 
   const [showOut, setShowOut] = useState(false);
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [operationTitle, setOperationTitle] = useState<string | null>(null);
+  const [operationSteps, setOperationSteps] = useState<OperationStep[] | null>(
+    null
+  );
+  const [operationError, setOperationError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [values, setValues] = useState<RowValue[]>(() =>
     branches.map((b) => {
       const init = initial.get(b.id);
@@ -117,16 +142,43 @@ export function RoundResultsForm({
     });
   }, [values, kind, maxPoints]);
 
-  async function handleSave() {
-    setLoading(true);
+  function clearOperation() {
+    setOperationTitle(null);
+    setOperationSteps(null);
+    setOperationError(null);
+    setSuccessMessage(null);
+  }
+
+  function dismissSuccess() {
+    clearOperation();
     setMessage("");
+  }
+
+  async function handleSave() {
+    clearOperation();
+    setBusy(true);
+    setMessage("");
+    setOperationTitle("Saving draft");
+    setOperationSteps([
+      { id: "save", label: "Writing scores to draft", status: "active" },
+    ]);
+
     try {
       await saveRoundResults(roundId, getDraftResults());
+      setOperationSteps([
+        { id: "save", label: "Writing scores to draft", status: "done" },
+      ]);
+      setSuccessMessage("Draft saved — nothing is live yet.");
       setMessage("Draft saved.");
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Save failed");
+      const err = e instanceof Error ? e.message : "Save failed";
+      setOperationSteps([
+        { id: "save", label: "Writing scores to draft", status: "error" },
+      ]);
+      setOperationError(err);
+      setMessage(err);
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
@@ -143,24 +195,78 @@ export function RoundResultsForm({
       return;
     }
 
-    if (
-      !confirm(formatPublishConfirmMessage(roundName, readiness))
-    ) {
+    if (!confirm(formatPublishConfirmMessage(roundName, readiness))) {
       return;
     }
 
-    setLoading(true);
+    clearOperation();
+    setBusy(true);
     setMessage("");
+    setOperationTitle("Publishing round");
+
+    const publishSteps: OperationStep[] = [
+      { id: "save", label: "Saving round scores", status: "pending" },
+      {
+        id: "mark",
+        label: "Marking round as published",
+        status: "pending",
+      },
+      {
+        id: "standings",
+        label: "Recomputing live standings",
+        detail: publishStandingsDetail(seasonSlug),
+        status: "pending",
+      },
+      {
+        id: "refresh",
+        label: "Updating public site",
+        detail: publishRefreshDetail(),
+        status: "pending",
+      },
+    ];
+    setOperationSteps(publishSteps);
+
     try {
+      setOperationSteps((s) =>
+        patchOperationStep(s ?? [], "save", "active")
+      );
       await saveRoundResults(roundId, getDraftResults());
+      setOperationSteps((s) => {
+        let next = patchOperationStep(s ?? [], "save", "done");
+        for (const id of ["mark", "standings", "refresh"] as const) {
+          next = patchOperationStep(next, id, "active");
+        }
+        return next;
+      });
+
       await publishRound(roundId);
+
+      setOperationSteps((s) => {
+        let next = s ?? [];
+        next = patchOperationStep(next, "mark", "done");
+        next = patchOperationStep(next, "standings", "done");
+        next = patchOperationStep(next, "refresh", "done");
+        return next;
+      });
+      setSuccessMessage(`${roundName} is now live on the public site.`);
       setMessage(
         "Round published. Consider updating the Competition map on the home page."
       );
+      router.refresh();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Publish failed");
+      const err = e instanceof Error ? e.message : "Publish failed";
+      setOperationSteps((s) => {
+        const next = (s ?? []).map((step) =>
+          step.status === "active" || step.status === "pending"
+            ? { ...step, status: "error" as const }
+            : step
+        );
+        return next;
+      });
+      setOperationError(err);
+      setMessage(err);
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
@@ -183,6 +289,10 @@ export function RoundResultsForm({
     });
   }
 
+  const liveBoardHref = seasonSlugToPublicPath(seasonSlug, "luzon");
+  const showOperationPanel =
+    operationTitle != null && operationSteps != null && operationSteps.length > 0;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -196,7 +306,36 @@ export function RoundResultsForm({
         >
           {status}
         </span>
+        {busy && (
+          <span className="text-xs text-sd-muted/80">Please wait…</span>
+        )}
       </div>
+
+      {showOperationPanel && (
+        <AdminOperationPanel
+          title={operationTitle!}
+          steps={operationSteps!}
+          error={operationError}
+          successMessage={successMessage}
+          successDetail={
+            successMessage ? (
+              <ul className="space-y-1.5 text-xs text-sd-muted/85">
+                <li>
+                  <Link href={liveBoardHref} className="sd-link" target="_blank">
+                    View live board →
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/admin/competition" className="sd-link">
+                    Update competition map on home →
+                  </Link>
+                </li>
+              </ul>
+            ) : undefined
+          }
+          onDismiss={successMessage ? dismissSuccess : undefined}
+        />
+      )}
 
       {mechanics && (
         <div className="rounded-lg border border-sd-glow/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50/90">
@@ -245,7 +384,8 @@ export function RoundResultsForm({
             <button
               type="button"
               onClick={() => setShowOut(!showOut)}
-              className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-sd-muted hover:text-white"
+              disabled={busy}
+              className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-sd-muted hover:text-white disabled:opacity-50"
             >
               <span>
                 Not competing this round ({eliminatedBranches.length} eliminated
@@ -266,100 +406,105 @@ export function RoundResultsForm({
           </div>
         )}
 
-      <div className="max-h-[60vh] overflow-auto rounded-xl border border-sd-glow/20 sd-glass">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-sd-panel/95 backdrop-blur">
-            <tr>
-              <th className="px-3 py-2 text-left text-sd-muted">Branch</th>
-              {kind === "last_man_standing" && (
-                <th className="px-3 py-2 text-center text-sd-muted">Survived</th>
-              )}
-              {kind !== "last_man_standing" && (
-                <th className="px-3 py-2 text-right text-sd-muted">
-                  {kind === "race_to_correct" ? "Correct (0–5)" : `Score (0–${maxPoints})`}
-                </th>
-              )}
-              {kind === "race_to_correct" && (
-                <th className="px-3 py-2 text-right text-sd-muted">Finish order</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {values.map((row, i) => (
-              <tr
-                key={row.branch_id}
-                className="border-t border-sd-glow/10 transition hover:bg-emerald-500/5"
-              >
-                <td className="px-3 py-2 text-white">{row.branch_name}</td>
+      <fieldset
+        disabled={busy}
+        className={`min-w-0 space-y-4 border-0 p-0 m-0 ${busy ? "opacity-75" : ""}`}
+      >
+        <div className="max-h-[60vh] overflow-auto rounded-xl border border-sd-glow/20 sd-glass">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-sd-panel/95 backdrop-blur">
+              <tr>
+                <th className="px-3 py-2 text-left text-sd-muted">Branch</th>
                 {kind === "last_man_standing" && (
-                  <td className="px-3 py-2 text-center">
-                    <input
-                      type="checkbox"
-                      checked={row.survived}
-                      onChange={(e) =>
-                        updateRow(i, { survived: e.target.checked })
-                      }
-                      className="h-4 w-4 rounded border-emerald-500/50"
-                    />
-                  </td>
+                  <th className="px-3 py-2 text-center text-sd-muted">Survived</th>
                 )}
                 {kind !== "last_man_standing" && (
-                  <td className="px-3 py-2">
-                    <input
-                      type="number"
-                      min={0}
-                      max={maxPoints}
-                      step={1}
-                      value={row.points}
-                      onChange={(e) => {
-                        const points = Math.min(
-                          maxPoints,
-                          Math.max(0, Number(e.target.value))
-                        );
-                        updateRow(i, {
-                          points,
-                          finish_order:
-                            kind === "race_to_correct" && points !== maxPoints
-                              ? null
-                              : row.finish_order,
-                        });
-                      }}
-                      className="sd-input w-28 rounded-lg px-2 py-1.5 text-right tabular-nums"
-                    />
-                  </td>
+                  <th className="px-3 py-2 text-right text-sd-muted">
+                    {kind === "race_to_correct" ? "Correct (0–5)" : `Score (0–${maxPoints})`}
+                  </th>
                 )}
                 {kind === "race_to_correct" && (
-                  <td className="px-3 py-2">
-                    <input
-                      type="number"
-                      min={1}
-                      max={32}
-                      step={1}
-                      disabled={row.points !== maxPoints}
-                      value={row.finish_order ?? ""}
-                      placeholder="—"
-                      onChange={(e) =>
-                        updateRow(i, {
-                          finish_order: e.target.value
-                            ? Number(e.target.value)
-                            : null,
-                        })
-                      }
-                      className="sd-input w-24 rounded-lg px-2 py-1.5 text-right tabular-nums disabled:opacity-40"
-                    />
-                  </td>
+                  <th className="px-3 py-2 text-right text-sd-muted">Finish order</th>
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {values.map((row, i) => (
+                <tr
+                  key={row.branch_id}
+                  className="border-t border-sd-glow/10 transition hover:bg-emerald-500/5"
+                >
+                  <td className="px-3 py-2 text-white">{row.branch_name}</td>
+                  {kind === "last_man_standing" && (
+                    <td className="px-3 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={row.survived}
+                        onChange={(e) =>
+                          updateRow(i, { survived: e.target.checked })
+                        }
+                        className="h-4 w-4 rounded border-emerald-500/50"
+                      />
+                    </td>
+                  )}
+                  {kind !== "last_man_standing" && (
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        min={0}
+                        max={maxPoints}
+                        step={1}
+                        value={row.points}
+                        onChange={(e) => {
+                          const points = Math.min(
+                            maxPoints,
+                            Math.max(0, Number(e.target.value))
+                          );
+                          updateRow(i, {
+                            points,
+                            finish_order:
+                              kind === "race_to_correct" && points !== maxPoints
+                                ? null
+                                : row.finish_order,
+                          });
+                        }}
+                        className="sd-input w-28 rounded-lg px-2 py-1.5 text-right tabular-nums"
+                      />
+                    </td>
+                  )}
+                  {kind === "race_to_correct" && (
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={32}
+                        step={1}
+                        disabled={row.points !== maxPoints}
+                        value={row.finish_order ?? ""}
+                        placeholder="—"
+                        onChange={(e) =>
+                          updateRow(i, {
+                            finish_order: e.target.value
+                              ? Number(e.target.value)
+                              : null,
+                          })
+                        }
+                        className="sd-input w-24 rounded-lg px-2 py-1.5 text-right tabular-nums disabled:opacity-40"
+                      />
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-      <DraftStandingsPreview
-        roundId={roundId}
-        seasonSlug={seasonSlug}
-        getDraftResults={getDraftResults}
-      />
+        <DraftStandingsPreview
+          roundId={roundId}
+          seasonSlug={seasonSlug}
+          getDraftResults={getDraftResults}
+        />
+      </fieldset>
 
       {publishReadiness.blockers.length > 0 && (
         <div className="rounded-lg border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
@@ -384,31 +529,35 @@ export function RoundResultsForm({
           </div>
         )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          disabled={loading}
+          disabled={busy}
           onClick={handleSave}
           className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
-          Save draft
+          {busy && operationTitle === "Saving draft"
+            ? "Saving draft…"
+            : "Save draft"}
         </button>
         <button
           type="button"
-          disabled={
-            loading || publishReadiness.blockers.length > 0
-          }
+          disabled={busy || publishReadiness.blockers.length > 0}
           onClick={handlePublish}
           className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
-          Save & publish
+          {busy && operationTitle === "Publishing round"
+            ? "Publishing…"
+            : "Save & publish"}
         </button>
         <InfoTip>
           Publishing applies the regional cut. Use advancement picks for tie
           breakers.
         </InfoTip>
       </div>
-      {message && <p className="text-sm text-sd-glow">{message}</p>}
+      {message && !showOperationPanel && (
+        <p className="text-sm text-sd-glow">{message}</p>
+      )}
     </div>
   );
 }

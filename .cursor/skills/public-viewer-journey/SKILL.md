@@ -17,11 +17,11 @@ Public viewers open the site to **see scores and who advanced** — not to expor
 
 1. **Results first** — On region/finals pages, the leaderboard table must appear within one mobile viewport when data exists.
 2. **Public vs admin** — No Export CSV, admin links, preview links, or setup instructions on public UI. Export API requires admin auth.
-3. **Tap budget** — Live standings reachable in ≤2 taps from home (bottom nav **Standings** = one tap).
+3. **Tap budget** — Live standings reachable in ≤2 taps from home (**View standings** on home, or phase tabs when already on a board page).
 4. **Content order (home)** — Live standings preview (centered arena block) → Carousel → Season journey (collapsed) → Share. No hero logo on home.
 5. **Content order (board pages)** — Sticky phase/region bar → Leaderboard → Collapsible progress/status below.
-6. **Navigation** — Mobile: fixed bottom glass bar. Desktop: fixed top glass bar. Three destinations: Home, Standings, How to win.
-7. **Smart Standings link** — Driven by `CompetitionMapConfig.milestoneId` via `resolvePublicStandingsHref()` (finals when map says August, etc.) — not “last CSV export” or arbitrary default.
+6. **Navigation** — Mobile: fixed bottom glass bar. Desktop: fixed top glass bar. Two destinations: **Home**, **How to win**. No duplicate standings link in nav — home **View standings** is the primary entry; board pages keep phase tabs.
+7. **Standings destination** — Home CTA uses `resolvePublicStandingsHref()` from competition map (finals when map says August, etc.) — not “last CSV export” or arbitrary default.
 8. **Empty states** — One clear message when R0; avoid stacking chrome with no data.
 
 ## Public nav items (only these)
@@ -29,10 +29,9 @@ Public viewers open the site to **see scores and who advanced** — not to expor
 | Label | Target | Active when |
 |-------|--------|-------------|
 | Home | `/` | pathname `/` |
-| Standings | `resolvePublicStandingsHref(map)` | `/june/*`, `/july/*`, `/august` |
-| Rules | `/mechanics` | `/mechanics` |
+| How to win | `/mechanics` | `/mechanics` |
 
-Label in nav: **How to win** (not “Rules”). No separate **Phases** item — phase tabs live on the standings board.
+Standings are **not** in global nav (same destination as home **View standings**). Use home CTA or in-board phase/region navigation.
 
 ## Home arena block (`HomeStandingsPreview`)
 

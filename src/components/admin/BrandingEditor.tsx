@@ -14,17 +14,25 @@ import {
   CAROUSEL_SLOTS,
   CAROUSEL_UPLOAD_SPECS,
   getActiveCarouselSlides,
+  getActiveSponsorLogos,
+  SPONSOR_LOGO_SLOTS,
+  SPONSOR_LOGO_UPLOAD_SPECS,
   type BrandingConfig,
   type CarouselSlides,
   type CarouselSlot,
+  type SponsorLogoSlides,
+  type SponsorLogoSlot,
 } from "@/lib/branding";
 import type { CarouselMutationResult } from "@/lib/branding-carousel";
+import type { SponsorLogoMutationResult } from "@/lib/branding-sponsor-logos";
 import {
   checkCarouselUploadFile,
   checkLogoUploadFile,
+  checkSponsorLogoUploadFile,
   LOGO_UPLOAD_SPECS,
   type BrandingFileCheck,
 } from "@/lib/branding-upload-validation";
+import { HomeSponsorLogoCarousel } from "@/components/home/HomeSponsorLogoCarousel";
 
 interface Props {
   initial: BrandingConfig;
@@ -37,6 +45,46 @@ type CarouselStatus = {
   slot?: CarouselSlot;
   message: string;
 };
+
+function applySponsorLogos(
+  branding: BrandingConfig,
+  logos: SponsorLogoSlides
+): BrandingConfig {
+  return { ...branding, sponsor_logos: logos };
+}
+
+async function postSponsorLogoUpload(
+  fd: FormData
+): Promise<SponsorLogoMutationResult> {
+  const res = await fetch("/api/admin/branding/sponsor-logos", {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  const data = (await res.json()) as SponsorLogoMutationResult & {
+    error?: string;
+  };
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error ?? `Upload failed (${res.status})`);
+  }
+  return data;
+}
+
+async function deleteSponsorLogoSlot(
+  slot: SponsorLogoSlot
+): Promise<SponsorLogoMutationResult> {
+  const res = await fetch(`/api/admin/branding/sponsor-logos?slot=${slot}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  const data = (await res.json()) as SponsorLogoMutationResult & {
+    error?: string;
+  };
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error ?? `Remove failed (${res.status})`);
+  }
+  return data;
+}
 
 function applyCarouselSlides(
   branding: BrandingConfig,
@@ -128,7 +176,14 @@ export function BrandingEditor({ initial }: Props) {
   const [carouselBusySlot, setCarouselBusySlot] = useState<CarouselSlot | null>(
     null
   );
+  const [sponsorBusySlot, setSponsorBusySlot] = useState<SponsorLogoSlot | null>(
+    null
+  );
   const [carouselStatus, setCarouselStatus] = useState<CarouselStatus>({
+    phase: "idle",
+    message: "",
+  });
+  const [sponsorStatus, setSponsorStatus] = useState<CarouselStatus>({
     phase: "idle",
     message: "",
   });
@@ -137,6 +192,12 @@ export function BrandingEditor({ initial }: Props) {
   >({});
   const [slotFileChecks, setSlotFileChecks] = useState<
     Partial<Record<CarouselSlot, BrandingFileCheck>>
+  >({});
+  const [sponsorFileChecks, setSponsorFileChecks] = useState<
+    Partial<Record<SponsorLogoSlot, BrandingFileCheck>>
+  >({});
+  const [sponsorLoadErrors, setSponsorLoadErrors] = useState<
+    Partial<Record<SponsorLogoSlot, boolean>>
   >({});
   const [logoFileCheck, setLogoFileCheck] = useState<
     BrandingFileCheck | undefined
@@ -148,10 +209,20 @@ export function BrandingEditor({ initial }: Props) {
     3: null,
     4: null,
   });
+  const sponsorInputRefs = useRef<
+    Record<SponsorLogoSlot, HTMLInputElement | null>
+  >({
+    1: null,
+    2: null,
+    3: null,
+  });
 
-  const carouselLocked = carouselBusySlot !== null;
+  const carouselLocked = carouselBusySlot !== null || sponsorBusySlot !== null;
+  const sponsorLocked = carouselLocked || logoBusy;
   const activeSlides = getActiveCarouselSlides(branding);
+  const activeSponsorLogos = getActiveSponsorLogos(branding);
   const specs = CAROUSEL_UPLOAD_SPECS;
+  const sponsorSpecs = SPONSOR_LOGO_UPLOAD_SPECS;
 
   function handleCarouselFileChange(slot: CarouselSlot) {
     const input = fileInputRefs.current[slot];
@@ -258,9 +329,103 @@ export function BrandingEditor({ initial }: Props) {
     }
   }
 
+  function handleSponsorFileChange(slot: SponsorLogoSlot) {
+    const input = sponsorInputRefs.current[slot];
+    const file = input?.files?.[0];
+    const check = checkSponsorLogoUploadFile(file);
+    setSponsorFileChecks((prev) => ({ ...prev, [slot]: check }));
+
+    if (!check.ok) {
+      setSponsorStatus({
+        phase: "error",
+        message: check.message,
+      });
+      return;
+    }
+
+    if (sponsorStatus.phase === "error") {
+      setSponsorStatus({ phase: "idle", message: "" });
+    }
+  }
+
+  async function handleSponsorUpload(slot: SponsorLogoSlot) {
+    if (sponsorLocked) return;
+
+    const input = sponsorInputRefs.current[slot];
+    const file = input?.files?.[0];
+    const check = checkSponsorLogoUploadFile(file);
+    setSponsorFileChecks((prev) => ({ ...prev, [slot]: check }));
+
+    if (!check.ok) {
+      setSponsorStatus({ phase: "error", message: check.message });
+      return;
+    }
+
+    setSponsorBusySlot(slot);
+    setSponsorStatus({
+      phase: "uploading",
+      message: `Uploading partner logo ${slot}… Other branding uploads are locked until this finishes.`,
+    });
+    setMessage("");
+
+    const fd = new FormData();
+    fd.set("slot", String(slot));
+    fd.set("file", file!);
+
+    try {
+      const result = await postSponsorLogoUpload(fd);
+      setBranding((b) => applySponsorLogos(b, result.sponsor_logos));
+      setSponsorLoadErrors((prev) => ({ ...prev, [slot]: false }));
+      setSponsorStatus({
+        phase: "success",
+        message: `Partner logo ${slot} uploaded. Home page updated.`,
+      });
+      setMessage(`Partner logo ${slot} live on home.`);
+      if (input) input.value = "";
+      setSponsorFileChecks((prev) => {
+        const next = { ...prev };
+        delete next[slot];
+        return next;
+      });
+    } catch (err) {
+      const text = formatUploadError(err);
+      setSponsorStatus({ phase: "error", message: text });
+      setMessage(text);
+    } finally {
+      setSponsorBusySlot(null);
+    }
+  }
+
+  async function handleRemoveSponsor(slot: SponsorLogoSlot) {
+    if (sponsorLocked) return;
+
+    setSponsorBusySlot(slot);
+    setSponsorStatus({
+      phase: "removing",
+      message: `Removing partner logo ${slot}…`,
+    });
+    setMessage("");
+
+    try {
+      const result = await deleteSponsorLogoSlot(slot);
+      setBranding((b) => applySponsorLogos(b, result.sponsor_logos));
+      setSponsorStatus({
+        phase: "success",
+        message: `Partner logo ${slot} removed.`,
+      });
+      setMessage(`Partner logo ${slot} removed.`);
+    } catch (err) {
+      const text = err instanceof Error ? err.message : "Remove failed";
+      setSponsorStatus({ phase: "error", message: text });
+      setMessage(text);
+    } finally {
+      setSponsorBusySlot(null);
+    }
+  }
+
   async function handleLogoUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (carouselLocked) return;
+    if (sponsorLocked) return;
 
     const form = e.currentTarget;
     const file = form.elements.namedItem("file") as HTMLInputElement | null;
@@ -291,7 +456,7 @@ export function BrandingEditor({ initial }: Props) {
   }
 
   async function handleRemoveLogo() {
-    if (carouselLocked) return;
+    if (sponsorLocked) return;
     setLogoBusy(true);
     setMessage("");
     try {
@@ -306,7 +471,7 @@ export function BrandingEditor({ initial }: Props) {
   }
 
   async function handleSaveAlt() {
-    if (carouselLocked) return;
+    if (sponsorLocked) return;
     setLogoBusy(true);
     setMessage("");
     try {
@@ -323,10 +488,142 @@ export function BrandingEditor({ initial }: Props) {
   return (
     <div className="space-y-8">
       <p className="text-sm text-sd-muted">
-        Page backgrounds use the built-in animated gradient mesh. Upload the hero logo
-        and up to {CAROUSEL_SLOT_COUNT} home carousel photos here. Only one carousel photo uploads at a
-        time.
+        Page backgrounds use the built-in animated gradient mesh. Upload partner logos
+        (above Live ranks), the hero logo, and up to {CAROUSEL_SLOT_COUNT} home carousel
+        photos. Only one file upload runs at a time.
       </p>
+
+      <section className="sd-neon-panel space-y-4 p-6">
+        <h2 className="font-semibold text-sd-glow">Partner logos (above Live ranks)</h2>
+        <p className="text-sm text-sd-muted">
+          Up to 3 company logos in a compact slow carousel above the home standings
+          block. PNG or SVG with a transparent background works best —{" "}
+          {sponsorSpecs.maxSizeLabel}, {sponsorSpecs.recommendedLabel}.
+        </p>
+
+        <CarouselStatusBanner status={sponsorStatus} />
+
+        <div className="max-w-md">
+          <p className="mb-2 text-xs uppercase tracking-wider text-sd-muted/70">
+            Home strip preview ({activeSponsorLogos.length} of 3 filled)
+          </p>
+          {activeSponsorLogos.length > 0 ? (
+            <HomeSponsorLogoCarousel logos={activeSponsorLogos} />
+          ) : (
+            <div className="sd-inset flex h-20 items-center justify-center rounded-xl px-4 text-center text-sm text-sd-muted">
+              {sponsorBusySlot
+                ? "Preview will update when the current upload finishes…"
+                : "Upload at least one partner logo to see the home strip."}
+            </div>
+          )}
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {SPONSOR_LOGO_SLOTS.map((slot) => {
+            const url = branding.sponsor_logos[slot - 1];
+            const isThisSlotBusy = sponsorBusySlot === slot;
+            const fileCheck = sponsorFileChecks[slot];
+            const uploadBlocked =
+              sponsorLocked || (fileCheck !== undefined && !fileCheck.ok);
+            return (
+              <div
+                key={slot}
+                className={`sd-inset space-y-3 rounded-xl p-4 transition ${
+                  isThisSlotBusy ? "ring-2 ring-sd-glow/50" : ""
+                }`}
+              >
+                <p className="text-sm font-medium text-white">
+                  Logo {slot}
+                  {isThisSlotBusy && (
+                    <span className="ml-2 text-xs font-normal text-sd-glow">
+                      Working…
+                    </span>
+                  )}
+                </p>
+                {url ? (
+                  <div className="space-y-2">
+                    <div className="flex h-16 items-center justify-center rounded-lg bg-sd-deep px-3">
+                      <img
+                        src={url}
+                        alt={`Partner logo slot ${slot}`}
+                        className="max-h-12 max-w-full object-contain"
+                        onLoad={() =>
+                          setSponsorLoadErrors((prev) => ({
+                            ...prev,
+                            [slot]: false,
+                          }))
+                        }
+                        onError={() =>
+                          setSponsorLoadErrors((prev) => ({ ...prev, [slot]: true }))
+                        }
+                      />
+                    </div>
+                    {sponsorLoadErrors[slot] && (
+                      <p className="text-xs text-amber-200/90">
+                        This logo link is broken. Remove and upload again.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex h-16 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-500/25 bg-sd-deep/40 px-3 text-center">
+                    <span className="text-xs font-medium text-sd-muted/90">
+                      No logo yet
+                    </span>
+                    {sponsorSpecs.emptyPlaceholderLines.map((line) => (
+                      <span
+                        key={line}
+                        className="text-[10px] leading-snug text-sd-muted/65"
+                      >
+                        {line}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <input
+                    ref={(el) => {
+                      sponsorInputRefs.current[slot] = el;
+                    }}
+                    type="file"
+                    accept={sponsorSpecs.accept}
+                    disabled={sponsorLocked}
+                    className="block w-full text-xs text-sd-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    onChange={() => handleSponsorFileChange(slot)}
+                  />
+                  <FilePickNotice check={fileCheck} />
+                  <button
+                    type="button"
+                    disabled={uploadBlocked}
+                    aria-busy={isThisSlotBusy}
+                    onClick={() => handleSponsorUpload(slot)}
+                    className={`w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isThisSlotBusy
+                        ? "cursor-wait bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep ring-2 ring-emerald-300/50"
+                        : "sd-btn-primary"
+                    }`}
+                  >
+                    {isThisSlotBusy
+                      ? "Uploading…"
+                      : url
+                        ? "Replace logo"
+                        : "Upload logo"}
+                  </button>
+                </div>
+                {url && (
+                  <button
+                    type="button"
+                    disabled={sponsorLocked}
+                    onClick={() => handleRemoveSponsor(slot)}
+                    className="text-xs text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Remove logo {slot}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="sd-neon-panel space-y-4 p-6">
         <h2 className="font-semibold text-sd-glow">Home photo carousel</h2>
@@ -495,7 +792,7 @@ export function BrandingEditor({ initial }: Props) {
           type="file"
           name="file"
           accept={LOGO_UPLOAD_SPECS.accept}
-          disabled={logoBusy || carouselLocked}
+          disabled={logoBusy || sponsorLocked}
           className="block text-sm text-sd-muted disabled:opacity-50"
           onChange={(e) => {
             const check = checkLogoUploadFile(e.target.files?.[0]);
@@ -532,7 +829,7 @@ export function BrandingEditor({ initial }: Props) {
           />
           <button
             type="button"
-            disabled={logoBusy || carouselLocked}
+            disabled={logoBusy || sponsorLocked}
             onClick={handleSaveAlt}
             className="rounded-lg border border-fuchsia-400/30 px-4 py-2 text-sm text-sd-muted hover:text-white disabled:opacity-50"
           >
@@ -544,7 +841,7 @@ export function BrandingEditor({ initial }: Props) {
       {branding.logo_url && (
         <button
           type="button"
-          disabled={logoBusy || carouselLocked}
+          disabled={logoBusy || sponsorLocked}
           onClick={handleRemoveLogo}
           className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
         >
