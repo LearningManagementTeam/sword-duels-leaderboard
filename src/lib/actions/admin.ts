@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { parseBranchesCsv } from "@/lib/branches-csv";
+import { branchUpsertPayload, countRowsWithRepresentatives } from "@/lib/branch-upsert";
 import { parseRepresentativesCsv } from "@/lib/representatives-csv";
 import {
   aggregatePublishedResults,
@@ -74,13 +75,9 @@ export async function importBranchesFromCsv(csvText?: string) {
   }
 
   const service = await createServiceClient();
+  const now = new Date().toISOString();
   const { error } = await service.from("branches").upsert(
-    rows.map((r) => ({
-      branch_code: r.branch_code,
-      branch_name: r.branch_name,
-      area: r.area,
-      region: r.region,
-    })),
+    rows.map((r) => branchUpsertPayload(r, now)),
     { onConflict: "branch_code" }
   );
 
@@ -113,13 +110,11 @@ export async function importParticipatingBranchesForJuneArea(csvText: string) {
   }
 
   const service = await createServiceClient();
+  const now = new Date().toISOString();
+  const withReps = countRowsWithRepresentatives(rows);
+
   const { error: branchError } = await service.from("branches").upsert(
-    rows.map((r) => ({
-      branch_code: r.branch_code,
-      branch_name: r.branch_name,
-      area: r.area,
-      region: r.region,
-    })),
+    rows.map((r) => branchUpsertPayload(r, now)),
     { onConflict: "branch_code" }
   );
   if (branchError) {
@@ -166,16 +161,22 @@ export async function importParticipatingBranchesForJuneArea(csvText: string) {
 
   await logAudit(email, "import_june_participants", "june_area", season.id, {
     branch_count: rows.length,
+    representatives_count: withReps,
     round_id: round.id,
     round_seeded: true,
   });
 
   revalidatePath("/", "layout");
+  const repNote =
+    withReps > 0
+      ? ` ${withReps} include representative names.`
+      : " Add representative columns to the CSV or edit names under Admin → Representatives.";
   return {
     ok: true as const,
     count: rows.length,
+    representativesCount: withReps,
     roundId: round.id,
-    message: `Imported ${rows.length} branches and prepared June Round 1 for data entry.`,
+    message: `Imported ${rows.length} branches and prepared June Round 1.${repNote}`,
   };
 }
 

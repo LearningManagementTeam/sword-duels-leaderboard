@@ -9,22 +9,16 @@ export default function AdminBranchesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Branches</h1>
+        <h1 className="text-2xl font-bold">Branches & participants</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Import participating branches before you enter June Area-wide scores.
+          Import all competing branches in one CSV — areas, regions, and
+          optional representative names together.
         </p>
       </div>
 
       {!configured && <SetupBanner />}
 
       <ImportParticipatingBranches />
-
-      <p className="text-sm text-slate-400">
-        After branches are imported, assign representatives:{" "}
-        <a href="/admin/representatives" className="text-amber-400 hover:underline">
-          Admin → Representatives
-        </a>
-      </p>
 
       <details className="rounded-lg border border-slate-800 bg-slate-900/30 p-4">
         <summary className="cursor-pointer text-sm text-slate-400">

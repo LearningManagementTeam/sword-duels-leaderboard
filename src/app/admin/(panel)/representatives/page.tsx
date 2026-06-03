@@ -1,4 +1,3 @@
-import { ImportRepresentativesCsv } from "@/components/admin/ImportRepresentativesCsv";
 import { RepresentativesEditor } from "@/components/admin/RepresentativesEditor";
 import { SetupBanner } from "@/components/SetupBanner";
 import { getBranchesForRepresentatives } from "@/lib/data/admin-queries";
@@ -16,20 +15,17 @@ export default async function RepresentativesPage() {
       <div>
         <h1 className="text-2xl font-bold">Branch representatives</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Add or change competitor names for any branch at any time — import a
-          CSV or edit the table below, then save. Stored in admin (not on the
-          public leaderboard unless enabled later).
-        </p>
-        <p className="mt-2 text-sm">
+          Edit names in the table below anytime. For bulk setup, use the{" "}
+          <strong>combined CSV</strong> on{" "}
           <Link href="/admin/branches" className="text-amber-400 hover:underline">
-            ← Branch import
-          </Link>
+            Admin → Branches
+          </Link>{" "}
+          (same file includes branch_code, branch_name, area, region, and
+          representative columns).
         </p>
       </div>
 
       {!configured && <SetupBanner />}
-
-      <ImportRepresentativesCsv />
 
       <RepresentativesEditor
         key={`reps-${data.total}-${data.withReps}`}

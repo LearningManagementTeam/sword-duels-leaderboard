@@ -27,13 +27,12 @@ export function ImportParticipatingBranches() {
       const text = await file.text();
       const result = await importParticipatingBranchesForJuneArea(text);
       if (result.ok) {
-        setMessage(result.message);
         setError(false);
-        if (result.roundId) {
-          setMessage(
-            `${result.message} Go to Rounds → June — Round 1 to enter scores.`
-          );
-        }
+        setMessage(
+          result.roundId
+            ? `${result.message} Go to Rounds → June — Round 1 to enter scores.`
+            : result.message
+        );
       } else {
         setError(true);
         setMessage(result.errors.join(" "));
@@ -50,24 +49,32 @@ export function ImportParticipatingBranches() {
     <div className="space-y-6 rounded-xl border border-slate-700 bg-slate-900/50 p-6">
       <div>
         <h2 className="text-lg font-semibold text-amber-300">
-          June Area-wide — participating branches
+          Import participants (one CSV)
         </h2>
         <p className="mt-1 text-sm text-slate-400">
-          Upload your official branch list for Round 1. Requires at least 130
-          branches. In Excel: <strong>File → Save As → CSV UTF-8</strong>.
-          If a branch name has a <strong>comma</strong> (e.g. TIMES SQUARE,
-          TALAMBAN), Excel must wrap that cell in quotes — or remove the comma.
+          One file for <strong>branches, areas, regions, and representative
+          names</strong>. Requires at least 130 rows for June Area-wide.
+          Representative columns are optional — leave blank and add names later
+          in Admin → Representatives. Excel:{" "}
+          <strong>File → Save As → CSV UTF-8</strong>. Quote branch names that
+          contain commas.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-3">
         <a
-          href="/templates/branches-import-template.csv"
-          download="branches-import-template.csv"
+          href="/templates/participants-import-template.csv"
+          download="participants-import-template.csv"
           className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
         >
-          Download CSV template
+          Download combined template
         </a>
+        <Link
+          href="/admin/representatives"
+          className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
+        >
+          Edit representatives
+        </Link>
         <Link
           href="/admin/rounds"
           className="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
@@ -78,20 +85,23 @@ export function ImportParticipatingBranches() {
 
       <div className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-          Required columns
+          Columns
         </p>
         <code className="block rounded-lg bg-slate-950 px-3 py-2 text-sm text-slate-300">
-          branch_code, branch_name, area, region
+          branch_code, branch_name, area, region, representative_1,
+          representative_2
         </code>
         <p className="text-xs text-slate-500">
-          Region must be: <code>luzon</code>, <code>ncr</code>, or{" "}
-          <code>vismin</code> (lowercase).
+          <strong>Required:</strong> first four columns.{" "}
+          <strong>Optional:</strong> representative_1, representative_2 (can be
+          empty). Region: <code>luzon</code>, <code>ncr</code>, or{" "}
+          <code>vismin</code>.
         </p>
       </div>
 
       <div className="space-y-3">
         <label className="block text-sm text-slate-300">
-          Upload participating branches (CSV)
+          Upload participants CSV
           <input
             ref={inputRef}
             type="file"

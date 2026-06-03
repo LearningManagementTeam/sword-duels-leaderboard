@@ -1,5 +1,4 @@
-branch_code,branch_name,area,region
-BR0001,Example Branch One,Area 1,luzon
-BR0002,Example Branch Two,Area 2,ncr
-BR0003,"Example Branch, With Comma",Area 3,vismin
-BR0004,Example Branch Four,Area 14,vismin
+branch_code,branch_name,area,region,representative_1,representative_2
+BR0001,Example Branch One,Area 1,luzon,Juan Dela Cruz,Maria Santos
+BR0002,Example Branch Two,Area 2,ncr,,
+BR0003,"Example Branch, With Comma",Area 3,vismin,Ana Reyes,

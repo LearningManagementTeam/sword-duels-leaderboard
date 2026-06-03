@@ -5,6 +5,9 @@ export interface BranchCsvRow {
   branch_name: string;
   area: string;
   region: Region;
+  /** Optional — included in combined participants template */
+  representative_1?: string;
+  representative_2?: string;
 }
 
 const REGION_SET = new Set<string>(["luzon", "ncr", "vismin"]);
@@ -95,6 +98,21 @@ export function parseBranchesCsv(text: string): {
   ]);
   const areaIdx = resolveHeaderIndex(header, ["area"]);
   const regionIdx = resolveHeaderIndex(header, ["region"]);
+  const rep1Idx = resolveHeaderIndex(header, [
+    "representative_1",
+    "representative 1",
+    "representative1",
+    "rep1",
+    "representative",
+    "representative_name",
+    "representative name",
+  ]);
+  const rep2Idx = resolveHeaderIndex(header, [
+    "representative_2",
+    "representative 2",
+    "representative2",
+    "rep2",
+  ]);
 
   if (
     codeIdx === undefined ||
@@ -136,6 +154,10 @@ export function parseBranchesCsv(text: string): {
       branch_name,
       area,
       region: region as Region,
+      representative_1:
+        rep1Idx !== undefined ? cols[rep1Idx]?.trim() || undefined : undefined,
+      representative_2:
+        rep2Idx !== undefined ? cols[rep2Idx]?.trim() || undefined : undefined,
     });
   }
 

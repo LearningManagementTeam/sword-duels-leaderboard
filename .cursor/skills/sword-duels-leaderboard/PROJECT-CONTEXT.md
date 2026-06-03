@@ -18,8 +18,8 @@ Dynamic public leaderboard + central admin for a 3-phase branch competition (Phi
 
 ## Admin workflow (order)
 
-1. **Branches** `/admin/branches` — CSV upload → `importParticipatingBranchesForJuneArea` (≥130 rows, seeds June R1)
-2. **Representatives** `/admin/representatives` — CSV upload or table → editable **anytime**
+1. **Branches** `/admin/branches` — one CSV: branch + optional reps → June R1 seed
+2. **Representatives** `/admin/representatives` — table edit anytime (or re-import combined CSV on Branches)
 3. **Rounds** `/admin/rounds` — points per round → draft / **Save & publish**
 4. **Advancement** `/admin/advancement` — lock phase, seed next season participants
 5. **Audit** `/admin/audit` — admin action log
@@ -49,8 +49,8 @@ Dynamic public leaderboard + central admin for a 3-phase branch competition (Phi
 
 ## CSV templates (public)
 
-- `/templates/branches-import-template.csv`
-- `/templates/representatives-import-template.csv`
+- `/templates/participants-import-template.csv` — **combined** (branches + reps)
+- `/templates/branches-import-template.csv` — alias, same columns
 
 ## Deploy / env (Vercel)
 
