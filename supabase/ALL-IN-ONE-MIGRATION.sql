@@ -249,3 +249,13 @@ CREATE POLICY branding_storage_public_read ON storage.objects
 CREATE POLICY branding_storage_admin_write ON storage.objects
   FOR ALL USING (bucket_id = 'branding' AND is_admin())
   WITH CHECK (bucket_id = 'branding' AND is_admin());
+
+-- 008: Tie-breaker status
+ALTER TYPE branch_status ADD VALUE IF NOT EXISTS 'tie_breaker';
+
+ALTER TABLE published_standings
+  ADD COLUMN IF NOT EXISTS tie_breaker_in_round INT CHECK (
+    tie_breaker_in_round IS NULL OR (
+      tie_breaker_in_round >= 1 AND tie_breaker_in_round <= 10
+    )
+  );

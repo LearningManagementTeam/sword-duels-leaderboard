@@ -74,6 +74,7 @@ export async function getPublishedStandings(
       total_wins,
       status,
       eliminated_in_round,
+      tie_breaker_in_round,
       last_active_round,
       branch:branches (
         id,
@@ -105,6 +106,7 @@ export async function getPublishedStandings(
       lastActive >= n ? Number(val) : null;
     const advancing_to_round =
       row.eliminated_in_round === null &&
+      (row.tie_breaker_in_round ?? null) === null &&
       lastActive > 0 &&
       lastActive < 3 &&
       row.status === "active"
@@ -126,6 +128,7 @@ export async function getPublishedStandings(
       representative_1: b.representative_1 ?? null,
       representative_2: b.representative_2 ?? null,
       eliminated_in_round: row.eliminated_in_round ?? null,
+      tie_breaker_in_round: row.tie_breaker_in_round ?? null,
       last_active_round: row.last_active_round ?? null,
       advancing_to_round,
     };

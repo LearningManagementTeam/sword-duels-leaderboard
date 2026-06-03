@@ -105,7 +105,7 @@ export function LeaderboardTable({
   const cellPad = tvMode ? "px-4 py-3" : "px-3 py-2";
 
   const columnCount =
-    6 +
+    5 +
     (showArea ? 1 : 0) +
     (showRegion ? 1 : 0) +
     (showRepresentatives && !tvMode ? 1 : 0) +
@@ -143,6 +143,7 @@ export function LeaderboardTable({
           >
             <option value="">All statuses</option>
             <option value="active">Active / advancing</option>
+            <option value="tie_breaker">Tie breaker</option>
             <option value="advanced">Advancing to next phase</option>
             <option value="eliminated">Eliminated</option>
             <option value="regional_finalist">Regional champion</option>
@@ -173,7 +174,6 @@ export function LeaderboardTable({
               <th className="px-3 py-2 font-medium text-right">R1</th>
               <th className="px-3 py-2 font-medium text-right">R2</th>
               <th className="px-3 py-2 font-medium text-right">R3</th>
-              <th className="px-3 py-2 font-medium text-right">Total</th>
               {!tvMode && (
                 <th className="px-3 py-2 font-medium">Status</th>
               )}
@@ -198,7 +198,9 @@ export function LeaderboardTable({
                 const items = [];
 
                 const inSurvivorZone =
-                  row.status !== "eliminated" && row.rank <= advancementCutoff;
+                  row.status !== "eliminated" &&
+                  row.status !== "tie_breaker" &&
+                  row.rank <= advancementCutoff;
                 const rowClasses = `border-t border-slate-800 animate-row-in ${
                   inSurvivorZone
                     ? "border-l-4 border-l-emerald-500/70 bg-emerald-950/25"
@@ -283,17 +285,13 @@ export function LeaderboardTable({
                     >
                       {formatRoundPoints(row.round3_points)}
                     </td>
-                    <td
-                      className={`${cellPad} text-right font-semibold tabular-nums text-sd-glow`}
-                    >
-                      {row.total_points}
-                    </td>
                     {!tvMode && (
                       <td className={cellPad}>
                         <StatusBadge
                           status={row.status}
                           eliminatedInRound={row.eliminated_in_round}
                           advancingToRound={row.advancing_to_round}
+                          tieBreakerInRound={row.tie_breaker_in_round}
                           manuallyAdvancedAfterRound={
                             row.manually_advanced_after_round
                           }

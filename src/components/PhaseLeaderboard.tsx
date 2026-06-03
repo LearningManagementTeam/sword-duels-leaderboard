@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { HeroLogo } from "@/components/branding/HeroLogo";
+import { PhaseHighlightsCarousel } from "@/components/home/PhaseHighlightsCarousel";
+import { StatusTickerCarousel } from "@/components/leaderboard/StatusTickerCarousel";
+import { getPhaseHighlights } from "@/lib/phase-highlights";
 import { LeaderboardSection } from "./LeaderboardSection";
 import { PhaseJourneyBar } from "./PhaseJourneyBar";
 import { PhaseNav } from "./PhaseNav";
@@ -92,9 +96,17 @@ export async function PhaseLeaderboard({
 
   const needsRegion = (phase === "june" || phase === "july") && perRound;
 
+  const highlights = getPhaseHighlights(slug);
+
   return (
     <div className="space-y-6">
       {isPreview && <PreviewBanner />}
+
+      <HeroLogo branding={branding} priority={!isPreview && phase === "june"} />
+
+      {needsRegion && !region && (
+        <PhaseHighlightsCarousel items={highlights} />
+      )}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -163,6 +175,9 @@ export async function PhaseLeaderboard({
 
       {needsRegion && !region ? null : (
         <>
+          {region && !isPreview && (
+            <StatusTickerCarousel lastPublished={lastPublished} />
+          )}
           {perRound && region && (
             <PhaseJourneyBar
               seasonSlug={slug}
@@ -184,7 +199,6 @@ export async function PhaseLeaderboard({
             }
           >
             <LeaderboardSection
-              branding={branding}
               bannerSubtitle={
                 region
                   ? `${config.name} · ${REGION_LABELS[region]}${

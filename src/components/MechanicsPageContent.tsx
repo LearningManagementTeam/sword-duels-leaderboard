@@ -10,15 +10,15 @@ export function MechanicsPageContent({ content }: Props) {
   return (
     <div className="space-y-10">
       {content.intro.trim() && (
-        <section className="rounded-xl border border-sd-glow/25 bg-emerald-500/5 p-5">
+        <section className="sd-neon-panel p-5">
           <MarkdownContent source={content.intro} />
         </section>
       )}
 
       {content.announcements.trim() && (
         <section>
-          <h2 className="text-xl font-semibold text-amber-300">Announcements</h2>
-          <div className="mt-3 rounded-lg border border-slate-700 bg-slate-900/50 p-4">
+          <h2 className="text-xl font-semibold text-sd-glow">Announcements</h2>
+          <div className="sd-inset mt-3 rounded-xl p-4">
             <MarkdownContent source={content.announcements} />
           </div>
         </section>
@@ -28,10 +28,8 @@ export function MechanicsPageContent({ content }: Props) {
 
       {content.custom_sections.map((section) => (
         <section key={section.id} id={`section-${section.id}`}>
-          <h2 className="text-xl font-semibold text-amber-300">
-            {section.title}
-          </h2>
-          <div className="mt-3">
+          <h2 className="text-xl font-semibold text-sd-glow">{section.title}</h2>
+          <div className="sd-glass mt-3 rounded-xl p-4">
             <MarkdownContent source={section.body} />
           </div>
         </section>

@@ -60,16 +60,14 @@ export const REGION_LABELS: Record<Region, string> = {
 };
 
 export const TIE_BREAKER_LABELS = [
-  "Round points",
-  "Wins in round",
-  "Branch name (A–Z)",
+  "Round points (higher advances)",
+  "Branch name (A–Z) for ties at the cut",
 ];
 
 export const CUMULATIVE_TIE_BREAKER_LABELS = [
   "Total points",
   "Round 3 points",
   "Round 2 points",
-  "Total wins",
   "Branch name (A–Z)",
 ];
 

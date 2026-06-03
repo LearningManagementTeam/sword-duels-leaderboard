@@ -21,10 +21,10 @@ export function PhaseNav({
           <Link
             key={p.slug}
             href={`${basePath}/${p.slug}`}
-            className={`rounded-lg px-4 py-2 text-sm transition ${
+            className={`rounded-xl px-4 py-2 text-sm transition ${
               isActive
-                ? "bg-sd-glow text-sd-deep font-semibold shadow-lg shadow-emerald-500/20"
-                : "sd-glass text-sd-muted hover:text-white"
+                ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep shadow-[0_0_20px_rgb(163_230_53/0.35)] ring-1 ring-fuchsia-400/30"
+                : "sd-glass text-sd-muted hover:border-fuchsia-400/30 hover:text-white"
             }`}
           >
             <span className="block font-medium">{p.label}</span>

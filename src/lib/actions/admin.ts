@@ -301,8 +301,6 @@ export async function saveRoundResults(
   results: Array<{
     branch_id: string;
     points: number;
-    wins: number;
-    losses: number;
   }>
 ) {
   const { email } = await requireAdmin();
@@ -321,17 +319,14 @@ export async function saveRoundResults(
   for (const r of results) {
     const err = validateRoundPoints(seasonSlug, round.round_number, r.points);
     if (err) throw new Error(err);
-    if (r.wins < 0 || r.losses < 0) {
-      throw new Error("Wins and losses cannot be negative.");
-    }
   }
 
   const payload = results.map((r) => ({
     round_id: roundId,
     branch_id: r.branch_id,
     points: r.points,
-    wins: r.wins,
-    losses: r.losses,
+    wins: 0,
+    losses: 0,
     updated_at: new Date().toISOString(),
   }));
 
@@ -488,6 +483,7 @@ async function upsertStandings(
     region_filter: region,
     published_at: publishedAt,
     eliminated_in_round: s.eliminated_in_round ?? null,
+    tie_breaker_in_round: s.tie_breaker_in_round ?? null,
     last_active_round: s.last_active_round ?? 0,
   }));
   const { error } = await service.from("published_standings").insert(rows);
@@ -613,8 +609,6 @@ export async function previewDraftStandings(
   draftResults: Array<{
     branch_id: string;
     points: number;
-    wins: number;
-    losses: number;
   }>
 ): Promise<DraftPreviewResult> {
   await requireAdmin();
@@ -685,8 +679,8 @@ export async function previewDraftStandings(
     mapped.push({
       branch_id: draft.branch_id,
       points: draft.points,
-      wins: draft.wins,
-      losses: draft.losses,
+      wins: 0,
+      losses: 0,
       round_number: round.round_number,
     });
   }
@@ -830,7 +824,11 @@ export async function saveManualAdvances(
 
   const eligibleToPick = new Set(
     autoOnly
-      .filter((r) => r.eliminated_in_round === round.round_number)
+      .filter(
+        (r) =>
+          r.eliminated_in_round === round.round_number ||
+          r.tie_breaker_in_round === round.round_number
+      )
       .map((r) => r.branch_id)
   );
 
@@ -841,7 +839,7 @@ export async function saveManualAdvances(
     }
     if (!eligibleToPick.has(branchId)) {
       throw new Error(
-        `${branch.branch_name} was not eliminated at the automatic cut for this round.`
+        `${branch.branch_name} is not eligible for extra advancement after this round.`
       );
     }
   }

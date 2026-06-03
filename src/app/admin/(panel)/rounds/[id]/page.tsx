@@ -19,6 +19,7 @@ export default async function AdminRoundPage({
       status={data.round.status}
       seasonSlug={data.seasonSlug}
       branches={data.branches}
+      tieBreakerBranches={data.tieBreakerBranches}
       eliminatedBranches={data.eliminatedBranches}
       priorRoundNumber={data.priorRoundNumber}
       supportsManualAdvances={data.supportsManualAdvances}

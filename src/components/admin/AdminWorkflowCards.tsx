@@ -25,47 +25,47 @@ export function AdminWorkflowCards({ rounds }: Props) {
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-        <div className="sd-glass rounded-lg p-4">
+      <div className="sd-neon-panel p-4">
         <h3 className="font-semibold text-white">Weekly round</h3>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-sd-muted">
           Enter scores → save draft → preview → publish.
         </p>
         <Link
           href="/admin/rounds"
-          className="mt-3 inline-block rounded-lg bg-sd-glow px-3 py-1.5 text-sm font-medium text-sd-deep hover:bg-emerald-300"
+          className="sd-btn-primary mt-3 inline-block rounded-lg px-3 py-1.5 text-sm"
         >
           Open rounds
         </Link>
       </div>
 
-        <div className="sd-glass rounded-lg p-4">
+      <div className="sd-neon-panel p-4">
         <h3 className="font-semibold text-white">Extra advancement</h3>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-sd-muted">
           After publish, add branches that tied at the cut (e.g. many 10/10
           scores).
         </p>
         {showAdvances && latestPublished ? (
           <Link
             href={`/admin/rounds/${latestPublished.id}/advances`}
-            className="mt-3 inline-block rounded-lg border border-sd-glow/40 px-3 py-1.5 text-sm text-sd-glow hover:bg-emerald-500/10"
+            className="mt-3 inline-block rounded-lg border border-fuchsia-400/40 px-3 py-1.5 text-sm text-fuchsia-200 hover:bg-fuchsia-950/30"
           >
             {latestPublished.name} picks
           </Link>
         ) : (
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-sd-muted/60">
             Available after a June/July round is published.
           </p>
         )}
       </div>
 
-        <div className="sd-glass rounded-lg p-4">
+      <div className="sd-neon-panel p-4">
         <h3 className="font-semibold text-white">End of phase</h3>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-sd-muted">
           Lock June or July after Round 3 is published for all regions.
         </p>
         <Link
           href="/admin/advancement"
-          className="mt-3 inline-block rounded-lg border border-slate-600 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
+          className="mt-3 inline-block rounded-lg border border-emerald-400/30 px-3 py-1.5 text-sm text-sd-muted hover:text-white"
         >
           Lock & advance
         </Link>

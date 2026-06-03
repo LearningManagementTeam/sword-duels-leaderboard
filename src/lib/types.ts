@@ -3,6 +3,7 @@ import type { Region, SeasonSlug } from "./scoring-config";
 export type BranchStatus =
   | "active"
   | "advanced"
+  | "tie_breaker"
   | "eliminated"
   | "regional_finalist"
   | "champion";
@@ -57,6 +58,8 @@ export interface StandingRow {
   round3_points: number | null;
   total_wins: number;
   status: BranchStatus;
+  /** Set when tied at the cut line and must play a tie-breaker for remaining slots. */
+  tie_breaker_in_round?: number | null;
   representative_1?: string | null;
   representative_2?: string | null;
   eliminated_in_round?: number | null;

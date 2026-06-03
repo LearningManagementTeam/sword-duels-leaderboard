@@ -1,7 +1,13 @@
 import Link from "next/link";
+import { HeroLogo } from "@/components/branding/HeroLogo";
+import {
+  HomeRegionCarousel,
+  HomeSeasonCarousel,
+} from "@/components/home/HomeCarousels";
 import { PhaseNav } from "@/components/PhaseNav";
 import { SetupBanner } from "@/components/SetupBanner";
 import { ShareCard } from "@/components/ShareCard";
+import { getBranding } from "@/lib/data/content-queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 const SITE_URL =
@@ -16,39 +22,26 @@ const regions = [
   { href: "/june/vismin", label: "VisMin" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
   const configured = isSupabaseConfigured();
+  const branding = await getBranding();
 
   return (
     <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-2xl border border-sd-glow/25 sd-glass p-6 sm:p-8">
+      <HeroLogo branding={branding} priority />
+
+      <HomeSeasonCarousel />
+      <HomeRegionCarousel />
+
+      <section className="sd-neon-panel relative overflow-hidden p-6 sm:p-8">
         <div className="relative z-10 space-y-4">
-          <h2 className="text-3xl font-bold text-white">
-            Sword Duels Leaderboard
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            Live standings
           </h2>
           <p className="max-w-2xl text-sd-muted">
             Track standings across three phases: June area-wide (130+ branches →
             top 24), July regional, and August finals.
           </p>
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <span className="text-xs font-medium uppercase tracking-wider text-sd-muted/70">
-              Season path
-            </span>
-            <div className="flex flex-wrap items-center gap-1 text-sm">
-              {["June", "July", "August"].map((label, i) => (
-                <span key={label} className="flex items-center gap-1">
-                  <span className="rounded-full bg-sd-glow/20 px-3 py-1 text-sd-glow">
-                    {label}
-                  </span>
-                  {i < 2 && (
-                    <span className="text-emerald-800" aria-hidden>
-                      →
-                    </span>
-                  )}
-                </span>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
@@ -98,7 +91,7 @@ export default function HomePage() {
             <Link
               key={r.href}
               href={r.href}
-              className="rounded-lg bg-sd-glow px-4 py-2 text-sm font-medium text-sd-deep hover:bg-emerald-300"
+              className="sd-btn-primary rounded-lg px-4 py-2 text-sm"
             >
               June · {r.label}
             </Link>

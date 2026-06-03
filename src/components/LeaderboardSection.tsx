@@ -3,12 +3,10 @@
 import { useSearchParams } from "next/navigation";
 import { BranchHighlightControls } from "@/components/BranchHighlight";
 import { GamifiedLeaderboard } from "@/components/leaderboard/GamifiedLeaderboard";
-import type { BrandingConfig } from "@/lib/branding";
 import type { StandingRow } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
 
 interface Props {
-  branding: BrandingConfig;
   bannerSubtitle?: string;
   rows: StandingRow[];
   advancementCutoff?: number;
@@ -23,7 +21,6 @@ interface Props {
 }
 
 export function LeaderboardSection({
-  branding,
   bannerSubtitle,
   tvMode = false,
   showDetailToggle = true,
@@ -36,7 +33,6 @@ export function LeaderboardSection({
     <div className="space-y-4">
       {!tvMode && <BranchHighlightControls />}
       <GamifiedLeaderboard
-        branding={branding}
         bannerSubtitle={bannerSubtitle}
         highlightCode={highlightCode}
         tvMode={tvMode}

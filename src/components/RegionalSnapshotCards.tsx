@@ -38,8 +38,11 @@ export function RegionalSnapshotCards({
     }).length;
   }
 
+  const tieBreaker = rows.filter((r) => r.status === "tie_breaker").length;
+
   const cards = [
-    { label: "Active / advancing", value: String(active) },
+    { label: "Advancing", value: String(active) },
+    { label: "Tie breaker", value: String(tieBreaker) },
     { label: "Eliminated", value: String(eliminated) },
     { label: "Total shown", value: String(rows.length) },
   ];
@@ -52,14 +55,11 @@ export function RegionalSnapshotCards({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="sd-neon-panel space-y-3 p-4">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
-          <div
-            key={c.label}
-            className="sd-glass rounded-lg px-4 py-3"
-          >
-            <p className="text-xs text-slate-500">{c.label}</p>
+          <div key={c.label} className="sd-inset rounded-xl px-4 py-3">
+            <p className="text-xs text-sd-muted/70">{c.label}</p>
             <p className="text-xl font-bold tabular-nums text-sd-glow">
               {c.value}
             </p>
@@ -67,7 +67,7 @@ export function RegionalSnapshotCards({
         ))}
       </div>
       {lastPublished && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-sd-muted/60">
           Last published:{" "}
           {new Date(lastPublished).toLocaleString("en-PH", {
             dateStyle: "medium",

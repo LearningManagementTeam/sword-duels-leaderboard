@@ -9,7 +9,7 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 | **Dashboard** | Workflow cards — weekly round, extra advancement, end of phase |
 | **Rounds** | Enter and publish scores |
 | **Mechanics** | Edit public “How it works” intro and announcements (rule tables auto-update) |
-| **Branding** | Upload logo for site header and leaderboard banner |
+| **Branding** | Upload hero game logo (full-width splash) + header icon |
 | **System & stack** | Tech setup, migrations, architecture (IT / troubleshooting) |
 
 Public mechanics: **How it works** on the site header → `/mechanics`
@@ -18,7 +18,7 @@ Public mechanics: **How it works** on the site header → `/mechanics`
 
 1. Admin → **Branding**
 2. Upload PNG, JPG, WebP, or SVG (max 2MB)
-3. Logo appears in the site header and on the public **LEADERBOARD** banner
+3. Logo appears as the large **hero splash** on home and leaderboards (almost full phone width), plus a small icon in the header. PNG/SVG with transparent background works best on the dark glass UI.
 
 ## Before June (one-time)
 
@@ -52,12 +52,13 @@ Each round is one week. **That round’s score only** decides who advances (not 
 
 1. Open **Admin** → **Rounds** → correct round (e.g. June — Round 2).
 2. Enter **Points** for **survivors only** (eliminated branches are hidden; see read-only list if needed).
-3. **Round 1 quiz caps:** June R1 = **0–10** points · July R1 = **0–15** points (same quiz style).
-4. **Save draft** while checking → public site unchanged.
-4. Optional: **Preview standings (draft)**.
-5. **Save & publish** when correct.
-6. Public site → pick **June or July** → pick **region** (Luzon / NCR / VisMin).
-7. Confirm badges: **Advancing to R2** / **Eliminated — R1**, and **—** for rounds not played.
+3. **Round 1 quiz caps:** June R1 = **0–10** points · July R1 = **0–15** points (points only — no wins/losses).
+4. After publish, branches **tied at the cut** show **Tie breaker** on the public board — run tie-breaker round, then use **advancement picks** to add winners.
+5. **Save draft** while checking → public site unchanged.
+6. Optional: **Preview standings (draft)**.
+7. **Save & publish** when correct.
+8. Public site → pick **June or July** → pick **region** (Luzon / NCR / VisMin).
+9. Confirm badges: **Advancing to R2** / **Tie breaker — R1** / **Eliminated — R1**, and **—** for rounds not played.
 
 ### Many ties at 10/10 (or max score)?
 
@@ -121,3 +122,4 @@ If upgrading an existing Supabase project, run in SQL Editor:
 - `supabase/migrations/005_manual_round_advances.sql` (committee extra advancement picks)
 - `supabase/migrations/006_site_content.sql` (editable public mechanics page)
 - `supabase/migrations/007_branding_storage.sql` (logo storage bucket + branding settings)
+- `supabase/migrations/008_tie_breaker_status.sql` (tie breaker status + column)

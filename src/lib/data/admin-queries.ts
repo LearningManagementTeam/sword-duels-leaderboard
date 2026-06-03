@@ -149,8 +149,50 @@ export async function getRoundWithResults(roundId: string) {
     );
   }
 
+  const priorRound = round.round_number - 1;
+  let tieBreakerIds = new Set<string>();
+  if (
+    priorRound >= 1 &&
+    publishedRoundNumbers.includes(priorRound) &&
+    publishedRoundIds.length > 0
+  ) {
+    const { data: priorResults } = await service
+      .from("round_results")
+      .select("branch_id, points, wins, losses, rounds(round_number)")
+      .in("round_id", publishedRoundIds);
+
+    const mapped = (priorResults ?? []).map((r) => ({
+      branch_id: r.branch_id,
+      points: Number(r.points),
+      wins: r.wins,
+      losses: r.losses,
+      round_number: (Array.isArray(r.rounds) ? r.rounds[0] : r.rounds)
+        .round_number,
+    }));
+    const agg = aggregatePublishedResults(mapped);
+    const branchInputs = branches.map((b) => ({
+      id: b.id,
+      branch_code: b.branch_code,
+      branch_name: b.branch_name,
+      area: b.area,
+      region: b.region as Region,
+    }));
+    const standings = computeStandings(seasonSlug, branchInputs, agg, {
+      publishedRoundNumbers,
+      manualAdvances,
+    });
+    for (const s of standings) {
+      if (s.tie_breaker_in_round === priorRound) {
+        tieBreakerIds.add(s.branch_id);
+      }
+    }
+  }
+
   const activeBranches = branches.filter((b) => eligibleIds.has(b.id));
-  const eliminatedBranches = branches.filter((b) => !eligibleIds.has(b.id));
+  const tieBreakerBranches = branches.filter((b) => tieBreakerIds.has(b.id));
+  const eliminatedBranches = branches.filter(
+    (b) => !eligibleIds.has(b.id) && !tieBreakerIds.has(b.id)
+  );
 
   const { data: results } = await service
     .from("round_results")
@@ -172,6 +214,7 @@ export async function getRoundWithResults(roundId: string) {
     round,
     seasonSlug,
     branches: activeBranches,
+    tieBreakerBranches,
     eliminatedBranches,
     priorRoundNumber: round.round_number > 1 ? round.round_number - 1 : null,
     resultMap,
@@ -187,6 +230,7 @@ export interface AdvancementPickBranch {
   points: number;
   wins: number;
   rank: number;
+  isTieBreaker?: boolean;
 }
 
 export async function getAdvancementPickContext(roundId: string) {
@@ -333,18 +377,22 @@ export async function getAdvancementPickContext(roundId: string) {
       }));
 
     const eligibleExtra = autoOnly
-      .filter((r) => r.eliminated_in_round === round.round_number)
+      .filter(
+        (r) =>
+          r.eliminated_in_round === round.round_number ||
+          r.tie_breaker_in_round === round.round_number
+      )
       .map((r) => ({
         branch_id: r.branch_id,
         branch_name: r.branch_name,
         branch_code: r.branch_code,
         points: pointsForRound(r.branch_id),
-        wins: winsForRound(r.branch_id),
+        wins: 0,
         rank: r.rank,
+        isTieBreaker: r.tie_breaker_in_round === round.round_number,
       }))
       .sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
-        if (b.wins !== a.wins) return b.wins - a.wins;
         return a.branch_name.localeCompare(b.branch_name);
       });
 

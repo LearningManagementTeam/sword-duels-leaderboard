@@ -31,7 +31,7 @@ function PodiumSlot({
       ? "ring-emerald-400 animate-glow-pulse"
       : rank === 2
         ? "ring-emerald-500/60"
-        : "ring-teal-500/50";
+        : "ring-fuchsia-500/40";
 
   return (
     <div
@@ -50,7 +50,7 @@ function PodiumSlot({
         </span>
       )}
       <div
-        className={`flex items-center justify-center rounded-xl bg-gradient-to-br from-emerald-950 to-sd-panel-light font-bold text-emerald-100 ring-2 ${glow} ${
+        className={`sd-neon-panel flex items-center justify-center font-bold text-emerald-100 ring-2 ${glow} ${
           tvMode ? "h-28 w-28 text-2xl" : elevated ? "h-24 w-24 text-xl" : "h-20 w-20 text-lg"
         }`}
       >
@@ -75,6 +75,7 @@ function PodiumSlot({
           status={row.status}
           eliminatedInRound={row.eliminated_in_round}
           advancingToRound={row.advancing_to_round}
+          tieBreakerInRound={row.tie_breaker_in_round}
           manuallyAdvancedAfterRound={row.manually_advanced_after_round}
         />
       </div>

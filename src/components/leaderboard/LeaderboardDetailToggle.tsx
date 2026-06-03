@@ -25,12 +25,16 @@ export function LeaderboardDetailToggle(props: TableProps) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full rounded-lg border border-sd-glow/30 bg-sd-panel/80 px-4 py-2 text-sm font-medium text-sd-muted transition hover:border-sd-glow/50 hover:text-white sm:w-auto"
+        className={`w-full rounded-full border px-4 py-2 text-sm font-medium transition sm:w-auto ${
+          open
+            ? "border-fuchsia-400/50 bg-fuchsia-950/30 text-fuchsia-100"
+            : "border-emerald-400/40 sd-glass text-sd-muted hover:border-fuchsia-400/40 hover:text-white"
+        }`}
       >
         {open ? "Hide detailed standings" : "Show detailed standings"}
       </button>
       {open && (
-        <div className="sd-glass rounded-xl p-4">
+        <div className="sd-neon-panel p-4">
           <LeaderboardTable {...props} />
         </div>
       )}

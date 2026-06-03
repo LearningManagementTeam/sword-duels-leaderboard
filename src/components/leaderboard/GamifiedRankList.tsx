@@ -48,12 +48,14 @@ export function GamifiedRankList({
           listRows.some((r) => r.rank === advancementCutoff);
 
         const inZone =
-          row.status !== "eliminated" && row.rank <= advancementCutoff;
+          row.status !== "eliminated" &&
+          row.status !== "tie_breaker" &&
+          row.rank <= advancementCutoff;
 
         return (
           <li key={row.branch_id} className="list-none">
             {showCutLine && (
-              <div className="mb-2 rounded-lg border border-sd-glow/40 bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-sd-glow">
+              <div className="sd-cut-shimmer mb-2 rounded-lg border border-sd-glow/40 bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-sd-glow">
                 {cutLineLabel}
               </div>
             )}
@@ -63,9 +65,15 @@ export function GamifiedRankList({
               highlightCode={highlightCode ?? null}
             >
               <div
-                className={`flex flex-wrap items-center gap-2 rounded-full bg-[var(--sd-surface-light)] px-3 py-2 shadow-md shadow-black/20 sm:flex-nowrap sm:gap-3 ${
+                className={`sd-row-hover flex flex-wrap items-center gap-2 rounded-2xl border px-3 py-2 sm:flex-nowrap sm:gap-3 ${
                   tvMode ? "px-4 py-3" : ""
-                } ${inZone ? "ring-1 ring-emerald-400/50" : "opacity-90"}`}
+                } ${
+                  row.status === "tie_breaker"
+                    ? "sd-glass border-fuchsia-400/50 ring-2 ring-fuchsia-400/40"
+                    : inZone
+                      ? "sd-glass border-emerald-400/40 ring-1 ring-emerald-400/30"
+                      : "sd-glass border-slate-600/30 opacity-85"
+                }`}
               >
                 <span
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm font-bold text-white ${rankBadgeClass(row.rank)} ${
@@ -75,7 +83,7 @@ export function GamifiedRankList({
                   {row.rank}
                 </span>
                 <span
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-900 text-xs font-bold text-emerald-100 ${
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-950/90 text-xs font-bold text-emerald-100 ring-1 ring-emerald-500/30 ${
                     tvMode ? "h-11 w-11 text-sm" : ""
                   }`}
                 >
@@ -83,30 +91,31 @@ export function GamifiedRankList({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p
-                    className={`truncate font-semibold text-slate-900 ${
+                    className={`truncate font-semibold text-white ${
                       tvMode ? "text-lg" : "text-sm"
                     }`}
                   >
                     {row.branch_name}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-sd-muted/80">
                     R1 {formatRoundPoints(row.round1_points)} · R2{" "}
                     {formatRoundPoints(row.round2_points)} · R3{" "}
                     {formatRoundPoints(row.round3_points)}
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 rounded-full border border-emerald-200 bg-white px-3 py-1 font-bold tabular-nums text-slate-900 ${
+                  className={`sd-inset shrink-0 rounded-full px-3 py-1 font-bold tabular-nums text-sd-glow ${
                     tvMode ? "text-lg" : "text-sm"
                   }`}
                 >
                   {row.total_points}
                 </span>
-                <div className="hidden shrink-0 sm:block">
+                <div className="shrink-0 sm:block">
                   <StatusBadge
                     status={row.status}
                     eliminatedInRound={row.eliminated_in_round}
                     advancingToRound={row.advancing_to_round}
+                    tieBreakerInRound={row.tie_breaker_in_round}
                     manuallyAdvancedAfterRound={
                       row.manually_advanced_after_round
                     }

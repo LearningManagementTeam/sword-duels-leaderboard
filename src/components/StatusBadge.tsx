@@ -1,10 +1,13 @@
 import type { BranchStatus } from "@/lib/types";
 
 const styles: Record<BranchStatus, string> = {
-  active: "bg-slate-700 text-slate-100",
+  active: "bg-emerald-600/40 text-emerald-100 ring-1 ring-emerald-400/40",
   advanced: "bg-emerald-600/90 text-white",
-  eliminated: "bg-slate-800 text-slate-400 line-through",
-  regional_finalist: "bg-emerald-600/90 text-white ring-1 ring-sd-gold/50",
+  tie_breaker:
+    "bg-fuchsia-500/25 text-fuchsia-100 ring-1 ring-fuchsia-400/70 animate-pulse",
+  eliminated: "bg-slate-800/80 text-slate-400",
+  regional_finalist:
+    "bg-emerald-600/90 text-white ring-1 ring-[var(--sd-gold)]/50",
   champion: "bg-[var(--sd-gold)] text-sd-deep font-semibold",
 };
 
@@ -13,9 +16,13 @@ export function statusLabel(
   context?: {
     eliminatedInRound?: number | null;
     advancingToRound?: number | null;
+    tieBreakerInRound?: number | null;
     manuallyAdvancedAfterRound?: number | null;
   }
 ): string {
+  if (status === "tie_breaker" && context?.tieBreakerInRound) {
+    return `Tie breaker — R${context.tieBreakerInRound}`;
+  }
   if (status === "eliminated" && context?.eliminatedInRound) {
     return `Eliminated — R${context.eliminatedInRound}`;
   }
@@ -28,6 +35,7 @@ export function statusLabel(
   const labels: Record<BranchStatus, string> = {
     active: "Active",
     advanced: "Advancing to July",
+    tie_breaker: "Tie breaker",
     eliminated: "Eliminated",
     regional_finalist: "Regional champion",
     champion: "Champion",
@@ -39,6 +47,7 @@ interface Props {
   status: BranchStatus;
   eliminatedInRound?: number | null;
   advancingToRound?: number | null;
+  tieBreakerInRound?: number | null;
   manuallyAdvancedAfterRound?: number | null;
 }
 
@@ -46,6 +55,7 @@ export function StatusBadge({
   status,
   eliminatedInRound,
   advancingToRound,
+  tieBreakerInRound,
   manuallyAdvancedAfterRound,
 }: Props) {
   return (
@@ -55,6 +65,7 @@ export function StatusBadge({
       {statusLabel(status, {
         eliminatedInRound,
         advancingToRound,
+        tieBreakerInRound,
         manuallyAdvancedAfterRound,
       })}
     </span>

@@ -16,6 +16,7 @@ interface Props {
   status: string;
   seasonSlug: SeasonSlug;
   branches: Branch[];
+  tieBreakerBranches?: Branch[];
   eliminatedBranches?: Branch[];
   priorRoundNumber?: number | null;
   supportsManualAdvances?: boolean;
@@ -29,6 +30,7 @@ export function RoundResultsForm({
   status,
   seasonSlug,
   branches,
+  tieBreakerBranches = [],
   eliminatedBranches = [],
   priorRoundNumber,
   supportsManualAdvances = false,
@@ -43,7 +45,7 @@ export function RoundResultsForm({
     if (pointsMax != null) n = Math.min(pointsMax, n);
     return n;
   };
-  const [showEliminated, setShowEliminated] = useState(false);
+  const [showOut, setShowOut] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [values, setValues] = useState(() =>
@@ -51,8 +53,6 @@ export function RoundResultsForm({
       branch_id: b.id,
       branch_name: b.branch_name,
       points: initial.get(b.id)?.points ?? 0,
-      wins: initial.get(b.id)?.wins ?? 0,
-      losses: initial.get(b.id)?.losses ?? 0,
     }))
   );
 
@@ -61,8 +61,6 @@ export function RoundResultsForm({
       values.map((v) => ({
         branch_id: v.branch_id,
         points: Number(v.points),
-        wins: Number(v.wins),
-        losses: Number(v.losses),
       })),
     [values]
   );
@@ -71,15 +69,7 @@ export function RoundResultsForm({
     setLoading(true);
     setMessage("");
     try {
-      await saveRoundResults(
-        roundId,
-        values.map((v) => ({
-          branch_id: v.branch_id,
-          points: Number(v.points),
-          wins: Number(v.wins),
-          losses: Number(v.losses),
-        }))
-      );
+      await saveRoundResults(roundId, getDraftResults());
       setMessage("Draft saved.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Save failed");
@@ -95,15 +85,7 @@ export function RoundResultsForm({
     setLoading(true);
     setMessage("");
     try {
-      await saveRoundResults(
-        roundId,
-        values.map((v) => ({
-          branch_id: v.branch_id,
-          points: Number(v.points),
-          wins: Number(v.wins),
-          losses: Number(v.losses),
-        }))
-      );
+      await saveRoundResults(roundId, getDraftResults());
       await publishRound(roundId);
       setMessage("Round published.");
     } catch (e) {
@@ -116,25 +98,25 @@ export function RoundResultsForm({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold">{roundName}</h2>
+        <h2 className="text-lg font-semibold text-white">{roundName}</h2>
         <span
           className={`rounded-full px-2 py-0.5 text-xs ${
             status === "published"
               ? "bg-emerald-800 text-emerald-100"
-              : "bg-slate-700 text-slate-200"
+              : "bg-sd-panel text-sd-muted"
           }`}
         >
           {status}
         </span>
       </div>
 
-      <ol className="flex flex-wrap gap-2 text-xs text-slate-400">
-        <li className="rounded bg-slate-800 px-2 py-1">1. Enter scores</li>
-        <li className="rounded bg-slate-800 px-2 py-1">2. Draft preview</li>
-        <li className="rounded bg-slate-800 px-2 py-1">3. Publish</li>
+      <ol className="flex flex-wrap gap-2 text-xs text-sd-muted">
+        <li className="rounded bg-sd-panel px-2 py-1">1. Enter points</li>
+        <li className="rounded bg-sd-panel px-2 py-1">2. Draft preview</li>
+        <li className="rounded bg-sd-panel px-2 py-1">3. Publish</li>
         {supportsManualAdvances && (
-          <li className="rounded bg-amber-500/20 px-2 py-1 text-amber-200">
-            4. Advancement picks
+          <li className="rounded bg-cyan-500/20 px-2 py-1 text-cyan-200">
+            4. Advancement / tie-breaker picks
           </li>
         )}
       </ol>
@@ -143,77 +125,105 @@ export function RoundResultsForm({
         <p className="text-sm">
           <Link
             href={`/admin/rounds/${roundId}/advances`}
-            className="text-amber-300 underline hover:text-amber-200"
+            className="text-sd-glow underline hover:text-emerald-200"
           >
             Manage advancement picks
           </Link>
-          <span className="text-slate-500">
+          <span className="text-sd-muted/80">
             {" "}
-            — add extra branches after the automatic cut (e.g. tied perfect scores)
+            — add tie-breaker winners or extra advancers after publish
           </span>
         </p>
       )}
 
-      <p className="text-xs text-slate-500">
-        <Link href="/admin/mechanics" className="text-amber-400/80 hover:underline">
+      <p className="text-xs text-sd-muted">
+        <Link href="/admin/mechanics" className="text-sd-glow/90 hover:underline">
           Competition rules
         </Link>{" "}
-        · public{" "}
-        <Link href="/mechanics" className="hover:underline" target="_blank">
-          /mechanics
-        </Link>
+        · Scoring uses <strong className="text-white">points only</strong> (no
+        wins/losses). Ties at the cut get a <strong className="text-cyan-200">Tie breaker</strong>{" "}
+        status until resolved.
       </p>
 
       {mechanics && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          <p className="font-medium text-amber-200">{mechanics.label}</p>
-          <p className="mt-1 text-amber-100/90">{mechanics.description}</p>
-          <p className="mt-1 text-xs text-amber-200/70">
-            Ties: higher points → more wins → branch name (A–Z)
+        <div className="rounded-lg border border-sd-glow/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50/90">
+          <p className="font-medium text-sd-glow">{mechanics.label}</p>
+          <p className="mt-1">{mechanics.description}</p>
+          <p className="mt-1 text-xs text-sd-muted">
+            Tie-break: higher points, then branch name A–Z at the regional cut.
           </p>
         </div>
       )}
 
-      {eliminatedBranches.length > 0 && priorRoundNumber && (
-        <div className="rounded-lg border border-slate-700 bg-slate-900/40">
-          <button
-            type="button"
-            onClick={() => setShowEliminated(!showEliminated)}
-            className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-slate-400 hover:text-slate-200"
-          >
-            <span>
-              Eliminated after Round {priorRoundNumber} ({eliminatedBranches.length}{" "}
-              branches — read-only)
-            </span>
-            <span>{showEliminated ? "▲" : "▼"}</span>
-          </button>
-          {showEliminated && (
-            <ul className="max-h-40 overflow-auto border-t border-slate-800 px-4 py-2 text-xs text-slate-500">
-              {eliminatedBranches.map((b) => (
-                <li key={b.id}>{b.branch_name}</li>
-              ))}
-            </ul>
-          )}
+      {tieBreakerBranches.length > 0 && priorRoundNumber && (
+        <div className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+          <p className="font-medium">
+            {tieBreakerBranches.length} branch
+            {tieBreakerBranches.length === 1 ? "" : "es"} need tie breaker after
+            Round {priorRoundNumber}
+          </p>
+          <p className="mt-1 text-xs text-cyan-200/80">
+            They are not in this score list. After the tie-breaker round, use
+            advancement picks or update scores and re-publish.
+          </p>
+          <ul className="mt-2 max-h-24 overflow-auto text-xs text-cyan-100/90">
+            {tieBreakerBranches.map((b) => (
+              <li key={b.id}>{b.branch_name}</li>
+            ))}
+          </ul>
         </div>
       )}
 
-      <div className="max-h-[60vh] overflow-auto rounded-lg border border-slate-700">
+      {(eliminatedBranches.length > 0 || tieBreakerBranches.length > 0) &&
+        priorRoundNumber && (
+          <div className="rounded-lg border border-sd-glow/15 bg-sd-panel/50">
+            <button
+              type="button"
+              onClick={() => setShowOut(!showOut)}
+              className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-sd-muted hover:text-white"
+            >
+              <span>
+                Not competing this round ({eliminatedBranches.length} eliminated
+                {tieBreakerBranches.length > 0
+                  ? `, ${tieBreakerBranches.length} tie breaker`
+                  : ""}
+                )
+              </span>
+              <span>{showOut ? "▲" : "▼"}</span>
+            </button>
+            {showOut && (
+              <ul className="max-h-40 overflow-auto border-t border-sd-glow/10 px-4 py-2 text-xs text-sd-muted">
+                {eliminatedBranches.map((b) => (
+                  <li key={b.id}>{b.branch_name} — eliminated</li>
+                ))}
+                {tieBreakerBranches.map((b) => (
+                  <li key={b.id} className="text-cyan-300/90">
+                    {b.branch_name} — tie breaker pending
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+      <div className="max-h-[60vh] overflow-auto rounded-xl border border-sd-glow/20 sd-glass">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-slate-800">
+          <thead className="sticky top-0 bg-sd-panel/95 backdrop-blur">
             <tr>
-              <th className="px-2 py-2 text-left">Branch</th>
-              <th className="px-2 py-2 text-right">
+              <th className="px-3 py-2 text-left text-sd-muted">Branch</th>
+              <th className="px-3 py-2 text-right text-sd-muted">
                 Points{pointsMax != null ? ` (0–${pointsMax})` : ""}
               </th>
-              <th className="px-2 py-2 text-right">Wins</th>
-              <th className="px-2 py-2 text-right">Losses</th>
             </tr>
           </thead>
           <tbody>
             {values.map((row, i) => (
-              <tr key={row.branch_id} className="border-t border-slate-800">
-                <td className="px-2 py-1">{row.branch_name}</td>
-                <td className="px-2 py-1">
+              <tr
+                key={row.branch_id}
+                className="border-t border-sd-glow/10 transition hover:bg-emerald-500/5"
+              >
+                <td className="px-3 py-2 text-white">{row.branch_name}</td>
+                <td className="px-3 py-2">
                   <input
                     type="number"
                     min={0}
@@ -228,33 +238,7 @@ export function RoundResultsForm({
                       };
                       setValues(next);
                     }}
-                    className="w-24 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-right"
-                  />
-                </td>
-                <td className="px-2 py-1">
-                  <input
-                    type="number"
-                    min={0}
-                    value={row.wins}
-                    onChange={(e) => {
-                      const next = [...values];
-                      next[i] = { ...next[i], wins: Number(e.target.value) };
-                      setValues(next);
-                    }}
-                    className="w-16 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-right"
-                  />
-                </td>
-                <td className="px-2 py-1">
-                  <input
-                    type="number"
-                    min={0}
-                    value={row.losses}
-                    onChange={(e) => {
-                      const next = [...values];
-                      next[i] = { ...next[i], losses: Number(e.target.value) };
-                      setValues(next);
-                    }}
-                    className="w-16 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-right"
+                    className="sd-input w-28 rounded-lg px-2 py-1.5 text-right tabular-nums"
                   />
                 </td>
               </tr>
@@ -274,7 +258,7 @@ export function RoundResultsForm({
           type="button"
           disabled={loading}
           onClick={handleSave}
-          className="rounded-lg bg-slate-700 px-4 py-2 text-sm hover:bg-slate-600 disabled:opacity-50"
+          className="rounded-lg border border-sd-glow/30 bg-sd-panel px-4 py-2 text-sm text-sd-muted hover:text-white disabled:opacity-50"
         >
           Save draft
         </button>
@@ -283,17 +267,18 @@ export function RoundResultsForm({
             type="button"
             disabled={loading}
             onClick={handlePublish}
-            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-50"
+            className="rounded-lg bg-sd-glow px-4 py-2 text-sm font-medium text-sd-deep hover:bg-emerald-300 disabled:opacity-50"
           >
             Save & publish
           </button>
           <InfoTip>
-            Publishing updates public leaderboards and applies regional elimination
-            for this round. Only enter scores for branches still in the competition.
+            Publishing applies the regional cut. Branches tied at the line get
+            Tie breaker status; use advancement picks after publish to add
+            winners.
           </InfoTip>
         </span>
       </div>
-      {message && <p className="text-sm text-amber-200">{message}</p>}
+      {message && <p className="text-sm text-sd-glow">{message}</p>}
     </div>
   );
 }

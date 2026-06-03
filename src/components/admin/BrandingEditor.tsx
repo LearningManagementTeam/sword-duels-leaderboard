@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { HeroLogo } from "@/components/branding/HeroLogo";
 import { LeaderboardBanner } from "@/components/leaderboard/LeaderboardBanner";
 import {
   removeBrandingLogo,
@@ -69,21 +70,27 @@ export function BrandingEditor({ initial }: Props) {
 
   return (
     <div className="space-y-8">
+      <section className="sd-neon-panel space-y-3 p-6">
+        <h2 className="font-semibold text-sd-glow">Hero logo preview</h2>
+        <p className="text-sm text-sd-muted">
+          This is how your logo appears on the home page and leaderboards — nearly
+          full width on mobile, like a game title screen. PNG or SVG with a
+          transparent background works best on dark glass.
+        </p>
+        <HeroLogo branding={branding} />
+      </section>
+
       <section className="space-y-3">
-        <h2 className="font-semibold text-sd-glow">Banner preview</h2>
-        <div className="rounded-xl border border-sd-glow/20 bg-sd-deep p-6">
-          <LeaderboardBanner
-            branding={branding}
-            subtitle="June — Luzon · After Round 1"
-          />
+        <h2 className="font-semibold text-sd-glow">Leaderboard strip preview</h2>
+        <div className="rounded-xl border border-sd-glow/20 bg-sd-deep p-4">
+          <LeaderboardBanner subtitle="June — Luzon · After Round 1" />
         </div>
       </section>
 
-      <form onSubmit={handleUpload} className="space-y-3">
+      <form onSubmit={handleUpload} className="sd-neon-panel space-y-3 p-6">
         <h2 className="font-semibold text-white">Upload logo</h2>
         <p className="text-sm text-sd-muted">
-          PNG, JPG, WebP, or SVG · max 2MB · appears in header and leaderboard
-          banner.
+          PNG, JPG, WebP, or SVG · max 2MB · hero splash + small header icon.
         </p>
         <input
           type="file"
@@ -94,13 +101,13 @@ export function BrandingEditor({ initial }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-sd-glow px-4 py-2 text-sm font-medium text-sd-deep hover:bg-emerald-300 disabled:opacity-50"
+          className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
           {loading ? "Uploading…" : "Upload logo"}
         </button>
       </form>
 
-      <div className="space-y-2">
+      <div className="sd-neon-panel space-y-2 p-6">
         <label className="block text-sm font-medium text-sd-muted">
           Logo alt text (accessibility)
         </label>
@@ -108,13 +115,13 @@ export function BrandingEditor({ initial }: Props) {
           <input
             value={alt}
             onChange={(e) => setAlt(e.target.value)}
-            className="sd-input flex-1 rounded-lg px-3 py-2 text-sm min-w-[200px]"
+            className="sd-input flex-1 min-w-[200px] px-3 py-2 text-sm"
           />
           <button
             type="button"
             disabled={loading}
             onClick={handleSaveAlt}
-            className="rounded-lg border border-sd-glow/30 px-4 py-2 text-sm text-sd-muted hover:text-white"
+            className="rounded-lg border border-fuchsia-400/30 px-4 py-2 text-sm text-sd-muted hover:text-white"
           >
             Save alt text
           </button>

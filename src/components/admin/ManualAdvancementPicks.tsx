@@ -187,7 +187,10 @@ export function ManualAdvancementPicks({
                 />
                 <span className="flex-1">{b.branch_name}</span>
                 <span className="tabular-nums text-slate-400">
-                  {b.points} pts · {b.wins} W · rank {b.rank}
+                  {b.points} pts · rank {b.rank}
+                  {b.isTieBreaker && (
+                    <span className="ml-1 text-cyan-300">· tie breaker</span>
+                  )}
                 </span>
               </li>
             ))

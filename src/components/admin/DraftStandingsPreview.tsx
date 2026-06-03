@@ -16,8 +16,6 @@ import type { Region, SeasonSlug } from "@/lib/scoring-config";
 interface DraftResultInput {
   branch_id: string;
   points: number;
-  wins: number;
-  losses: number;
 }
 
 interface Props {

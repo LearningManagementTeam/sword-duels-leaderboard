@@ -8,14 +8,18 @@ interface Props {
 
 export function SiteHeader({ branding }: Props) {
   return (
-    <header className="relative border-b border-sd-glow/20 bg-gradient-to-r from-sd-deep via-sd-panel to-sd-deep backdrop-blur">
+    <header className="relative border-b border-transparent bg-gradient-to-r from-sd-deep/95 via-sd-panel/90 to-sd-deep/95 backdrop-blur-xl">
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-emerald-400/60 via-fuchsia-400/40 to-purple-500/50"
+        aria-hidden
+      />
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
         <Link href="/" className="group flex items-center gap-3">
           {branding.logo_url ? (
-            <div className="relative h-10 w-10 shrink-0">
+            <div className="relative h-10 w-10 shrink-0 ring-1 ring-emerald-400/30 rounded-lg overflow-hidden">
               <Image
                 src={branding.logo_url}
-                alt={branding.logo_alt}
+                alt=""
                 fill
                 className="object-contain"
                 unoptimized={branding.logo_url.endsWith(".svg")}
@@ -59,7 +63,7 @@ export function SiteHeader({ branding }: Props) {
           </Link>
           <Link
             href="/admin"
-            className="rounded-md bg-sd-panel px-3 py-1.5 text-sd-muted ring-1 ring-sd-glow/20 hover:bg-sd-panel-light hover:text-white"
+            className="rounded-md sd-glass px-3 py-1.5 text-sd-muted ring-1 ring-fuchsia-400/20 hover:text-sd-glow"
           >
             Admin
           </Link>

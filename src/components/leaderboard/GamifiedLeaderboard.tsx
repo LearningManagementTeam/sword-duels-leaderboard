@@ -5,7 +5,6 @@ import { LeaderboardBanner } from "./LeaderboardBanner";
 import { PodiumTopThree } from "./PodiumTopThree";
 import { GamifiedRankList } from "./GamifiedRankList";
 import { LeaderboardDetailToggle } from "./LeaderboardDetailToggle";
-import type { BrandingConfig } from "@/lib/branding";
 import { filterLeaderboardRows } from "@/lib/leaderboard-utils";
 import type { StandingRow } from "@/lib/types";
 import {
@@ -16,7 +15,6 @@ import {
 import type { SeasonSlug } from "@/lib/scoring-config";
 
 interface Props {
-  branding: BrandingConfig;
   rows: StandingRow[];
   bannerSubtitle?: string;
   advancementCutoff?: number;
@@ -32,7 +30,6 @@ interface Props {
 }
 
 export function GamifiedLeaderboard({
-  branding,
   rows,
   bannerSubtitle,
   advancementCutoff = 24,
@@ -87,12 +84,8 @@ export function GamifiedLeaderboard({
   const topThree = filtered.filter((r) => r.rank <= 3);
 
   return (
-    <div className="space-y-6">
-      <LeaderboardBanner
-        branding={branding}
-        subtitle={bannerSubtitle}
-        tvMode={tvMode}
-      />
+    <div className="sd-glass-strong relative space-y-6 overflow-hidden rounded-2xl p-4 sm:p-6">
+      <LeaderboardBanner subtitle={bannerSubtitle} tvMode={tvMode} />
 
       {!tvMode && (
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -125,6 +118,7 @@ export function GamifiedLeaderboard({
             <option value="">All statuses</option>
             <option value="active">Active / advancing</option>
             <option value="advanced">Advancing to next phase</option>
+            <option value="tie_breaker">Tie breaker</option>
             <option value="eliminated">Eliminated</option>
             <option value="regional_finalist">Regional champion</option>
             <option value="champion">Champion</option>

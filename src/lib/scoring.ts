@@ -32,16 +32,46 @@ export interface ComputeStandingsOptions {
 interface BranchEliminationState {
   branch: BranchInput;
   eliminatedInRound: number | null;
+  tieBreakerInRound: number | null;
   manuallyAdvancedAfterRound: number | null;
   roundScores: Map<number, RoundPoints>;
 }
 
+/** Apply regional survivor cut; marks tie-breaker when tied scores exceed available slots. */
+function applyRegionalSurvivorCut(
+  ranked: { branch: BranchInput; points: number }[],
+  survivorCut: number,
+  roundNum: number,
+  state: Map<string, BranchEliminationState>,
+  alive: Set<string>
+) {
+  if (ranked.length <= survivorCut) return;
+
+  const cutoffPoints = ranked[survivorCut - 1].points;
+  const aboveCut = ranked.filter((e) => e.points > cutoffPoints);
+  const atCut = ranked.filter((e) => e.points === cutoffPoints);
+  const belowCut = ranked.filter((e) => e.points < cutoffPoints);
+
+  const autoSlotsAtCut = survivorCut - aboveCut.length;
+
+  atCut.forEach((entry, idx) => {
+    if (idx >= autoSlotsAtCut) {
+      state.get(entry.branch.id)!.tieBreakerInRound = roundNum;
+      alive.delete(entry.branch.id);
+    }
+  });
+
+  for (const entry of belowCut) {
+    state.get(entry.branch.id)!.eliminatedInRound = roundNum;
+    alive.delete(entry.branch.id);
+  }
+}
+
 function compareRoundEntry(
-  a: { points: number; wins: number; branch_name: string },
-  b: { points: number; wins: number; branch_name: string }
+  a: { points: number; branch_name: string },
+  b: { points: number; branch_name: string }
 ): number {
   if (b.points !== a.points) return b.points - a.points;
-  if (b.wins !== a.wins) return b.wins - a.wins;
   return a.branch_name.localeCompare(b.branch_name);
 }
 
@@ -92,6 +122,7 @@ function computePerRoundEliminationStandings(
     state.set(branch.id, {
       branch,
       eliminatedInRound: null,
+      tieBreakerInRound: null,
       manuallyAdvancedAfterRound: null,
       roundScores: new Map(),
     });
@@ -128,38 +159,34 @@ function computePerRoundEliminationStandings(
           return {
             branch,
             points: rp?.points ?? 0,
-            wins: rp?.wins ?? 0,
           };
         })
         .sort((a, b) =>
           compareRoundEntry(
             {
               points: a.points,
-              wins: a.wins,
               branch_name: a.branch.branch_name,
             },
             {
               points: b.points,
-              wins: b.wins,
               branch_name: b.branch.branch_name,
             }
           )
         );
 
-      ranked.forEach((entry, idx) => {
-        if (idx >= survivorCut) {
-          state.get(entry.branch.id)!.eliminatedInRound = roundNum;
-          alive.delete(entry.branch.id);
-        }
-      });
+      applyRegionalSurvivorCut(ranked, survivorCut, roundNum, state, alive);
 
       const manual = manualAdvancesForRound(manualAdvances, roundNum, region);
       for (const branchId of manual) {
         const branch = pool.find((b) => b.id === branchId && b.region === region);
         if (!branch) continue;
         const s = state.get(branchId)!;
-        if (s.eliminatedInRound === roundNum) {
+        if (
+          s.eliminatedInRound === roundNum ||
+          s.tieBreakerInRound === roundNum
+        ) {
           s.eliminatedInRound = null;
+          s.tieBreakerInRound = null;
           s.manuallyAdvancedAfterRound = roundNum;
           alive.add(branchId);
         }
@@ -170,7 +197,8 @@ function computePerRoundEliminationStandings(
   const rows: StandingRow[] = pool.map((branch) => {
     const s = state.get(branch.id)!;
     const elim = s.eliminatedInRound;
-    const lastActiveRound = elim ?? latestPublishedRound;
+    const tieBreak = s.tieBreakerInRound;
+    const lastActiveRound = elim ?? tieBreak ?? latestPublishedRound;
 
     const r1Val = roundPointsOrNull(
       lastActiveRound,
@@ -199,7 +227,9 @@ function computePerRoundEliminationStandings(
     );
 
     let status: BranchStatus = "active";
-    if (elim !== null) {
+    if (tieBreak !== null) {
+      status = "tie_breaker";
+    } else if (elim !== null) {
       status = "eliminated";
     } else if (
       latestPublishedRound === config.roundCount &&
@@ -211,6 +241,7 @@ function computePerRoundEliminationStandings(
 
     const advancing_to_round =
       elim === null &&
+      tieBreak === null &&
       latestPublishedRound > 0 &&
       latestPublishedRound < config.roundCount
         ? latestPublishedRound + 1
@@ -230,6 +261,7 @@ function computePerRoundEliminationStandings(
       total_wins,
       status,
       eliminated_in_round: elim,
+      tie_breaker_in_round: tieBreak,
       last_active_round: lastActiveRound,
       advancing_to_round,
       latest_published_round: latestPublishedRound,
@@ -359,14 +391,24 @@ export function getEligibleBranchIdsForRound(
 
   return new Set(
     standings
-      .filter((r) => r.eliminated_in_round === null)
+      .filter(
+        (r) =>
+          r.eliminated_in_round === null && r.tie_breaker_in_round === null
+      )
       .map((r) => r.branch_id)
   );
 }
 
+function statusSortOrder(status: BranchStatus): number {
+  if (status === "eliminated") return 3;
+  if (status === "tie_breaker") return 2;
+  return 0;
+}
+
 export function compareStandingRows(a: StandingRow, b: StandingRow): number {
-  if (a.status === "eliminated" && b.status !== "eliminated") return 1;
-  if (b.status === "eliminated" && a.status !== "eliminated") return -1;
+  const orderA = statusSortOrder(a.status);
+  const orderB = statusSortOrder(b.status);
+  if (orderA !== orderB) return orderA - orderB;
   if (b.total_points !== a.total_points) return b.total_points - a.total_points;
   const aR3 = a.round3_points ?? -1;
   const bR3 = b.round3_points ?? -1;
@@ -374,7 +416,6 @@ export function compareStandingRows(a: StandingRow, b: StandingRow): number {
   const aR2 = a.round2_points ?? -1;
   const bR2 = b.round2_points ?? -1;
   if (bR2 !== aR2) return bR2 - aR2;
-  if (b.total_wins !== a.total_wins) return b.total_wins - a.total_wins;
   return a.branch_name.localeCompare(b.branch_name);
 }
 

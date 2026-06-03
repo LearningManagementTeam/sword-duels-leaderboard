@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { HeroLogo } from "@/components/branding/HeroLogo";
 import { GamifiedLeaderboard } from "@/components/leaderboard/GamifiedLeaderboard";
 import type { BrandingConfig } from "@/lib/branding";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
@@ -84,13 +85,13 @@ export function TvLeaderboardView({
 
   return (
     <div className="space-y-4">
+      <HeroLogo branding={branding} tvMode />
       {rotateSec >= 10 && phase !== "august" && (
         <p className="text-center text-sm text-sd-glow">
           Auto-rotate regions every {rotateSec}s
         </p>
       )}
       <GamifiedLeaderboard
-        branding={branding}
         bannerSubtitle={subtitle}
         rows={displayRows}
         advancementCutoff={advancementCutoff}

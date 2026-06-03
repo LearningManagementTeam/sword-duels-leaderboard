@@ -87,6 +87,12 @@ export function getRoundCapRows() {
 }
 
 export const STATUS_GLOSSARY = [
+  { status: "Advancing", meaning: "Cleared the cut — advances to the next round" },
+  {
+    status: "Tie breaker",
+    meaning:
+      "Tied at the regional cut line — must play a tie-breaker round for a remaining slot (e.g. last spots in the top 32)",
+  },
   { status: "Active / advancing", meaning: "Still competing — advancing to next round" },
   {
     status: "Committee pick",
