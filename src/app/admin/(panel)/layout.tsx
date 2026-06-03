@@ -8,6 +8,7 @@ const links = [
   { href: "/admin/branches", label: "Branches" },
   { href: "/admin/representatives", label: "Representatives" },
   { href: "/admin/rounds", label: "Rounds" },
+  { href: "/admin/preview", label: "Preview" },
   { href: "/admin/advancement", label: "Advancement" },
   { href: "/admin/audit", label: "Audit log" },
 ];

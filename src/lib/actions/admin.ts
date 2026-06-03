@@ -12,6 +12,7 @@ import {
 } from "@/lib/scoring";
 import type { Region, SeasonSlug } from "@/lib/scoring-config";
 import { SCORING_CONFIG, REGIONS } from "@/lib/scoring-config";
+import type { StandingRow } from "@/lib/types";
 import {
   createClient,
   createServiceClient,
@@ -545,4 +546,138 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
+}
+
+export interface DraftPreviewResult {
+  seasonSlug: SeasonSlug;
+  rows: StandingRow[];
+  byRegion?: Partial<Record<Region, StandingRow[]>>;
+}
+
+export async function previewDraftStandings(
+  roundId: string,
+  draftResults: Array<{
+    branch_id: string;
+    points: number;
+    wins: number;
+    losses: number;
+  }>
+): Promise<DraftPreviewResult> {
+  await requireAdmin();
+  const service = await createServiceClient();
+
+  const { data: round, error: roundErr } = await service
+    .from("rounds")
+    .select("id, season_id, round_number, seasons(slug)")
+    .eq("id", roundId)
+    .single();
+  if (roundErr || !round) throw new Error("Round not found");
+
+  const seasonRaw = round.seasons as { slug: SeasonSlug } | { slug: SeasonSlug }[];
+  const seasonSlug = (Array.isArray(seasonRaw) ? seasonRaw[0] : seasonRaw).slug;
+
+  const participantIds = await getParticipantBranchIds(
+    service,
+    round.season_id,
+    seasonSlug
+  );
+
+  let branchQuery = service
+    .from("branches")
+    .select(
+      "id, branch_code, branch_name, area, region, representative_1, representative_2"
+    );
+  if (participantIds.length > 0) {
+    branchQuery = branchQuery.in("id", participantIds);
+  }
+  const { data: branchList } = await branchQuery;
+
+  const { data: seasonRounds } = await service
+    .from("rounds")
+    .select("id, round_number, status")
+    .eq("season_id", round.season_id);
+
+  const includedRoundIds = (seasonRounds ?? [])
+    .filter((r) => r.status === "published" || r.id === roundId)
+    .map((r) => r.id);
+
+  const { data: dbResults } = await service
+    .from("round_results")
+    .select("branch_id, points, wins, losses, round_id, rounds(round_number)")
+    .in(
+      "round_id",
+      includedRoundIds.length
+        ? includedRoundIds
+        : ["00000000-0000-0000-0000-000000000000"]
+    );
+
+  const mapped = (dbResults ?? [])
+    .filter((r) => {
+      const roundMeta = Array.isArray(r.rounds) ? r.rounds[0] : r.rounds;
+      return r.round_id !== roundId && roundMeta;
+    })
+    .map((r) => {
+      const roundMeta = Array.isArray(r.rounds) ? r.rounds[0] : r.rounds;
+      return {
+        branch_id: r.branch_id,
+        points: Number(r.points),
+        wins: r.wins,
+        losses: r.losses,
+        round_number: roundMeta.round_number,
+      };
+    });
+
+  for (const draft of draftResults) {
+    mapped.push({
+      branch_id: draft.branch_id,
+      points: draft.points,
+      wins: draft.wins,
+      losses: draft.losses,
+      round_number: round.round_number,
+    });
+  }
+
+  const agg = aggregatePublishedResults(mapped);
+
+  const attachReps = (rows: StandingRow[]): StandingRow[] => {
+    const byId = new Map((branchList ?? []).map((b) => [b.id, b]));
+    return rows.map((row) => {
+      const b = byId.get(row.branch_id);
+      return {
+        ...row,
+        representative_1: b?.representative_1 ?? null,
+        representative_2: b?.representative_2 ?? null,
+      };
+    });
+  };
+
+  const branchInputs =
+    branchList?.map((b) => ({
+      id: b.id,
+      branch_code: b.branch_code,
+      branch_name: b.branch_name,
+      area: b.area,
+      region: b.region as Region,
+    })) ?? [];
+
+  if (seasonSlug === "july_region") {
+    const byRegion: Partial<Record<Region, StandingRow[]>> = {};
+    for (const region of REGIONS) {
+      byRegion[region] = attachReps(
+        computeStandings(seasonSlug, branchInputs, agg, {
+          filterRegion: region,
+        })
+      );
+    }
+    return {
+      seasonSlug,
+      rows: byRegion.luzon ?? [],
+      byRegion,
+    };
+  }
+
+  const rows = attachReps(
+    computeStandings(seasonSlug, branchInputs, agg)
+  );
+  return { seasonSlug, rows };
 }

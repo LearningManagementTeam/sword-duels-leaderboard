@@ -12,6 +12,8 @@ Dynamic public leaderboard + central admin for a 3-phase branch competition (Phi
 | July Regional | `july_region` | `/july`, `/july/{luzon\|ncr\|vismin}` | **1** per region |
 | August Finals | `august_finals` | `/august` | **1** champion |
 
+**Preview routes (sample data, no DB):** `/preview`, `/preview/june`, `/preview/july/[region]`, `/preview/august`, `/preview/tv`
+
 **Live site:** https://sword-duels-leaderboard.vercel.app  
 **GitHub:** LearningManagementTeam/sword-duels-leaderboard  
 **Stack:** Next.js 16 App Router, Supabase (Postgres + Auth), Vercel, Tailwind 4
@@ -20,9 +22,10 @@ Dynamic public leaderboard + central admin for a 3-phase branch competition (Phi
 
 1. **Branches** `/admin/branches` — one CSV: branch + optional reps → June R1 seed
 2. **Representatives** `/admin/representatives` — table edit anytime (or re-import combined CSV on Branches)
-3. **Rounds** `/admin/rounds` — points per round → draft / **Save & publish**
-4. **Advancement** `/admin/advancement` — lock phase, seed next season participants
-5. **Audit** `/admin/audit` — admin action log
+3. **Rounds** `/admin/rounds` — points per round → draft / **Preview standings** / **Save & publish**
+4. **Preview** `/admin/preview` — links to sample public boards
+5. **Advancement** `/admin/advancement` — lock phase, seed next season participants
+6. **Audit** `/admin/audit` — admin action log
 
 **Auth:** Supabase users in `admins` table. Default doc email `learningmanagement2026@gmail.com` (owner sets password in Supabase).
 
@@ -45,6 +48,7 @@ Dynamic public leaderboard + central admin for a 3-phase branch competition (Phi
 | Rep CSV parse | `src/lib/representatives-csv.ts` |
 | Admin actions | `src/lib/actions/admin.ts` |
 | Public standings | `src/lib/data/queries.ts` |
+| Preview demo data | `src/lib/demo/generate-demo-standings.ts` |
 | Env validation | `src/lib/supabase/env.ts` |
 
 ## CSV templates (public)

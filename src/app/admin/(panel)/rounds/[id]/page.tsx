@@ -16,6 +16,7 @@ export default async function AdminRoundPage({
       roundId={data.round.id}
       roundName={data.round.name}
       status={data.round.status}
+      seasonSlug={data.seasonSlug}
       branches={data.branches}
       initial={data.resultMap}
     />

@@ -11,6 +11,7 @@ interface Props {
   advancementCutoff?: number;
   showArea?: boolean;
   showRegion?: boolean;
+  showRepresentatives?: boolean;
   compact?: boolean;
 }
 
@@ -19,6 +20,7 @@ export function LeaderboardTable({
   advancementCutoff = 24,
   showArea = true,
   showRegion = false,
+  showRepresentatives = false,
   compact = false,
 }: Props) {
   const [search, setSearch] = useState("");
@@ -36,7 +38,9 @@ export function LeaderboardTable({
         const q = search.toLowerCase();
         if (
           !r.branch_name.toLowerCase().includes(q) &&
-          !r.branch_code.toLowerCase().includes(q)
+          !r.branch_code.toLowerCase().includes(q) &&
+          !(r.representative_1?.toLowerCase().includes(q) ?? false) &&
+          !(r.representative_2?.toLowerCase().includes(q) ?? false)
         ) {
           return false;
         }
@@ -101,6 +105,9 @@ export function LeaderboardTable({
               {showRegion && (
                 <th className="px-3 py-2 font-medium">Region</th>
               )}
+              {showRepresentatives && (
+                <th className="px-3 py-2 font-medium">Representatives</th>
+              )}
               <th className="px-3 py-2 font-medium text-right">R1</th>
               <th className="px-3 py-2 font-medium text-right">R2</th>
               <th className="px-3 py-2 font-medium text-right">R3</th>
@@ -112,7 +119,12 @@ export function LeaderboardTable({
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={showArea ? (showRegion ? 9 : 8) : 7}
+                  colSpan={
+                    7 +
+                    (showArea ? 1 : 0) +
+                    (showRegion ? 1 : 0) +
+                    (showRepresentatives ? 1 : 0)
+                  }
                   className="px-3 py-8 text-center text-slate-400"
                 >
                   No standings published yet.
@@ -125,7 +137,11 @@ export function LeaderboardTable({
                   row.rank === advancementCutoff + 1 &&
                   filtered.some((r) => r.rank === advancementCutoff);
 
-                const colSpan = showArea ? (showRegion ? 9 : 8) : 7;
+                const colSpan =
+                  7 +
+                  (showArea ? 1 : 0) +
+                  (showRegion ? 1 : 0) +
+                  (showRepresentatives ? 1 : 0);
                 const items = [];
 
                 if (showCutLine) {
@@ -167,6 +183,18 @@ export function LeaderboardTable({
                       {showRegion && (
                         <td className="px-3 py-2 text-slate-300">
                           {REGION_LABELS[row.region as Region]}
+                        </td>
+                      )}
+                      {showRepresentatives && (
+                        <td className="px-3 py-2 text-slate-300">
+                          <div className="text-xs">
+                            {row.representative_1 || "—"}
+                          </div>
+                          {row.representative_2 && (
+                            <div className="text-xs text-slate-500">
+                              {row.representative_2}
+                            </div>
+                          )}
                         </td>
                       )}
                       <td className="px-3 py-2 text-right tabular-nums">

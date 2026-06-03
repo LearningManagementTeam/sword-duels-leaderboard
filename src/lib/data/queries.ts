@@ -78,7 +78,9 @@ export async function getPublishedStandings(
         branch_code,
         branch_name,
         area,
-        region
+        region,
+        representative_1,
+        representative_2
       )
     `
     )
@@ -109,6 +111,8 @@ export async function getPublishedStandings(
       round3_points: Number(row.round3_points),
       total_wins: row.total_wins,
       status: row.status,
+      representative_1: b.representative_1 ?? null,
+      representative_2: b.representative_2 ?? null,
     };
   });
 }

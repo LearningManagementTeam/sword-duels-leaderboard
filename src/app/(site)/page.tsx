@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { PhaseNav } from "@/components/PhaseNav";
 import { SetupBanner } from "@/components/SetupBanner";
+import { ShareCard } from "@/components/ShareCard";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://sword-duels-leaderboard.vercel.app");
 
 export default function HomePage() {
   const configured = isSupabaseConfigured();
@@ -51,6 +58,15 @@ export default function HomePage() {
           </p>
         </Link>
       </div>
+
+      <ShareCard url={SITE_URL} />
+
+      <p className="text-sm text-slate-500">
+        Want to see sample data first?{" "}
+        <Link href="/preview" className="text-amber-300/80 underline hover:text-amber-200">
+          Open preview leaderboards
+        </Link>
+      </p>
     </div>
   );
 }

@@ -1,21 +1,26 @@
 import Link from "next/link";
 
 const phases = [
-  { href: "/june", label: "June", sub: "Area-wide" },
-  { href: "/july", label: "July", sub: "Regional" },
-  { href: "/august", label: "August", sub: "Finals" },
-];
+  { slug: "june", label: "June", sub: "Area-wide" },
+  { slug: "july", label: "July", sub: "Regional" },
+  { slug: "august", label: "August", sub: "Finals" },
+] as const;
 
-export function PhaseNav({ active }: { active: "june" | "july" | "august" }) {
+export function PhaseNav({
+  active,
+  basePath = "",
+}: {
+  active: "june" | "july" | "august";
+  basePath?: string;
+}) {
   return (
     <nav className="flex flex-wrap gap-2">
       {phases.map((p) => {
-        const key = p.href.slice(1) as typeof active;
-        const isActive = key === active;
+        const isActive = p.slug === active;
         return (
           <Link
-            key={p.href}
-            href={p.href}
+            key={p.slug}
+            href={`${basePath}/${p.slug}`}
             className={`rounded-lg px-4 py-2 text-sm transition ${
               isActive
                 ? "bg-amber-500 text-slate-900 font-semibold"

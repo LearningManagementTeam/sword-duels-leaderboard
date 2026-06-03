@@ -57,6 +57,8 @@ export interface StandingRow {
   round3_points: number;
   total_wins: number;
   status: BranchStatus;
+  representative_1?: string | null;
+  representative_2?: string | null;
 }
 
 export interface AuditEntry {

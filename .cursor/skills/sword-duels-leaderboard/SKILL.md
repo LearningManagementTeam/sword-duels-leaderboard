@@ -9,6 +9,10 @@ description: >-
 
 # Sword Duels Leaderboard
 
+## Communicating with the project owner
+
+**Read [beginner-friendly-guide](../beginner-friendly-guide/SKILL.md)** when explaining work to the non-developer owner. Use plain language, what/why/plan structure, and browser-only steps for them.
+
 ## Context recovery (read first if thread is long)
 
 **Read [PROJECT-CONTEXT.md](PROJECT-CONTEXT.md)** — product phases, schema, routes, code map, errors, live URLs.
@@ -19,7 +23,7 @@ For database changes → use skill **sword-duels-supabase** (MCP `apply_migratio
 
 | Surface | URL |
 |---------|-----|
-| Public | `/`, `/june`, `/july`, `/august`, `/tv` |
+| Public | `/`, `/june`, `/july`, `/august`, `/tv`, `/preview/*` |
 | Admin | `/admin/login`, `/admin/branches`, `/admin/representatives`, `/admin/rounds` |
 | Live | sword-duels-leaderboard.vercel.app |
 

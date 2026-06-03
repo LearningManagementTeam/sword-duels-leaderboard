@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { saveRoundResults, publishRound } from "@/lib/actions/admin";
+import { DraftStandingsPreview } from "@/components/admin/DraftStandingsPreview";
 import type { Branch } from "@/lib/types";
+import type { SeasonSlug } from "@/lib/scoring-config";
 
 interface Props {
   roundId: string;
   roundName: string;
   status: string;
+  seasonSlug: SeasonSlug;
   branches: Branch[];
   initial: Map<string, { points: number; wins: number; losses: number }>;
 }
@@ -16,6 +19,7 @@ export function RoundResultsForm({
   roundId,
   roundName,
   status,
+  seasonSlug,
   branches,
   initial,
 }: Props) {
@@ -29,6 +33,17 @@ export function RoundResultsForm({
       wins: initial.get(b.id)?.wins ?? 0,
       losses: initial.get(b.id)?.losses ?? 0,
     }))
+  );
+
+  const getDraftResults = useCallback(
+    () =>
+      values.map((v) => ({
+        branch_id: v.branch_id,
+        points: Number(v.points),
+        wins: Number(v.wins),
+        losses: Number(v.losses),
+      })),
+    [values]
   );
 
   async function handleSave() {
@@ -151,6 +166,12 @@ export function RoundResultsForm({
           </tbody>
         </table>
       </div>
+
+      <DraftStandingsPreview
+        roundId={roundId}
+        seasonSlug={seasonSlug}
+        getDraftResults={getDraftResults}
+      />
 
       <div className="flex flex-wrap gap-2">
         <button

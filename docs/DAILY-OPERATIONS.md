@@ -16,9 +16,10 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 2. Open the correct season and round (e.g. June — Round 2).
 3. Enter **Points** (main score). Wins/Losses are optional.
 4. While still checking numbers → **Save draft** (public site unchanged).
-5. When everything is correct → **Save & publish**.
-6. Open the **public** site → confirm the right phase (June / July / region / August).
-7. Optional: click **Export CSV** on the public page for announcements.
+5. Optional: click **Preview standings (draft)** to see what the board would look like before publishing.
+6. When everything is correct → **Save & publish**.
+7. Open the **public** site → confirm the right phase (June / July / region / August).
+8. Optional: click **Export CSV** on the public page for announcements (includes representative names when set).
 
 ## Do not
 
@@ -43,6 +44,21 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 ## TV at an event
 
 Open: `https://YOUR-SITE/tv?phase=june` (or `july` / `august`) on a browser in fullscreen (F11).
+
+## Preview leaderboards (sample data)
+
+Use **preview** pages to demo the site before real scores exist. They use fake data only — nothing is saved to the database.
+
+| Page | URL |
+|------|-----|
+| Preview hub | `/preview` |
+| June sample | `/preview/june` |
+| July by region | `/preview/july/luzon`, `/ncr`, `/vismin` |
+| August sample | `/preview/august` |
+| TV preview | `/preview/tv?phase=june` |
+| Admin links | Admin → **Preview** |
+
+Share the **official** URL from the home page QR card once you are ready to go live.
 
 ## If something looks wrong
 

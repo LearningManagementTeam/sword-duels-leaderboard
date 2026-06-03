@@ -40,6 +40,7 @@ export default async function TvPage({
         rows={rows}
         advancementCutoff={slug === "june_area" ? 24 : 1}
         showArea={slug === "june_area"}
+        showRepresentatives
         compact
       />
     </div>
