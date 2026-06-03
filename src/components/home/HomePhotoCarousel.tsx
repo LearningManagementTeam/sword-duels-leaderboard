@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 
 const ROTATE_MS = 5000;
@@ -9,14 +8,11 @@ const SLIDE_MS = 600;
 interface Props {
   slides: string[];
   label?: string;
-  /** Admin preview: skip optimizer for fresh Supabase cache-bust URLs */
-  unoptimized?: boolean;
 }
 
 export function HomePhotoCarousel({
   slides,
   label = "Featured photos",
-  unoptimized = false,
 }: Props) {
   const [pos, setPos] = useState(0);
   const [noTransition, setNoTransition] = useState(false);
@@ -96,14 +92,13 @@ export function HomePhotoCarousel({
               style={{ width: `${100 / trackSlides.length}%` }}
               aria-hidden={i !== pos}
             >
-              <Image
+              {/* Native img: Supabase URLs + cache-bust query must not go through next/image */}
+              <img
                 src={src}
                 alt={`Featured photo ${(i % slides.length) + 1} of ${slides.length}`}
-                fill
-                className="object-cover"
-                sizes="(max-width: 640px) 288px, 448px"
-                priority={i === 0}
-                unoptimized={unoptimized}
+                className="h-full w-full object-cover"
+                loading={i === 0 ? "eager" : "lazy"}
+                decoding="async"
               />
             </div>
           ))}

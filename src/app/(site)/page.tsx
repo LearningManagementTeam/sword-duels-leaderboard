@@ -7,19 +7,15 @@ import { HomeStandingsHub } from "@/components/home/HomeStandingsHub";
 import { SetupBanner } from "@/components/SetupBanner";
 import { ShareCard } from "@/components/ShareCard";
 import { getBranding } from "@/lib/data/content-queries";
+import { getPublicSiteUrl } from "@/lib/site-url";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "https://sword-duels-leaderboard.vercel.app");
-
 export default async function HomePage() {
   const configured = isSupabaseConfigured();
   const branding = await getBranding();
+  const siteUrl = getPublicSiteUrl();
 
   return (
     <div className="space-y-8">
@@ -35,7 +31,7 @@ export default async function HomePage() {
 
       <HomeLastPublished />
 
-      <ShareCard url={SITE_URL} />
+      <ShareCard url={siteUrl} />
 
       <p className="text-sm text-sd-muted/70">
         Want to see sample data first?{" "}

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { parseBranchesCsv } from "@/lib/branches-csv";
@@ -37,12 +38,14 @@ import {
   getSeasonBySlug,
 } from "@/lib/data/queries";
 import type { StandingRow } from "@/lib/types";
+import { getBranding } from "@/lib/data/content-queries";
 import {
   createClient,
   createServiceClient,
   isSupabaseConfigured,
   isSupabaseServiceConfigured,
 } from "@/lib/supabase/server";
+import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
 async function requireAdmin() {
   if (!isSupabaseServiceConfigured()) {
@@ -71,14 +74,21 @@ async function logAudit(
   entity_id: string | null,
   details: Record<string, unknown>
 ) {
-  const service = await createServiceClient();
-  await service.from("audit_log").insert({
-    admin_email: email,
-    action,
-    entity_type,
-    entity_id,
-    details,
-  });
+  try {
+    const service = await createServiceClient();
+    const { error } = await service.from("audit_log").insert({
+      admin_email: email,
+      action,
+      entity_type,
+      entity_id,
+      details,
+    });
+    if (error) {
+      console.error("audit_log insert failed:", error.message);
+    }
+  } catch (e) {
+    console.error("audit_log insert failed:", e);
+  }
 }
 
 export async function importBranchesFromCsv(csvText?: string) {
@@ -1064,10 +1074,34 @@ const CAROUSEL_MIME: Record<string, string> = {
   "image/webp": "webp",
 };
 
-function revalidateBrandingSurfaces() {
-  revalidatePath("/", "layout");
-  revalidatePath("/admin", "layout");
-  revalidatePath("/admin/branding");
+const CAROUSEL_EXT_MIME: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  webp: "image/webp",
+};
+
+function carouselContentType(file: File, ext: string): string {
+  if (file.type && CAROUSEL_MIME[file.type]) return file.type;
+  return CAROUSEL_EXT_MIME[ext] ?? "image/jpeg";
+}
+
+function brandingStoragePublicUrl(path: string): string {
+  const { url } = getSupabasePublicEnv();
+  if (!url) {
+    throw new Error("Supabase URL is not configured.");
+  }
+  return `${url.replace(/\/$/, "")}/storage/v1/object/public/branding/${path}?v=${Date.now()}`;
+}
+
+/** Home is force-dynamic; skip revalidate here to avoid upload action errors. */
+function scheduleBrandingRevalidation() {
+  after(() => {
+    try {
+      revalidatePath("/admin/branding");
+    } catch {
+      // non-fatal
+    }
+  });
 }
 
 async function upsertBrandingBody(
@@ -1145,7 +1179,7 @@ export async function uploadBrandingLogo(formData: FormData) {
     path,
   });
 
-  revalidateBrandingSurfaces();
+  scheduleBrandingRevalidation();
   return { ok: true, logo_url: logoUrl };
 }
 
@@ -1173,7 +1207,7 @@ export async function removeBrandingLogo() {
 
   await logAudit(email, "remove_branding_logo", "site_content", BRANDING_CONTENT_SLUG, {});
 
-  revalidateBrandingSurfaces();
+  scheduleBrandingRevalidation();
   return { ok: true };
 }
 
@@ -1183,7 +1217,7 @@ export async function saveBrandingAlt(logoAlt: string) {
   await upsertBrandingBody(service, email, {
     logo_alt: logoAlt.trim() || DEFAULT_BRANDING.logo_alt,
   });
-  revalidateBrandingSurfaces();
+  scheduleBrandingRevalidation();
   return { ok: true };
 }
 
@@ -1205,7 +1239,6 @@ function carouselFileExtension(file: File): string | undefined {
 
 export async function refreshBrandingConfig(): Promise<BrandingConfig> {
   await requireAdmin();
-  const { getBranding } = await import("@/lib/data/content-queries");
   return getBranding();
 }
 
@@ -1236,13 +1269,22 @@ export async function uploadCarouselSlide(formData: FormData) {
   const { error: uploadErr } = await service.storage
     .from("branding")
     .upload(path, buffer, {
-      contentType: file.type,
+      contentType: carouselContentType(file, ext),
       upsert: true,
+      cacheControl: "3600",
     });
   if (uploadErr) throw new Error(uploadErr.message);
 
-  const { data: urlData } = service.storage.from("branding").getPublicUrl(path);
-  const url = `${urlData.publicUrl}?v=${Date.now()}`;
+  const { error: verifyErr } = await service.storage
+    .from("branding")
+    .download(path);
+  if (verifyErr) {
+    throw new Error(
+      `Photo saved but could not be read back (${verifyErr.message}). Check that the branding storage bucket is public in Supabase.`
+    );
+  }
+
+  const url = brandingStoragePublicUrl(path);
 
   const { data: existing } = await service
     .from("site_content")
@@ -1262,7 +1304,6 @@ export async function uploadCarouselSlide(formData: FormData) {
     path,
   });
 
-  revalidateBrandingSurfaces();
   return { ok: true, slot, url, carousel_slides: slides };
 }
 
@@ -1289,6 +1330,5 @@ export async function removeCarouselSlide(slot: 1 | 2 | 3) {
     slot,
   });
 
-  revalidateBrandingSurfaces();
   return { ok: true, carousel_slides: slides };
 }

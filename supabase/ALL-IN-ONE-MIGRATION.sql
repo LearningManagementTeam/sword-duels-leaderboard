@@ -272,6 +272,11 @@ SET
   ]::text[]
 WHERE id = 'branding';
 
+-- Ensure branding photos are publicly viewable (required for home carousel)
+UPDATE storage.buckets
+SET public = true
+WHERE id = 'branding';
+
 -- 010: Competition map (home page progress)
 INSERT INTO site_content (slug, body) VALUES (
   'competition_map',

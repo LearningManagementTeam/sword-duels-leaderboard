@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRef, useState } from "react";
 import { HeroLogo } from "@/components/branding/HeroLogo";
 import { HomePhotoCarousel } from "@/components/home/HomePhotoCarousel";
@@ -40,6 +39,14 @@ function applyCarouselSlides(
   return { ...branding, carousel_slides: slides };
 }
 
+function formatUploadError(err: unknown): string {
+  const text = err instanceof Error ? err.message : "Upload failed";
+  if (text.includes("Server Components render")) {
+    return "Upload may have completed — check the slot preview below. If the photo appears, you are done; otherwise refresh this page and try again.";
+  }
+  return text;
+}
+
 function CarouselStatusBanner({ status }: { status: CarouselStatus }) {
   if (status.phase === "idle") return null;
 
@@ -75,6 +82,9 @@ export function BrandingEditor({ initial }: Props) {
     phase: "idle",
     message: "",
   });
+  const [slotLoadErrors, setSlotLoadErrors] = useState<
+    Partial<Record<1 | 2 | 3, boolean>>
+  >({});
   const [message, setMessage] = useState("");
   const fileInputRefs = useRef<Record<1 | 2 | 3, HTMLInputElement | null>>({
     1: null,
@@ -137,6 +147,7 @@ export function BrandingEditor({ initial }: Props) {
       const result = await uploadCarouselSlide(fd);
       if (result.carousel_slides) {
         setBranding((b) => applyCarouselSlides(b, result.carousel_slides));
+        setSlotLoadErrors((prev) => ({ ...prev, [slot]: false }));
       } else if (result.url) {
         setBranding((b) => {
           const slides = [...b.carousel_slides] as CarouselSlides;
@@ -156,7 +167,23 @@ export function BrandingEditor({ initial }: Props) {
       });
       setMessage(`Photo ${slot} uploaded.`);
     } catch (err) {
-      const text = err instanceof Error ? err.message : "Upload failed";
+      const text = formatUploadError(err);
+      try {
+        const fresh = await refreshBrandingConfig();
+        setBranding(fresh);
+        if (fresh.carousel_slides[slot - 1]) {
+          setCarouselStatus({
+            phase: "success",
+            slot,
+            message: `Photo ${slot} saved (recovered after refresh).`,
+          });
+          setMessage(`Photo ${slot} uploaded.`);
+          if (input) input.value = "";
+          return;
+        }
+      } catch {
+        // ignore refresh failure
+      }
       setCarouselStatus({ phase: "error", slot, message: text });
       setMessage(text);
     } finally {
@@ -272,7 +299,7 @@ export function BrandingEditor({ initial }: Props) {
             Carousel preview ({activeSlides.length} of {CAROUSEL_SLOT_COUNT} filled)
           </p>
           {activeSlides.length > 0 ? (
-            <HomePhotoCarousel slides={activeSlides} unoptimized />
+            <HomePhotoCarousel slides={activeSlides} />
           ) : (
             <div className="sd-inset flex aspect-video max-h-48 items-center justify-center rounded-xl px-4 text-center text-sm text-sd-muted">
               {carouselLocked
@@ -302,15 +329,30 @@ export function BrandingEditor({ initial }: Props) {
                   )}
                 </p>
                 {url ? (
-                  <div className="relative aspect-video overflow-hidden rounded-lg bg-sd-deep">
-                    <Image
-                      src={url}
-                      alt={`Carousel slot ${slot}`}
-                      fill
-                      className="object-cover"
-                      sizes="200px"
-                      unoptimized
-                    />
+                  <div className="space-y-2">
+                    <div className="relative aspect-video overflow-hidden rounded-lg bg-sd-deep">
+                      <img
+                        src={url}
+                        alt={`Carousel slot ${slot}`}
+                        className="h-full w-full object-cover"
+                        onLoad={() =>
+                          setSlotLoadErrors((prev) => ({
+                            ...prev,
+                            [slot]: false,
+                          }))
+                        }
+                        onError={() =>
+                          setSlotLoadErrors((prev) => ({ ...prev, [slot]: true }))
+                        }
+                      />
+                    </div>
+                    {slotLoadErrors[slot] && (
+                      <p className="text-xs text-amber-200/90">
+                        This photo link is broken. Click{" "}
+                        <strong>Remove photo {slot}</strong>, then upload the file
+                        again.
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-emerald-500/25 bg-sd-deep/40 px-3 py-4 text-center">
