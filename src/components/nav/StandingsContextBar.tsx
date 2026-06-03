@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { PhaseNav } from "@/components/PhaseNav";
+import { getRoundViewConfig } from "@/lib/leaderboard-display";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { Region } from "@/lib/scoring-config";
+import type { SeasonSlug } from "@/lib/scoring-config";
 
 interface Props {
   phase: "june" | "july" | "august";
@@ -9,6 +11,7 @@ interface Props {
   latestPublishedRound: number;
   lastPublished: string | null;
   phaseTitle: string;
+  seasonSlug: SeasonSlug;
   basePath?: string;
   showRegions: boolean;
 }
@@ -19,9 +22,11 @@ export function StandingsContextBar({
   latestPublishedRound,
   lastPublished,
   phaseTitle,
+  seasonSlug,
   basePath = "",
   showRegions,
 }: Props) {
+  const roundView = getRoundViewConfig(seasonSlug, latestPublishedRound, region);
   const regionLinks = (["luzon", "ncr", "vismin"] as Region[]).map((r) => ({
     href: `${basePath}/${phase}/${r}`,
     label: REGION_LABELS[r],
@@ -29,8 +34,8 @@ export function StandingsContextBar({
 
   const roundLine =
     latestPublishedRound > 0
-      ? `After Round ${latestPublishedRound} — climb the board`
-      : "Round 1 drops soon — ranks appear after publish";
+      ? roundView.roundName
+      : "Round 1 kicks off soon — ranks appear after publish";
 
   return (
     <div className="sticky top-0 z-40 -mx-4 border-b border-emerald-500/15 bg-sd-deep/95 px-4 py-3 backdrop-blur-xl md:top-[3.25rem] md:mx-0 md:rounded-xl md:border md:border-emerald-500/20">

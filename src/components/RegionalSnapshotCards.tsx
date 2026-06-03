@@ -25,6 +25,7 @@ export function RegionalSnapshotCards({
       : null;
 
   let perfectCount = 0;
+  let perfectLabel: string | null = null;
   if (mechanics && latestPublishedRound > 0) {
     const key =
       latestPublishedRound === 1
@@ -32,10 +33,22 @@ export function RegionalSnapshotCards({
         : latestPublishedRound === 2
           ? "round2_points"
           : "round3_points";
-    perfectCount = rows.filter((r) => {
-      const pts = r[key as keyof StandingRow];
-      return typeof pts === "number" && pts >= mechanics.maxPoints;
-    }).length;
+    const maxScore =
+      mechanics.kind === "quiz"
+        ? mechanics.maxPoints
+        : mechanics.kind === "race_to_correct"
+          ? mechanics.maxCorrect
+          : null;
+    if (maxScore != null) {
+      perfectCount = rows.filter((r) => {
+        const pts = r[key as keyof StandingRow];
+        return typeof pts === "number" && pts >= maxScore;
+      }).length;
+      perfectLabel = `Scored max (${maxScore}) this round`;
+    } else if (mechanics.kind === "last_man_standing") {
+      perfectCount = rows.filter((r) => r.round2_points === 1).length;
+      perfectLabel = "Still standing";
+    }
   }
 
   const tieBreaker = rows.filter((r) => r.status === "tie_breaker").length;
@@ -47,9 +60,9 @@ export function RegionalSnapshotCards({
     { label: "Total shown", value: String(rows.length) },
   ];
 
-  if (mechanics && perfectCount > 0) {
+  if (perfectLabel && perfectCount > 0) {
     cards.push({
-      label: `Scored max (${mechanics.maxPoints}) this round`,
+      label: perfectLabel,
       value: String(perfectCount),
     });
   }

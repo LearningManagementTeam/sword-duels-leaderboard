@@ -67,6 +67,8 @@ export interface StandingRow {
   advancing_to_round?: number | null;
   latest_published_round?: number;
   manually_advanced_after_round?: number | null;
+  /** R3 qualification sequence (1 = first to 5 correct). */
+  round3_finish_order?: number | null;
 }
 
 export interface AuditEntry {

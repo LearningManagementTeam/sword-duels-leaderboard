@@ -13,6 +13,7 @@ import {
 } from "@/lib/scoring";
 import type { Region, SeasonSlug } from "@/lib/scoring-config";
 import {
+  validateFinishOrder,
   validateRoundPoints,
 } from "@/lib/scoring-config";
 import { SCORING_CONFIG, REGIONS } from "@/lib/scoring-config";
@@ -318,6 +319,7 @@ export async function saveRoundResults(
   results: Array<{
     branch_id: string;
     points: number;
+    finish_order?: number | null;
   }>
 ) {
   const { email } = await requireAdmin();
@@ -336,6 +338,13 @@ export async function saveRoundResults(
   for (const r of results) {
     const err = validateRoundPoints(seasonSlug, round.round_number, r.points);
     if (err) throw new Error(err);
+    const orderErr = validateFinishOrder(
+      seasonSlug,
+      round.round_number,
+      r.finish_order,
+      r.points
+    );
+    if (orderErr) throw new Error(orderErr);
   }
 
   const payload = results.map((r) => ({
@@ -344,6 +353,7 @@ export async function saveRoundResults(
     points: r.points,
     wins: 0,
     losses: 0,
+    finish_order: r.finish_order ?? null,
     updated_at: new Date().toISOString(),
   }));
 
@@ -432,7 +442,7 @@ async function recomputeAndPublishStandings(
   const roundIds = (publishedRounds ?? []).map((r) => r.id);
   const { data: results } = await service
     .from("round_results")
-    .select("branch_id, points, wins, losses, rounds(round_number)")
+    .select("branch_id, points, wins, losses, finish_order, rounds(round_number)")
     .in("round_id", roundIds.length ? roundIds : ["00000000-0000-0000-0000-000000000000"]);
 
   const mapped = (results ?? []).map((r) => ({
@@ -440,6 +450,7 @@ async function recomputeAndPublishStandings(
     points: Number(r.points),
     wins: r.wins,
     losses: r.losses,
+    finish_order: r.finish_order ?? null,
     round_number: (Array.isArray(r.rounds) ? r.rounds[0] : r.rounds)
       .round_number,
   }));
@@ -502,6 +513,7 @@ async function upsertStandings(
     eliminated_in_round: s.eliminated_in_round ?? null,
     tie_breaker_in_round: s.tie_breaker_in_round ?? null,
     last_active_round: s.last_active_round ?? 0,
+    round3_finish_order: s.round3_finish_order ?? null,
   }));
   const { error } = await service.from("published_standings").insert(rows);
   if (error) throw new Error(error.message);
@@ -626,6 +638,7 @@ export async function previewDraftStandings(
   draftResults: Array<{
     branch_id: string;
     points: number;
+    finish_order?: number | null;
   }>
 ): Promise<DraftPreviewResult> {
   await requireAdmin();
@@ -668,7 +681,9 @@ export async function previewDraftStandings(
 
   const { data: dbResults } = await service
     .from("round_results")
-    .select("branch_id, points, wins, losses, round_id, rounds(round_number)")
+    .select(
+      "branch_id, points, wins, losses, finish_order, round_id, rounds(round_number)"
+    )
     .in(
       "round_id",
       includedRoundIds.length
@@ -688,6 +703,7 @@ export async function previewDraftStandings(
         points: Number(r.points),
         wins: r.wins,
         losses: r.losses,
+        finish_order: r.finish_order ?? null,
         round_number: roundMeta.round_number,
       };
     });
@@ -699,6 +715,7 @@ export async function previewDraftStandings(
       wins: 0,
       losses: 0,
       round_number: round.round_number,
+      finish_order: draft.finish_order ?? null,
     });
   }
 

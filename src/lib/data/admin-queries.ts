@@ -196,7 +196,7 @@ export async function getRoundWithResults(roundId: string) {
 
   const { data: results } = await service
     .from("round_results")
-    .select("branch_id, points, wins, losses")
+    .select("branch_id, points, wins, losses, finish_order")
     .eq("round_id", roundId);
 
   const resultMap = new Map(
@@ -206,6 +206,7 @@ export async function getRoundWithResults(roundId: string) {
         points: Number(r.points),
         wins: r.wins,
         losses: r.losses,
+        finish_order: r.finish_order ?? null,
       },
     ])
   );
@@ -309,7 +310,12 @@ export async function getAdvancementPickContext(roundId: string) {
   const agg = aggregatePublishedResults(mapped);
   const manualAdvances = await fetchManualAdvances(service, round.season_id);
   const mechanics = getRoundMechanics(seasonSlug, round.round_number);
-  const maxPoints = mechanics?.maxPoints ?? null;
+  const maxPoints =
+    mechanics?.kind === "quiz"
+      ? mechanics.maxPoints
+      : mechanics?.kind === "race_to_correct"
+        ? mechanics.maxCorrect
+        : null;
 
   const pointsForRound = (branchId: string) => {
     const rp = (agg.get(branchId) ?? []).find(

@@ -18,6 +18,7 @@ interface Props {
   showDetailToggle?: boolean;
   seasonSlug?: SeasonSlug;
   latestPublishedRound?: number;
+  region?: import("@/lib/scoring-config").Region;
 }
 
 export function LeaderboardSection({

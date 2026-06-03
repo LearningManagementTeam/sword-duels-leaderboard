@@ -79,11 +79,17 @@ export function getRoundCapRows() {
     for (let r = 1; r <= 3; r++) {
       const m = getRoundMechanics(slug, r);
       if (m) {
+        const max =
+          m.kind === "quiz"
+            ? String(m.maxPoints)
+            : m.kind === "race_to_correct"
+              ? `${m.maxCorrect} correct`
+              : "Survived / Out";
         rows.push({
           season: name,
           round: `Round ${r}`,
-          format: m.label.replace(/^Round \d+ — /, ""),
-          max: String(m.maxPoints),
+          format: m.roundName,
+          max,
         });
       }
     }

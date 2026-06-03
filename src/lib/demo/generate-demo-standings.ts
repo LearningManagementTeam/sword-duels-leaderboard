@@ -2,21 +2,13 @@ import {
   computeStandings,
   type BranchInput,
   type RoundPoints,
-  aggregatePublishedResults,
-  getEligibleBranchIdsForRound,
 } from "@/lib/scoring";
-import type { Region, SeasonSlug } from "@/lib/scoring-config";
+import { REGIONS, type Region, type SeasonSlug } from "@/lib/scoring-config";
 import type { StandingRow } from "@/lib/types";
 import { DEMO_BRANCHES } from "./demo-branches";
 
-function seededPoints(branchIndex: number, round: number): number {
-  const base = (branchIndex * 7919 + round * 104729) % 8500;
-  const branchTotal = DEMO_BRANCHES.length;
-  return Math.round((base / 100 + 15 + (branchTotal - branchIndex) * 0.05) * 100) / 100;
-}
-
-function seededWins(branchIndex: number, round: number): number {
-  return ((branchIndex * 17 + round * 31) % 12) + 1;
+function quizScore(branchIndex: number): number {
+  return (branchIndex * 7 + 13) % 11;
 }
 
 function toBranchInput(): BranchInput[] {
@@ -34,39 +26,86 @@ function buildEliminationResults(
   seasonSlug: "june_area" | "july_region"
 ): Map<string, RoundPoints[]> {
   const results = new Map<string, RoundPoints[]>();
+  const r1Max = seasonSlug === "june_area" ? 10 : 15;
 
   branches.forEach((branch, index) => {
+    const score =
+      seasonSlug === "june_area"
+        ? quizScore(index + 1)
+        : Math.min(15, quizScore(index + 1) + 5);
     results.set(branch.id, [
       {
         round_number: 1,
-        points: seededPoints(index + 1, 1),
-        wins: seededWins(index + 1, 1),
-        losses: Math.max(0, 5 - seededWins(index + 1, 1)),
+        points: Math.min(r1Max, score),
+        wins: 0,
+        losses: 0,
       },
     ]);
   });
 
-  for (let round = 2; round <= 3; round++) {
-    const publishedRoundNumbers = Array.from({ length: round - 1 }, (_, i) => i + 1);
-    const eligible = getEligibleBranchIdsForRound(
-      seasonSlug,
-      branches,
-      results,
-      round,
-      publishedRoundNumbers
-    );
+  const afterR1 = computeStandings(seasonSlug, branches, results, {
+    publishedRoundNumbers: [1],
+  });
 
-    for (const branch of branches) {
-      if (!eligible.has(branch.id)) continue;
-      const index = branches.findIndex((b) => b.id === branch.id);
-      const list = results.get(branch.id)!;
+  for (const region of REGIONS) {
+    const regional = afterR1
+      .filter(
+        (r) =>
+          r.region === region &&
+          r.eliminated_in_round === null &&
+          r.tie_breaker_in_round === null
+      )
+      .sort((a, b) => (b.round1_points ?? 0) - (a.round1_points ?? 0));
+
+    const r2Cut = seasonSlug === "june_area" ? 16 : 2;
+    regional.forEach((row, i) => {
+      const list = results.get(row.branch_id);
+      if (!list) return;
       list.push({
-        round_number: round,
-        points: seededPoints(index + 1, round),
-        wins: seededWins(index + 1, round),
-        losses: Math.max(0, 5 - seededWins(index + 1, round)),
+        round_number: 2,
+        points: i < r2Cut ? 1 : 0,
+        wins: 0,
+        losses: 0,
       });
-    }
+    });
+  }
+
+  const afterR2 = computeStandings(seasonSlug, branches, results, {
+    publishedRoundNumbers: [1, 2],
+  });
+
+  for (const region of REGIONS) {
+    const regional = afterR2
+      .filter(
+        (r) =>
+          r.region === region &&
+          r.eliminated_in_round === null &&
+          r.tie_breaker_in_round === null
+      )
+      .sort((a, b) => a.branch_name.localeCompare(b.branch_name));
+
+    const r3Cut = seasonSlug === "june_area" ? 8 : 1;
+    regional.forEach((row, i) => {
+      const list = results.get(row.branch_id);
+      if (!list) return;
+      if (i < r3Cut) {
+        list.push({
+          round_number: 3,
+          points: 5,
+          wins: 0,
+          losses: 0,
+          finish_order: i + 1,
+        });
+      } else {
+        list.push({
+          round_number: 3,
+          points: (i % 5),
+          wins: 0,
+          losses: 0,
+          finish_order: null,
+        });
+      }
+    });
   }
 
   return results;
@@ -122,7 +161,7 @@ export function getDemoJulyStandings(region: Region): StandingRow[] {
 
 export function getDemoAugustStandings(): StandingRow[] {
   const champions: BranchInput[] = [];
-  for (const region of ["luzon", "ncr", "vismin"] as Region[]) {
+  for (const region of REGIONS) {
     const regional = getDemoJulyStandings(region);
     const winner = regional.find((r) => r.status === "regional_finalist");
     if (winner) {
@@ -137,8 +176,8 @@ export function getDemoAugustStandings(): StandingRow[] {
     for (let r = 1; r <= 3; r++) {
       rounds.push({
         round_number: r,
-        points: seededPoints(index + 50, r),
-        wins: seededWins(index + 50, r),
+        points: 5 + index,
+        wins: 0,
         losses: 0,
       });
     }
@@ -162,4 +201,18 @@ export function getDemoStandings(
     return getDemoJulyStandings(region);
   }
   return getDemoAugustStandings();
+}
+
+export function getDemoJuneStandingsForRound(
+  region: Region,
+  publishedRound: 1 | 2 | 3
+): StandingRow[] {
+  const branches = toBranchInput();
+  const results = getJuneResults();
+  return attachReps(
+    computeStandings("june_area", branches, results, {
+      filterRegion: region,
+      publishedRoundNumbers: Array.from({ length: publishedRound }, (_, i) => i + 1),
+    })
+  ).map((row) => ({ ...row, latest_published_round: publishedRound }));
 }

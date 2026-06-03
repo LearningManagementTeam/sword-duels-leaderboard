@@ -29,7 +29,7 @@ export type FullLeaderboardData = {
   phaseTitle: string;
 };
 
-function cutoffForRegion(
+export function buildJuneCutoffForRegion(
   region: Region,
   latestPublishedRound: number
 ): { cutoff: number; cutLineLabel?: string } {
@@ -62,7 +62,7 @@ export async function getFullLeaderboardJuneData(): Promise<FullLeaderboardData>
       const byRegion = await Promise.all(
         REGIONS.map(async (region) => {
           const rows = await getPublishedStandings(season.id, region);
-          const { cutoff, cutLineLabel } = cutoffForRegion(
+          const { cutoff, cutLineLabel } = buildJuneCutoffForRegion(
             region,
             latestPublishedRound
           );
@@ -91,7 +91,7 @@ export async function getFullLeaderboardJuneData(): Promise<FullLeaderboardData>
   const latestPublishedRound = 3;
   const byRegion = REGIONS.map((region) => {
     const rows = getDemoJuneStandings(region);
-    const { cutoff, cutLineLabel } = cutoffForRegion(
+    const { cutoff, cutLineLabel } = buildJuneCutoffForRegion(
       region,
       latestPublishedRound
     );

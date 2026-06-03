@@ -1,7 +1,7 @@
 import { FullLeaderboardCompare } from "@/components/leaderboard/FullLeaderboardCompare";
-import { getFullLeaderboardJuneData } from "@/lib/full-leaderboard-data";
+import { getCompareLeaderboardPreviewData } from "@/lib/compare-preview-data";
 
-export default async function CompareUnifiedPage() {
-  const data = await getFullLeaderboardJuneData();
+export default function CompareUnifiedPage() {
+  const data = getCompareLeaderboardPreviewData();
   return <FullLeaderboardCompare data={data} layout="unified" />;
 }

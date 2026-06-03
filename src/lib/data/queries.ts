@@ -86,6 +86,7 @@ export async function getPublishedStandings(
       eliminated_in_round,
       tie_breaker_in_round,
       last_active_round,
+      round3_finish_order,
       branch:branches (
         id,
         branch_code,
@@ -141,6 +142,7 @@ export async function getPublishedStandings(
       tie_breaker_in_round: row.tie_breaker_in_round ?? null,
       last_active_round: row.last_active_round ?? null,
       advancing_to_round,
+      round3_finish_order: row.round3_finish_order ?? null,
     };
   });
 }

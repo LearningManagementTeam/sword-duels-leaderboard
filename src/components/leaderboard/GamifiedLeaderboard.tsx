@@ -2,17 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { LeaderboardBanner } from "./LeaderboardBanner";
-import { PodiumTopThree } from "./PodiumTopThree";
-import { GamifiedRankList } from "./GamifiedRankList";
 import { LeaderboardDetailToggle } from "./LeaderboardDetailToggle";
+import { RoundBoardShell } from "./RoundBoardShell";
 import { filterLeaderboardRows } from "@/lib/leaderboard-utils";
+import {
+  getRoundViewConfig,
+  type RoundViewConfig,
+} from "@/lib/leaderboard-display";
 import type { StandingRow } from "@/lib/types";
 import {
   CUMULATIVE_TIE_BREAKER_LABELS,
   TIE_BREAKER_LABELS,
   usesPerRoundElimination,
+  type Region,
+  type SeasonSlug,
 } from "@/lib/scoring-config";
-import type { SeasonSlug } from "@/lib/scoring-config";
 
 interface Props {
   rows: StandingRow[];
@@ -28,6 +32,7 @@ interface Props {
   seasonSlug?: SeasonSlug;
   latestPublishedRound?: number;
   highlightCode?: string | null;
+  region?: Region;
 }
 
 export function GamifiedLeaderboard({
@@ -44,11 +49,20 @@ export function GamifiedLeaderboard({
   seasonSlug,
   latestPublishedRound = 0,
   highlightCode = null,
+  region,
 }: Props) {
   const storageKey = seasonSlug ? `sd-search-${seasonSlug}` : "sd-search";
   const [search, setSearch] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  const view: RoundViewConfig = useMemo(
+    () =>
+      seasonSlug
+        ? getRoundViewConfig(seasonSlug, latestPublishedRound, region)
+        : getRoundViewConfig("june_area", latestPublishedRound, region),
+    [seasonSlug, latestPublishedRound, region]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -77,29 +91,39 @@ export function GamifiedLeaderboard({
     [rows, search, areaFilter, statusFilter]
   );
 
-  const defaultCutLabel =
-    cutLineLabel ??
-    (perRound && latestPublishedRound > 0
-      ? `Cut line — top ${advancementCutoff} advance to Round ${latestPublishedRound + 1}`
-      : `Cut line — top ${advancementCutoff} advance`);
+  const defaultCutLabel = cutLineLabel ?? view.cutLineLabel;
+  const roundBannerTitle = view.roundName;
+  const roundBannerSubtitle =
+    bannerSubtitle ?? view.bannerTagline;
 
-  const topThree = filtered.filter((r) => r.rank <= 3);
+  const themeAccent =
+    view.layoutVariant === "quiz_ladder"
+      ? "border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent"
+      : view.layoutVariant === "survival_roster"
+        ? "border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-transparent"
+        : view.layoutVariant === "finish_order_champions"
+          ? "border-fuchsia-500/20 bg-gradient-to-br from-fuchsia-500/5 to-transparent"
+          : "";
 
   return (
     <div
-      className={`sd-glass-strong relative overflow-hidden rounded-2xl ${
+      className={`sd-glass-strong relative overflow-hidden rounded-2xl ${themeAccent} ${
         compact ? "space-y-3 p-3" : "space-y-6 p-4 sm:p-6"
       }`}
     >
       {!compact && (
-        <LeaderboardBanner subtitle={bannerSubtitle} tvMode={tvMode} />
+        <LeaderboardBanner
+          subtitle={roundBannerSubtitle}
+          title={latestPublishedRound > 0 ? roundBannerTitle : undefined}
+          tvMode={tvMode}
+        />
       )}
 
       {!tvMode && !compact && (
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <input
             type="search"
-            placeholder="Search branch… (?highlight=CODE)"
+            placeholder="Search participant, branch, or code…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="sd-input min-w-[200px] flex-1 rounded-lg px-3 py-2 text-sm"
@@ -136,23 +160,22 @@ export function GamifiedLeaderboard({
 
       {filtered.length === 0 ? (
         <p className={`text-center text-sd-muted ${compact ? "py-6 text-sm" : "py-12"}`}>
-          Round 1 drops soon — ranks appear here after publish.
+          {view.emptyMessage}
         </p>
       ) : (
-        <>
-          {!compact && (
-            <PodiumTopThree topThree={topThree} tvMode={tvMode} />
-          )}
-          <div className={compact ? "max-h-[min(28rem,55vh)] overflow-y-auto pr-1" : undefined}>
-            <GamifiedRankList
-              rows={filtered}
-              advancementCutoff={advancementCutoff}
-              cutLineLabel={defaultCutLabel}
-              highlightCode={highlightCode}
-              tvMode={tvMode}
-            />
-          </div>
-        </>
+        <div className={compact ? "max-h-[min(28rem,55vh)] overflow-y-auto pr-1" : undefined}>
+          <RoundBoardShell
+            rows={filtered}
+            view={view}
+            seasonSlug={seasonSlug}
+            region={region}
+            advancementCutoff={advancementCutoff}
+            cutLineLabel={defaultCutLabel}
+            highlightCode={highlightCode}
+            tvMode={tvMode}
+            compact={compact}
+          />
+        </div>
       )}
 
       {!tvMode && !compact && (

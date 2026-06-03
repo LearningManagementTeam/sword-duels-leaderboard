@@ -11,7 +11,11 @@ export function CompareLayoutBanner({ layoutName, layoutSlug }: Props) {
       <p className="text-sm">
         <strong>Layout preview:</strong> {layoutName}
         {layoutSlug !== "picker" && (
-          <span className="text-sd-muted/80"> — pick the view that feels best on your phone and desktop.</span>
+          <span className="text-sd-muted/80">
+            {" "}
+            — sample standings after Round 3 so you can see the full layout. Pick
+            the view that feels best on your phone and desktop.
+          </span>
         )}
       </p>
       <div className="flex flex-wrap gap-3 text-sm">

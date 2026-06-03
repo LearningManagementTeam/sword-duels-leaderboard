@@ -9,6 +9,7 @@ interface Props {
   cutoff: number;
   cutLineLabel?: string;
   compact?: boolean;
+  showDetailToggle?: boolean;
 }
 
 export function RegionLeaderboardPanel({
@@ -18,6 +19,7 @@ export function RegionLeaderboardPanel({
   cutoff,
   cutLineLabel,
   compact = true,
+  showDetailToggle = false,
 }: Props) {
   const subtitle =
     latestPublishedRound > 0
@@ -42,10 +44,11 @@ export function RegionLeaderboardPanel({
         showArea={!compact}
         showRegion={false}
         showRepresentatives={!compact}
-        showDetailToggle={false}
+        showDetailToggle={showDetailToggle}
         compact={compact}
         seasonSlug="june_area"
         latestPublishedRound={latestPublishedRound}
+        region={region}
       />
     </div>
   );

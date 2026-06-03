@@ -1,7 +1,7 @@
 import { FullLeaderboardCompare } from "@/components/leaderboard/FullLeaderboardCompare";
-import { getFullLeaderboardJuneData } from "@/lib/full-leaderboard-data";
+import { getCompareLeaderboardPreviewData } from "@/lib/compare-preview-data";
 
-export default async function CompareThreeColumnsPage() {
-  const data = await getFullLeaderboardJuneData();
+export default function CompareThreeColumnsPage() {
+  const data = getCompareLeaderboardPreviewData();
   return <FullLeaderboardCompare data={data} layout="three-columns" />;
 }

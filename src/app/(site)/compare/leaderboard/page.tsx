@@ -38,7 +38,9 @@ export default function CompareLeaderboardPickerPage() {
           Pick your full leaderboard view
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-sd-muted">
-          Open each option on your phone and desktop. Tell us which feels best —
+          Open each option on your phone and desktop. Each preview uses sample
+          June standings (45 branches per region, after Round 3) so you can see
+          podiums, cut lines, and search in action. Tell us which feels best —
           we&apos;ll make that the permanent full leaderboard page.
         </p>
       </div>

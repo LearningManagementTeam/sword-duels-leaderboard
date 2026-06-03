@@ -1,5 +1,11 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
+import {
+  branchSubtext,
+  formatHeroMetric,
+  getRoundViewConfig,
+  participantDisplayName,
+} from "@/lib/leaderboard-display";
 import { getCompetitionMap } from "@/lib/data/content-queries";
 import {
   getBranchCount,
@@ -55,6 +61,7 @@ export async function HomeStandingsPreview() {
   }
 
   const preview = rows.slice(0, PREVIEW_ROWS);
+  const roundView = getRoundViewConfig(seasonSlug, latestRound, region);
   const regionLine =
     region && seasonSlug !== "august_finals"
       ? REGION_LABELS[region]
@@ -114,14 +121,21 @@ export async function HomeStandingsPreview() {
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-950/80 text-xs font-bold text-sd-glow">
                     {row.rank}
                   </span>
-                  <span className="truncate font-medium text-white">
-                    {row.branch_name}
-                  </span>
+                  <div className="min-w-0">
+                    <span className="block truncate font-medium text-white">
+                      {participantDisplayName(row)}
+                    </span>
+                    <span className="block truncate text-xs text-sd-muted/70">
+                      {branchSubtext(row)}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className="font-semibold tabular-nums text-sd-glow">
-                    {row.total_points}
-                  </span>
+                  {latestRound > 0 && (
+                    <span className="text-xs font-semibold tabular-nums text-sd-glow">
+                      {formatHeroMetric(row, roundView, seasonSlug)}
+                    </span>
+                  )}
                   <StatusBadge
                     status={row.status}
                     eliminatedInRound={row.eliminated_in_round}

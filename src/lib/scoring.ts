@@ -1,6 +1,11 @@
 import type { BranchStatus, StandingRow } from "./types";
 import type { Region, SeasonSlug } from "./scoring-config";
-import { REGIONS, SCORING_CONFIG, usesPerRoundElimination } from "./scoring-config";
+import {
+  REGIONS,
+  SCORING_CONFIG,
+  getRoundMechanics,
+  usesPerRoundElimination,
+} from "./scoring-config";
 import {
   manualAdvancesForRound,
   type ManualAdvance,
@@ -19,6 +24,7 @@ export interface RoundPoints {
   points: number;
   wins: number;
   losses: number;
+  finish_order?: number | null;
 }
 
 export interface ComputeStandingsOptions {
@@ -68,9 +74,25 @@ function applyRegionalSurvivorCut(
 }
 
 function compareRoundEntry(
-  a: { points: number; branch_name: string },
-  b: { points: number; branch_name: string }
+  a: { points: number; finish_order?: number | null; branch_name: string },
+  b: { points: number; finish_order?: number | null; branch_name: string },
+  roundKind?: "quiz" | "last_man_standing" | "race_to_correct"
 ): number {
+  if (roundKind === "last_man_standing") {
+    if (b.points !== a.points) return b.points - a.points;
+    return a.branch_name.localeCompare(b.branch_name);
+  }
+
+  if (roundKind === "race_to_correct") {
+    if (b.points !== a.points) return b.points - a.points;
+    if (a.points === 5 && b.points === 5) {
+      const aOrder = a.finish_order ?? 999;
+      const bOrder = b.finish_order ?? 999;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+    }
+    return a.branch_name.localeCompare(b.branch_name);
+  }
+
   if (b.points !== a.points) return b.points - a.points;
   return a.branch_name.localeCompare(b.branch_name);
 }
@@ -159,18 +181,22 @@ function computePerRoundEliminationStandings(
           return {
             branch,
             points: rp?.points ?? 0,
+            finish_order: rp?.finish_order ?? null,
           };
         })
         .sort((a, b) =>
           compareRoundEntry(
             {
               points: a.points,
+              finish_order: a.finish_order,
               branch_name: a.branch.branch_name,
             },
             {
               points: b.points,
+              finish_order: b.finish_order,
               branch_name: b.branch.branch_name,
-            }
+            },
+            getRoundMechanics(seasonSlug, roundNum)?.kind
           )
         );
 
@@ -247,6 +273,8 @@ function computePerRoundEliminationStandings(
         ? latestPublishedRound + 1
         : null;
 
+    const r3Score = s.roundScores.get(3);
+
     return {
       branch_id: branch.id,
       branch_code: branch.branch_code,
@@ -266,6 +294,7 @@ function computePerRoundEliminationStandings(
       advancing_to_round,
       latest_published_round: latestPublishedRound,
       manually_advanced_after_round: s.manuallyAdvancedAfterRound,
+      round3_finish_order: r3Score?.finish_order ?? null,
     };
   });
 
@@ -409,6 +438,15 @@ export function compareStandingRows(a: StandingRow, b: StandingRow): number {
   const orderA = statusSortOrder(a.status);
   const orderB = statusSortOrder(b.status);
   if (orderA !== orderB) return orderA - orderB;
+
+  if (
+    a.latest_published_round === 3 &&
+    a.round3_finish_order != null &&
+    b.round3_finish_order != null
+  ) {
+    return a.round3_finish_order - b.round3_finish_order;
+  }
+
   if (b.total_points !== a.total_points) return b.total_points - a.total_points;
   const aR3 = a.round3_points ?? -1;
   const bR3 = b.round3_points ?? -1;
@@ -425,6 +463,7 @@ export interface ResultWithRound {
   wins: number;
   losses: number;
   round_number: number;
+  finish_order?: number | null;
 }
 
 export function aggregatePublishedResults(
@@ -438,12 +477,14 @@ export function aggregatePublishedResults(
       existing.points += Number(r.points);
       existing.wins += r.wins;
       existing.losses += r.losses;
+      if (r.finish_order != null) existing.finish_order = r.finish_order;
     } else {
       list.push({
         round_number: r.round_number,
         points: Number(r.points),
         wins: r.wins,
         losses: r.losses,
+        finish_order: r.finish_order ?? null,
       });
     }
     map.set(r.branch_id, list);

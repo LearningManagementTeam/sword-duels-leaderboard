@@ -1,14 +1,27 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { saveRoundResults, publishRound } from "@/lib/actions/admin";
 import { DraftStandingsPreview } from "@/components/admin/DraftStandingsPreview";
 import { InfoTip } from "@/components/admin/InfoTip";
-import { getRoundMechanics } from "@/lib/scoring-config";
+import {
+  getRoundMechanics,
+  requiredSurvivorsPerRegion,
+  type Region,
+} from "@/lib/scoring-config";
 import type { Branch } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
 import { REGIONS, REGION_LABELS } from "@/lib/scoring-config";
+
+interface RowValue {
+  branch_id: string;
+  branch_name: string;
+  region: Region;
+  points: number;
+  survived: boolean;
+  finish_order: number | null;
+}
 
 interface Props {
   roundId: string;
@@ -21,7 +34,10 @@ interface Props {
   eliminatedBranches?: Branch[];
   priorRoundNumber?: number | null;
   supportsManualAdvances?: boolean;
-  initial: Map<string, { points: number; wins: number; losses: number }>;
+  initial: Map<
+    string,
+    { points: number; wins: number; losses: number; finish_order?: number | null }
+  >;
 }
 
 export function RoundResultsForm({
@@ -38,33 +54,64 @@ export function RoundResultsForm({
   initial,
 }: Props) {
   const mechanics = getRoundMechanics(seasonSlug, roundNumber);
-  const pointsMax = mechanics?.maxPoints;
-  const pointsStep = pointsMax != null ? 1 : 0.01;
+  const kind = mechanics?.kind ?? "quiz";
+  const maxPoints =
+    mechanics?.kind === "quiz"
+      ? mechanics.maxPoints
+      : mechanics?.kind === "race_to_correct"
+        ? mechanics.maxCorrect
+        : 1;
 
-  const clampPoints = (value: number) => {
-    let n = Math.max(0, value);
-    if (pointsMax != null) n = Math.min(pointsMax, n);
-    return n;
-  };
   const [showOut, setShowOut] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [values, setValues] = useState(() =>
-    branches.map((b) => ({
-      branch_id: b.id,
-      branch_name: b.branch_name,
-      points: initial.get(b.id)?.points ?? 0,
-    }))
+  const [values, setValues] = useState<RowValue[]>(() =>
+    branches.map((b) => {
+      const init = initial.get(b.id);
+      const points = init?.points ?? 0;
+      return {
+        branch_id: b.id,
+        branch_name: b.branch_name,
+        region: b.region,
+        points,
+        survived: points >= 1,
+        finish_order: init?.finish_order ?? null,
+      };
+    })
   );
 
-  const getDraftResults = useCallback(
-    () =>
-      values.map((v) => ({
+  const survivorCounts = useMemo(() => {
+    const counts: Record<Region, number> = { luzon: 0, ncr: 0, vismin: 0 };
+    if (kind !== "last_man_standing") return counts;
+    for (const row of values) {
+      if (row.survived) counts[row.region]++;
+    }
+    return counts;
+  }, [values, kind]);
+
+  const getDraftResults = useCallback(() => {
+    return values.map((v) => {
+      if (kind === "last_man_standing") {
+        return {
+          branch_id: v.branch_id,
+          points: v.survived ? 1 : 0,
+          finish_order: null as number | null,
+        };
+      }
+      if (kind === "race_to_correct") {
+        return {
+          branch_id: v.branch_id,
+          points: v.points,
+          finish_order: v.points === maxPoints ? v.finish_order : null,
+        };
+      }
+      return {
         branch_id: v.branch_id,
-        points: Number(v.points),
-      })),
-    [values]
-  );
+        points: v.points,
+        finish_order: null as number | null,
+      };
+    });
+  }, [values, kind, maxPoints]);
 
   async function handleSave() {
     setLoading(true);
@@ -98,6 +145,14 @@ export function RoundResultsForm({
     }
   }
 
+  function updateRow(index: number, patch: Partial<RowValue>) {
+    setValues((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], ...patch };
+      return next;
+    });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -113,16 +168,35 @@ export function RoundResultsForm({
         </span>
       </div>
 
-      <ol className="flex flex-wrap gap-2 text-xs text-sd-muted">
-        <li className="rounded bg-sd-panel px-2 py-1">1. Enter points</li>
-        <li className="rounded bg-sd-panel px-2 py-1">2. Draft preview</li>
-        <li className="rounded bg-sd-panel px-2 py-1">3. Publish</li>
-        {supportsManualAdvances && (
-          <li className="rounded bg-cyan-500/20 px-2 py-1 text-cyan-200">
-            4. Advancement / tie-breaker picks
-          </li>
-        )}
-      </ol>
+      {mechanics && (
+        <div className="rounded-lg border border-sd-glow/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50/90">
+          <p className="font-medium text-sd-glow">{mechanics.label}</p>
+          <p className="mt-1">{mechanics.description}</p>
+        </div>
+      )}
+
+      {kind === "last_man_standing" && (
+        <div className="flex flex-wrap gap-2 text-xs">
+          {REGIONS.map((region) => {
+            const required =
+              requiredSurvivorsPerRegion(seasonSlug, roundNumber, region) ?? 0;
+            const count = survivorCounts[region];
+            const ok = count === required;
+            return (
+              <span
+                key={region}
+                className={`rounded-lg px-3 py-1.5 ${
+                  ok
+                    ? "bg-emerald-500/20 text-emerald-100"
+                    : "bg-amber-500/15 text-amber-100"
+                }`}
+              >
+                {REGION_LABELS[region]}: {count}/{required} survived
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       {supportsManualAdvances && (
         <p className="text-sm">
@@ -132,75 +206,7 @@ export function RoundResultsForm({
           >
             Manage advancement picks
           </Link>
-          <span className="text-sd-muted/80">
-            {" "}
-            — add tie-breaker winners or extra advancers after publish
-          </span>
         </p>
-      )}
-
-      <p className="text-xs text-sd-muted">
-        <Link href="/admin/mechanics" className="text-sd-glow/90 hover:underline">
-          Competition rules
-        </Link>{" "}
-        · Scoring uses <strong className="text-white">points only</strong> (no
-        wins/losses). Ties at the cut get a <strong className="text-cyan-200">Tie breaker</strong>{" "}
-        status until resolved.
-      </p>
-
-      {status === "published" && (
-        <div className="sd-glass flex flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-sm">
-          <span className="text-xs font-semibold uppercase tracking-wider text-sd-muted/70">
-            Export CSV
-          </span>
-          {seasonSlug === "august_finals" ? (
-            <a
-              href="/api/export/august"
-              className="rounded-lg border border-sd-glow/30 px-3 py-1 text-sd-muted hover:text-white"
-            >
-              August finals
-            </a>
-          ) : (
-            REGIONS.map((region) => (
-              <a
-                key={region}
-                href={`/api/export/${seasonSlug === "june_area" ? "june" : "july"}?region=${region}`}
-                className="rounded-lg border border-sd-glow/30 px-3 py-1 text-sd-muted hover:text-white"
-              >
-                {REGION_LABELS[region]}
-              </a>
-            ))
-          )}
-        </div>
-      )}
-
-      {mechanics && (
-        <div className="rounded-lg border border-sd-glow/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50/90">
-          <p className="font-medium text-sd-glow">{mechanics.label}</p>
-          <p className="mt-1">{mechanics.description}</p>
-          <p className="mt-1 text-xs text-sd-muted">
-            Tie-break: higher points, then branch name A–Z at the regional cut.
-          </p>
-        </div>
-      )}
-
-      {tieBreakerBranches.length > 0 && priorRoundNumber && (
-        <div className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
-          <p className="font-medium">
-            {tieBreakerBranches.length} branch
-            {tieBreakerBranches.length === 1 ? "" : "es"} need tie breaker after
-            Round {priorRoundNumber}
-          </p>
-          <p className="mt-1 text-xs text-cyan-200/80">
-            They are not in this score list. After the tie-breaker round, use
-            advancement picks or update scores and re-publish.
-          </p>
-          <ul className="mt-2 max-h-24 overflow-auto text-xs text-cyan-100/90">
-            {tieBreakerBranches.map((b) => (
-              <li key={b.id}>{b.branch_name}</li>
-            ))}
-          </ul>
-        </div>
       )}
 
       {(eliminatedBranches.length > 0 || tieBreakerBranches.length > 0) &&
@@ -225,11 +231,6 @@ export function RoundResultsForm({
                 {eliminatedBranches.map((b) => (
                   <li key={b.id}>{b.branch_name} — eliminated</li>
                 ))}
-                {tieBreakerBranches.map((b) => (
-                  <li key={b.id} className="text-cyan-300/90">
-                    {b.branch_name} — tie breaker pending
-                  </li>
-                ))}
               </ul>
             )}
           </div>
@@ -240,9 +241,17 @@ export function RoundResultsForm({
           <thead className="sticky top-0 bg-sd-panel/95 backdrop-blur">
             <tr>
               <th className="px-3 py-2 text-left text-sd-muted">Branch</th>
-              <th className="px-3 py-2 text-right text-sd-muted">
-                Points{pointsMax != null ? ` (0–${pointsMax})` : ""}
-              </th>
+              {kind === "last_man_standing" && (
+                <th className="px-3 py-2 text-center text-sd-muted">Survived</th>
+              )}
+              {kind !== "last_man_standing" && (
+                <th className="px-3 py-2 text-right text-sd-muted">
+                  {kind === "race_to_correct" ? "Correct (0–5)" : `Score (0–${maxPoints})`}
+                </th>
+              )}
+              {kind === "race_to_correct" && (
+                <th className="px-3 py-2 text-right text-sd-muted">Finish order</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -252,24 +261,64 @@ export function RoundResultsForm({
                 className="border-t border-sd-glow/10 transition hover:bg-emerald-500/5"
               >
                 <td className="px-3 py-2 text-white">{row.branch_name}</td>
-                <td className="px-3 py-2">
-                  <input
-                    type="number"
-                    min={0}
-                    max={pointsMax}
-                    step={pointsStep}
-                    value={row.points}
-                    onChange={(e) => {
-                      const next = [...values];
-                      next[i] = {
-                        ...next[i],
-                        points: clampPoints(Number(e.target.value)),
-                      };
-                      setValues(next);
-                    }}
-                    className="sd-input w-28 rounded-lg px-2 py-1.5 text-right tabular-nums"
-                  />
-                </td>
+                {kind === "last_man_standing" && (
+                  <td className="px-3 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      checked={row.survived}
+                      onChange={(e) =>
+                        updateRow(i, { survived: e.target.checked })
+                      }
+                      className="h-4 w-4 rounded border-emerald-500/50"
+                    />
+                  </td>
+                )}
+                {kind !== "last_man_standing" && (
+                  <td className="px-3 py-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={maxPoints}
+                      step={1}
+                      value={row.points}
+                      onChange={(e) => {
+                        const points = Math.min(
+                          maxPoints,
+                          Math.max(0, Number(e.target.value))
+                        );
+                        updateRow(i, {
+                          points,
+                          finish_order:
+                            kind === "race_to_correct" && points !== maxPoints
+                              ? null
+                              : row.finish_order,
+                        });
+                      }}
+                      className="sd-input w-28 rounded-lg px-2 py-1.5 text-right tabular-nums"
+                    />
+                  </td>
+                )}
+                {kind === "race_to_correct" && (
+                  <td className="px-3 py-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={32}
+                      step={1}
+                      disabled={row.points !== maxPoints}
+                      value={row.finish_order ?? ""}
+                      placeholder="—"
+                      onChange={(e) =>
+                        updateRow(i, {
+                          finish_order: e.target.value
+                            ? Number(e.target.value)
+                            : null,
+                        })
+                      }
+                      className="sd-input w-24 rounded-lg px-2 py-1.5 text-right tabular-nums disabled:opacity-40"
+                    />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -291,21 +340,18 @@ export function RoundResultsForm({
         >
           Save draft
         </button>
-        <span className="inline-flex items-center">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={handlePublish}
-            className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-          >
-            Save & publish
-          </button>
-          <InfoTip>
-            Publishing applies the regional cut. Branches tied at the line get
-            Tie breaker status; use advancement picks after publish to add
-            winners.
-          </InfoTip>
-        </span>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handlePublish}
+          className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+        >
+          Save & publish
+        </button>
+        <InfoTip>
+          Publishing applies the regional cut. Use advancement picks for tie
+          breakers.
+        </InfoTip>
       </div>
       {message && <p className="text-sm text-sd-glow">{message}</p>}
     </div>

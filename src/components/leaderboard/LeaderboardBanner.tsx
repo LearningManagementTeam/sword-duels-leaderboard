@@ -1,9 +1,10 @@
 interface Props {
   subtitle?: string;
+  title?: string;
   tvMode?: boolean;
 }
 
-export function LeaderboardBanner({ subtitle, tvMode }: Props) {
+export function LeaderboardBanner({ subtitle, title, tvMode }: Props) {
   return (
     <div
       className={`sd-neon-panel relative mx-auto w-full overflow-hidden px-4 py-3 sm:px-6 sm:py-4 ${
@@ -15,12 +16,15 @@ export function LeaderboardBanner({ subtitle, tvMode }: Props) {
         aria-hidden
       />
       <div className="relative text-center sm:text-left">
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-sd-muted/70">
+          Leaderboard
+        </p>
         <h2
-          className={`font-bold tracking-[0.2em] text-sd-glow ${
+          className={`font-bold tracking-wide text-sd-glow ${
             tvMode ? "text-3xl sm:text-4xl" : "text-xl sm:text-2xl"
           }`}
         >
-          LEADERBOARD
+          {title ?? "LEADERBOARD"}
         </h2>
         {subtitle && (
           <p

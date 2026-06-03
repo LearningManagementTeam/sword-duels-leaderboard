@@ -39,11 +39,12 @@ export function FullLeaderboardCompare({ data, layout }: Props) {
           {phaseTitle}
         </h1>
         <p className="mt-1 text-sm text-sd-muted">
-          {latestPublishedRound > 0
-            ? `Standings after Round ${latestPublishedRound}`
-            : "Round 1 kicks off soon — sample ranks shown for layout preview"}
+          Standings after Round {latestPublishedRound}
           {isDemo && (
-            <span className="text-sd-muted/60"> · Sample data for preview</span>
+            <span className="text-sd-muted/60">
+              {" "}
+              · Sample data (135 branches, realistic names)
+            </span>
           )}
         </p>
       </div>
@@ -58,6 +59,8 @@ export function FullLeaderboardCompare({ data, layout }: Props) {
               latestPublishedRound={latestPublishedRound}
               cutoff={board.cutoff}
               cutLineLabel={board.cutLineLabel}
+              compact={false}
+              showDetailToggle
             />
           ))}
         </div>

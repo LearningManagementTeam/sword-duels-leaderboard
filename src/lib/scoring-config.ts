@@ -71,6 +71,101 @@ export const CUMULATIVE_TIE_BREAKER_LABELS = [
   "Branch name (A–Z)",
 ];
 
+export type RoundLayoutVariant =
+  | "quiz_ladder"
+  | "survival_roster"
+  | "finish_order_champions"
+  | "cumulative";
+
+export type RoundMechanics =
+  | {
+      kind: "quiz";
+      roundName: string;
+      label: string;
+      description: string;
+      maxPoints: number;
+      layoutVariant: "quiz_ladder";
+      bannerTagline: string;
+    }
+  | {
+      kind: "last_man_standing";
+      roundName: string;
+      label: string;
+      description: string;
+      layoutVariant: "survival_roster";
+      bannerTagline: string;
+    }
+  | {
+      kind: "race_to_correct";
+      roundName: string;
+      label: string;
+      description: string;
+      maxCorrect: number;
+      layoutVariant: "finish_order_champions";
+      bannerTagline: string;
+    };
+
+const ROUND_MECHANICS: Partial<
+  Record<SeasonSlug, Partial<Record<number, RoundMechanics>>>
+> = {
+  june_area: {
+    1: {
+      kind: "quiz",
+      roundName: "Bingo Phallanx",
+      label: "Round 1 — Bingo Phallanx",
+      description: "10-question quiz — enter 0–10 per branch",
+      maxPoints: 10,
+      layoutVariant: "quiz_ladder",
+      bannerTagline: "10-question quiz · Top 32 per region advance",
+    },
+    2: {
+      kind: "last_man_standing",
+      roundName: "Last KaBingoPlus Standing",
+      label: "Round 2 — Last KaBingoPlus Standing",
+      description: "Mark exactly 16 survivors per region — no public score",
+      layoutVariant: "survival_roster",
+      bannerTagline: "Last 16 standing per region advance",
+    },
+    3: {
+      kind: "race_to_correct",
+      roundName: "Clash of the Knowledge Swords",
+      label: "Round 3 — Clash of the Knowledge Swords",
+      description: "First 8 per region to 5 correct — assign finish order 1–8",
+      maxCorrect: 5,
+      layoutVariant: "finish_order_champions",
+      bannerTagline: "First 8 to qualify advance to July",
+    },
+  },
+  july_region: {
+    1: {
+      kind: "quiz",
+      roundName: "Regional Quiz",
+      label: "Round 1 — Quiz",
+      description: "15-question quiz — enter 0–15 per branch",
+      maxPoints: 15,
+      layoutVariant: "quiz_ladder",
+      bannerTagline: "15-question quiz · Top 4 per region advance",
+    },
+    2: {
+      kind: "last_man_standing",
+      roundName: "Regional Last Standing",
+      label: "Round 2 — Last standing",
+      description: "Mark exactly 2 survivors per region",
+      layoutVariant: "survival_roster",
+      bannerTagline: "Last 2 standing per region advance",
+    },
+    3: {
+      kind: "race_to_correct",
+      roundName: "Regional Clash",
+      label: "Round 3 — Clash",
+      description: "First to 5 correct wins the region — assign finish order",
+      maxCorrect: 5,
+      layoutVariant: "finish_order_champions",
+      bannerTagline: "Regional champion advances to August",
+    },
+  },
+};
+
 export function getSurvivorCount(
   seasonSlug: SeasonSlug,
   round: number,
@@ -87,32 +182,6 @@ export function usesPerRoundElimination(seasonSlug: SeasonSlug): boolean {
   return "eliminationMode" in config && config.eliminationMode === "per_round_per_region";
 }
 
-export interface RoundMechanics {
-  label: string;
-  description: string;
-  maxPoints: number;
-}
-
-/** Per-round scoring rules for admin entry and validation. */
-const ROUND_MECHANICS: Partial<
-  Record<SeasonSlug, Partial<Record<number, RoundMechanics>>>
-> = {
-  june_area: {
-    1: {
-      label: "Round 1 — Quiz game",
-      description: "10-point quiz — enter 0–10 per branch",
-      maxPoints: 10,
-    },
-  },
-  july_region: {
-    1: {
-      label: "Round 1 — Quiz game",
-      description: "15-point quiz — enter 0–15 per branch",
-      maxPoints: 15,
-    },
-  },
-};
-
 export function getRoundMechanics(
   seasonSlug: SeasonSlug,
   roundNumber: number
@@ -127,8 +196,42 @@ export function validateRoundPoints(
 ): string | null {
   if (points < 0) return "Points cannot be negative.";
   const mechanics = getRoundMechanics(seasonSlug, roundNumber);
-  if (mechanics && points > mechanics.maxPoints) {
-    return `Points cannot exceed ${mechanics.maxPoints} for this round (${mechanics.label}).`;
+  if (!mechanics) return null;
+
+  if (mechanics.kind === "quiz" && points > mechanics.maxPoints) {
+    return `Score cannot exceed ${mechanics.maxPoints} for ${mechanics.roundName}.`;
+  }
+  if (mechanics.kind === "last_man_standing" && points !== 0 && points !== 1) {
+    return "Use 1 for survived or 0 for out.";
+  }
+  if (mechanics.kind === "race_to_correct" && points > mechanics.maxCorrect) {
+    return `Correct answers cannot exceed ${mechanics.maxCorrect}.`;
   }
   return null;
+}
+
+export function validateFinishOrder(
+  seasonSlug: SeasonSlug,
+  roundNumber: number,
+  finishOrder: number | null | undefined,
+  points: number
+): string | null {
+  const mechanics = getRoundMechanics(seasonSlug, roundNumber);
+  if (mechanics?.kind !== "race_to_correct") return null;
+  if (finishOrder == null) return null;
+  if (finishOrder < 1 || finishOrder > 32) {
+    return "Finish order must be between 1 and 32.";
+  }
+  if (points !== mechanics.maxCorrect) {
+    return "Finish order only applies to branches with full correct count.";
+  }
+  return null;
+}
+
+export function requiredSurvivorsPerRegion(
+  seasonSlug: SeasonSlug,
+  roundNumber: number,
+  region: Region
+): number | null {
+  return getSurvivorCount(seasonSlug, roundNumber, region);
 }

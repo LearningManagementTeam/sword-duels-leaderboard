@@ -4,6 +4,7 @@ import { PhaseHighlightsCarousel } from "@/components/home/PhaseHighlightsCarous
 import { StandingsContextBar } from "@/components/nav/StandingsContextBar";
 import { PhaseNav } from "@/components/PhaseNav";
 import { getPhaseHighlights } from "@/lib/phase-highlights";
+import { getRoundViewConfig } from "@/lib/leaderboard-display";
 import { LeaderboardSection } from "./LeaderboardSection";
 import { PhaseJourneyBar } from "./PhaseJourneyBar";
 import { RegionalSnapshotCards } from "./RegionalSnapshotCards";
@@ -87,6 +88,7 @@ export async function PhaseLeaderboard({
   const needsRegion = (phase === "june" || phase === "july") && perRound;
   const showBoard = !needsRegion || !!region;
   const highlights = getPhaseHighlights(slug);
+  const roundView = getRoundViewConfig(slug, latestPublishedRound, region);
 
   return (
     <div className="space-y-5">
@@ -115,6 +117,7 @@ export async function PhaseLeaderboard({
           latestPublishedRound={latestPublishedRound}
           lastPublished={lastPublished}
           phaseTitle={config.name}
+          seasonSlug={slug}
           basePath={basePath}
           showRegions={needsRegion && !!region}
         />
@@ -148,15 +151,7 @@ export async function PhaseLeaderboard({
             }
           >
             <LeaderboardSection
-              bannerSubtitle={
-                region
-                  ? `${config.name} · ${REGION_LABELS[region]}${
-                      latestPublishedRound > 0
-                        ? ` · After Round ${latestPublishedRound}`
-                        : ""
-                    }`
-                  : config.name
-              }
+              bannerSubtitle={roundView.bannerTagline}
               rows={rows}
               advancementCutoff={cutoff}
               cutLineLabel={cutLineLabel}
@@ -165,6 +160,7 @@ export async function PhaseLeaderboard({
               showRepresentatives
               seasonSlug={slug}
               latestPublishedRound={latestPublishedRound}
+              region={region}
             />
           </Suspense>
 
