@@ -2,12 +2,15 @@ import {
   BRANDING_CONTENT_SLUG,
   CAROUSEL_UPLOAD_SPECS,
   DEFAULT_BRANDING,
+  finalizeBrandingConfig,
   parseBrandingBody,
+  setCarouselSlideUrl,
   type BrandingConfig,
   type CarouselSlides,
   type CarouselSlot,
 } from "@/lib/branding";
 import { brandingAssetUrl } from "@/lib/branding-storage";
+import { revalidateBrandingPublicPaths } from "@/lib/branding-revalidate";
 import { createServiceClient } from "@/lib/supabase/server";
 
 import { checkCarouselUploadFile } from "@/lib/branding-upload-validation";
@@ -87,14 +90,14 @@ async function upsertBrandingBody(
     ? parseBrandingBody(existing.body)
     : { ...DEFAULT_BRANDING };
 
-  const body: BrandingConfig = {
+  const body: BrandingConfig = finalizeBrandingConfig({
     logo_url: patch.logo_url !== undefined ? patch.logo_url : current.logo_url,
     logo_alt: patch.logo_alt ?? current.logo_alt ?? DEFAULT_BRANDING.logo_alt,
     carousel_slides:
       patch.carousel_slides !== undefined
         ? patch.carousel_slides
         : current.carousel_slides,
-  };
+  });
 
   const { error } = await service.from("site_content").upsert(
     {
@@ -151,10 +154,10 @@ export async function uploadCarouselSlideFile(
   const current = existing?.body
     ? parseBrandingBody(existing.body)
     : { ...DEFAULT_BRANDING };
-  const slides = [...current.carousel_slides] as CarouselSlides;
-  slides[slot - 1] = url;
+  const slides = setCarouselSlideUrl(current.carousel_slides, slot, url);
 
   await upsertBrandingBody(service, email, { carousel_slides: slides });
+  revalidateBrandingPublicPaths();
 
   return { ok: true, slot, url, carousel_slides: slides };
 }
@@ -175,10 +178,10 @@ export async function removeCarouselSlideSlot(
   const current = existing?.body
     ? parseBrandingBody(existing.body)
     : { ...DEFAULT_BRANDING };
-  const slides = [...current.carousel_slides] as CarouselSlides;
-  slides[slot - 1] = null;
+  const slides = setCarouselSlideUrl(current.carousel_slides, slot, null);
 
   await upsertBrandingBody(service, email, { carousel_slides: slides });
+  revalidateBrandingPublicPaths();
 
   return { ok: true, slot, url: null, carousel_slides: slides };
 }

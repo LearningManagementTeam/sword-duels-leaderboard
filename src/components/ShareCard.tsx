@@ -10,7 +10,6 @@ interface Props {
 
 function normalizeShareUrl(url: string): string {
   const trimmed = url.trim().replace(/\/$/, "");
-  // Preview / branch deploy URLs often require Vercel login — never use for QR
   if (
     trimmed.includes(".vercel.app") &&
     !trimmed.startsWith(PRODUCTION_SITE_URL)
@@ -23,7 +22,7 @@ function normalizeShareUrl(url: string): string {
 export function ShareCard({ url, title = "Share this leaderboard" }: Props) {
   const [copied, setCopied] = useState(false);
   const shareUrl = normalizeShareUrl(url);
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(shareUrl)}`;
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(shareUrl)}`;
 
   async function copyLink() {
     try {
@@ -36,33 +35,36 @@ export function ShareCard({ url, title = "Share this leaderboard" }: Props) {
   }
 
   return (
-    <div className="sd-neon-panel p-5">
-      <h3 className="font-semibold text-sd-glow">{title}</h3>
-      <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={qrSrc}
-          alt="QR code for public leaderboard URL"
-          width={160}
-          height={160}
-          className="sd-inset rounded-xl p-2"
-        />
-        <div className="flex-1 space-y-3 text-sm">
-          <p className="text-sd-muted">
-            Scan or share this link so branches can follow live standings.
-          </p>
-          <code className="sd-inset block break-all rounded-lg px-3 py-2 text-xs text-sd-muted">
-            {shareUrl}
-          </code>
-          <button
-            type="button"
-            onClick={copyLink}
-            className="sd-btn-primary rounded-lg px-4 py-2 text-sm"
-          >
-            {copied ? "Copied!" : "Copy link"}
-          </button>
-        </div>
+    <section className="sd-neon-panel mx-auto max-w-md p-6 text-center sm:p-8">
+      <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-sd-glow/90">
+        Spread the word
+      </p>
+      <h3 className="mt-1 text-lg font-semibold text-white">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-sd-muted">
+        Scan the code or copy the link so branches can follow live standings.
+      </p>
+
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={qrSrc}
+        alt="QR code for public leaderboard URL"
+        width={180}
+        height={180}
+        className="sd-inset mx-auto mt-5 rounded-2xl p-3"
+      />
+
+      <div className="mx-auto mt-5 w-full max-w-xs space-y-2">
+        <button
+          type="button"
+          onClick={copyLink}
+          className="sd-btn-primary w-full rounded-2xl px-6 py-3 text-sm font-semibold"
+        >
+          {copied ? "Link copied!" : "Copy link"}
+        </button>
+        <p className="break-all text-[10px] leading-relaxed text-sd-muted/60">
+          {shareUrl}
+        </p>
       </div>
-    </div>
+    </section>
   );
 }

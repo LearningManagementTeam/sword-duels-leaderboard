@@ -23,11 +23,11 @@ export default async function HomePage() {
 
       {!configured && <SetupBanner />}
 
-      <HomeCarouselSection branding={branding} />
-
-      <CollapsibleCompetitionMap mapConfig={mapConfig} />
-
-      <ShareCard url={siteUrl} />
+      <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
+        <HomeCarouselSection branding={branding} />
+        <CollapsibleCompetitionMap mapConfig={mapConfig} />
+        <ShareCard url={siteUrl} />
+      </div>
     </div>
   );
 }

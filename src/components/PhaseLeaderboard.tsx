@@ -116,7 +116,6 @@ export async function PhaseLeaderboard({
           region={region}
           latestPublishedRound={latestPublishedRound}
           lastPublished={lastPublished}
-          phaseTitle={config.name}
           seasonSlug={slug}
           basePath={basePath}
           showRegions={needsRegion && !!region}
@@ -147,8 +146,8 @@ export async function PhaseLeaderboard({
           </Suspense>
 
           {!isPreview && ((perRound && region) || slug === "august_finals") ? (
-            <details className="sd-glass rounded-xl">
-              <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-white [&::-webkit-details-marker]:hidden">
+            <details className="sd-glass mx-auto max-w-3xl rounded-2xl">
+              <summary className="cursor-pointer list-none px-4 py-3 text-center text-sm font-semibold text-white sm:text-left [&::-webkit-details-marker]:hidden">
                 Round progress &amp; stats
               </summary>
               <div className="space-y-4 border-t border-emerald-500/10 px-4 pb-4 pt-3">

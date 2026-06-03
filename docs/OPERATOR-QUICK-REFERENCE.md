@@ -26,7 +26,7 @@ One-page cheat sheet for the central admin team. Details: [Daily operations](DAI
 
 ## Weekly branding (optional)
 
-- **Branding** — hero logo, up to 3 home carousel photos.
+- **Branding** — hero logo, up to 4 home carousel photos.
 - Background is automatic (gradient) — no upload.
 
 ## TV at an event

@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { BranchHighlightControls } from "@/components/BranchHighlight";
 import { GamifiedLeaderboard } from "@/components/leaderboard/GamifiedLeaderboard";
-import { StatusTickerCarousel } from "@/components/leaderboard/StatusTickerCarousel";
+import { StatusLegend } from "@/components/leaderboard/StatusTickerCarousel";
 import type { StandingRow } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
 
@@ -37,7 +37,7 @@ export function LeaderboardSection({
 
   return (
     <div className="space-y-4">
-      {!tvMode && <StatusTickerCarousel lastPublished={lastPublished} />}
+      {!tvMode && <StatusLegend lastPublished={lastPublished} />}
       {!tvMode && <BranchHighlightControls />}
       <GamifiedLeaderboard
         bannerSubtitle={bannerSubtitle}

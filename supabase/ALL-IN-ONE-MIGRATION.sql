@@ -312,3 +312,23 @@ ALTER TABLE published_standings
 
 COMMENT ON COLUMN published_standings.manually_advanced_after_round IS
   'Round after which this branch was manually added via committee pick';
+
+-- 014: Home carousel always 4 slots; 3 MB per photo in branding bucket
+UPDATE site_content
+SET body = jsonb_set(
+  COALESCE(body, '{}'::jsonb),
+  '{carousel_slides}',
+  (
+    SELECT COALESCE(jsonb_agg(elem ORDER BY ord), '[]'::jsonb)
+    FROM (
+      SELECT gs.ord, COALESCE(body->'carousel_slides'->gs.ord, 'null'::jsonb) AS elem
+      FROM generate_series(0, 3) AS gs(ord)
+    ) padded
+  ),
+  true
+)
+WHERE slug = 'branding';
+
+UPDATE storage.buckets
+SET file_size_limit = 3145728
+WHERE id = 'branding';

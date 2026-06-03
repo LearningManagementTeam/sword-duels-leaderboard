@@ -94,9 +94,12 @@ export function GamifiedLeaderboard({
   );
 
   const defaultCutLabel = cutLineLabel ?? view.cutLineLabel;
-  const roundBannerTitle = view.roundName;
   const roundBannerSubtitle =
     bannerSubtitle ?? view.bannerTagline;
+
+  const awaitingPublish = latestPublishedRound === 0;
+  const isEmpty = rows.length === 0;
+  const showFilters = !tvMode && !compact && (!awaitingPublish || !isEmpty);
 
   const themeAccent =
     view.layoutVariant === "quiz_ladder"
@@ -116,13 +119,13 @@ export function GamifiedLeaderboard({
       {!compact && showBanner && (
         <LeaderboardBanner
           subtitle={roundBannerSubtitle}
-          title={latestPublishedRound > 0 ? roundBannerTitle : undefined}
+          title={latestPublishedRound > 0 ? view.roundName : undefined}
           tvMode={tvMode}
         />
       )}
 
-      {!tvMode && !compact && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      {showFilters && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <input
             type="search"
             aria-label="Search participants, branches, or codes"
@@ -164,9 +167,29 @@ export function GamifiedLeaderboard({
       )}
 
       {filtered.length === 0 ? (
-        <p className={`text-center text-sd-muted ${compact ? "py-6 text-sm" : "py-12"}`}>
-          {view.emptyMessage}
-        </p>
+        <div
+          className={`mx-auto w-full text-center ${compact ? "max-w-sm py-6" : "max-w-md py-10"}`}
+        >
+          {!compact && (
+            <div
+              className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/10 ring-1 ring-emerald-400/25"
+              aria-hidden
+            >
+              <svg
+                className="h-5 w-5 text-sd-glow"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+              >
+                <path d="M4 20V10M12 20V4M20 20v-6" />
+              </svg>
+            </div>
+          )}
+          <p className={`leading-relaxed text-sd-muted ${compact ? "text-sm" : "text-sm sm:text-base"}`}>
+            {view.emptyMessage}
+          </p>
+        </div>
       ) : (
         <div className={compact ? "max-h-[min(28rem,55vh)] overflow-y-auto pr-1" : undefined}>
           <RoundBoardShell
@@ -184,10 +207,21 @@ export function GamifiedLeaderboard({
       )}
 
       {!tvMode && !compact && (
-        <p className="text-xs text-sd-muted/80">
-          Tie-breakers: {tieBreakers.join(" → ")} · Showing {filtered.length} of{" "}
-          {rows.length}
-        </p>
+        isEmpty ? (
+          <details className="text-center">
+            <summary className="cursor-pointer text-xs text-sd-muted/70 hover:text-sd-glow">
+              How tie-breakers work
+            </summary>
+            <p className="mt-2 text-xs leading-relaxed text-sd-muted/80">
+              {tieBreakers.join(" → ")}
+            </p>
+          </details>
+        ) : (
+          <p className="text-center text-xs text-sd-muted/80 sm:text-left">
+            Tie-breakers: {tieBreakers.join(" → ")} · Showing {filtered.length} of{" "}
+            {rows.length}
+          </p>
+        )
       )}
 
       {showDetailToggle && !tvMode && !compact && filtered.length > 0 && (

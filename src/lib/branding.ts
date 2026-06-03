@@ -56,6 +56,24 @@ function normalizeCarouselSlides(raw: unknown): CarouselSlides {
   return slots;
 }
 
+/** Always persist a fixed 4-slot array (never a truncated 3-element JSON array). */
+export function finalizeBrandingConfig(config: BrandingConfig): BrandingConfig {
+  return {
+    ...config,
+    carousel_slides: normalizeCarouselSlides(config.carousel_slides),
+  };
+}
+
+export function setCarouselSlideUrl(
+  slides: CarouselSlides,
+  slot: CarouselSlot,
+  url: string | null
+): CarouselSlides {
+  const next = normalizeCarouselSlides(slides);
+  next[slot - 1] = url;
+  return [...next] as CarouselSlides;
+}
+
 export function parseBrandingBody(raw: unknown): BrandingConfig {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_BRANDING };
   const o = raw as Record<string, unknown>;

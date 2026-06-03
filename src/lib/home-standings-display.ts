@@ -17,6 +17,65 @@ export function seasonSlugToPhase(
   return "august";
 }
 
+/** Board sticky bar — phase/region badges + round line; no duplicate season title. */
+export function buildBoardContextHeadline(
+  seasonSlug: SeasonSlug,
+  latestPublishedRound: number,
+  region?: Region,
+  fullBoardActive = false
+): {
+  phaseLabel: string;
+  regionLabel: string | null;
+  roundLine: string;
+  mechanicsLine: string | null;
+  scopeLine: string | null;
+} {
+  const phaseName =
+    seasonSlugToPhase(seasonSlug).charAt(0).toUpperCase() +
+    seasonSlugToPhase(seasonSlug).slice(1);
+  const roundView = getRoundViewConfig(
+    seasonSlug,
+    latestPublishedRound,
+    region
+  );
+
+  const roundLine =
+    latestPublishedRound > 0
+      ? roundView.roundName
+      : "Round 1 kicks off soon — ranks appear after publish";
+
+  const mechanicsLine =
+    latestPublishedRound > 0 ? roundView.bannerTagline : null;
+
+  if (fullBoardActive) {
+    return {
+      phaseLabel: phaseName,
+      regionLabel: null,
+      roundLine,
+      mechanicsLine,
+      scopeLine: "Luzon · NCR · VisMin · side-by-side",
+    };
+  }
+
+  if (seasonSlug === "august_finals") {
+    return {
+      phaseLabel: phaseName,
+      regionLabel: null,
+      roundLine,
+      mechanicsLine,
+      scopeLine: "National finals",
+    };
+  }
+
+  return {
+    phaseLabel: phaseName,
+    regionLabel: region ? REGION_LABELS[region] : null,
+    roundLine,
+    mechanicsLine,
+    scopeLine: null,
+  };
+}
+
 /** Home hero copy — one phase name, no region bias, no milestone duplication. */
 export function buildHomeArenaHeadline(
   seasonSlug: SeasonSlug,

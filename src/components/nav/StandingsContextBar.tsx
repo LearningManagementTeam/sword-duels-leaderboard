@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { PhaseNav } from "@/components/PhaseNav";
-import { getRoundViewConfig } from "@/lib/leaderboard-display";
-import { REGION_LABELS } from "@/lib/scoring-config";
+import { buildBoardContextHeadline } from "@/lib/home-standings-display";
 import type { Region } from "@/lib/scoring-config";
 import type { SeasonSlug } from "@/lib/scoring-config";
 
@@ -10,11 +9,9 @@ interface Props {
   region?: Region;
   latestPublishedRound: number;
   lastPublished: string | null;
-  phaseTitle: string;
   seasonSlug: SeasonSlug;
   basePath?: string;
   showRegions: boolean;
-  /** On /june/leaderboard — all three regions side-by-side */
   fullBoardActive?: boolean;
 }
 
@@ -23,65 +20,70 @@ export function StandingsContextBar({
   region,
   latestPublishedRound,
   lastPublished,
-  phaseTitle,
   seasonSlug,
   basePath = "",
   showRegions,
   fullBoardActive = false,
 }: Props) {
-  const roundView = getRoundViewConfig(seasonSlug, latestPublishedRound, region);
+  const headline = buildBoardContextHeadline(
+    seasonSlug,
+    latestPublishedRound,
+    region,
+    fullBoardActive
+  );
   const regionLinks = (["luzon", "ncr", "vismin"] as Region[]).map((r) => ({
     href: `${basePath}/${phase}/${r}`,
-    label: REGION_LABELS[r],
+    label: r === "luzon" ? "Luzon" : r === "ncr" ? "NCR" : "VisMin",
   }));
-
-  const roundLine =
-    latestPublishedRound > 0
-      ? roundView.roundName
-      : "Round 1 kicks off soon — ranks appear after publish";
 
   const pillActive =
     "bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep";
   const pillIdle = "sd-glass text-sd-muted hover:text-sd-glow";
 
   return (
-    <div className="sticky top-0 z-40 -mx-4 border-b border-emerald-500/15 bg-sd-deep/95 px-4 py-3 backdrop-blur-xl md:top-[3.25rem] md:mx-0 md:rounded-xl md:border md:border-emerald-500/20">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="truncate text-lg font-bold text-white sm:text-xl">
-            {phaseTitle}
-          </h1>
-          {fullBoardActive ? (
-            <p className="text-sm text-sd-glow">Luzon · NCR · VisMin · side-by-side</p>
-          ) : (
-            region && (
-              <p className="text-sm text-sd-glow">{REGION_LABELS[region]} region</p>
-            )
-          )}
-          <p className="mt-0.5 text-xs text-sd-muted">{roundLine}</p>
-          {latestPublishedRound > 0 && (
-            <p className="text-[11px] text-sd-muted/70">{roundView.bannerTagline}</p>
-          )}
-          {lastPublished && (
-            <p className="text-[11px] text-sd-muted/60">
-              Updated{" "}
-              {new Date(lastPublished).toLocaleString("en-PH", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
-            </p>
+    <div className="sticky top-0 z-40 -mx-4 border-b border-emerald-500/15 bg-sd-deep/95 px-4 py-4 backdrop-blur-xl md:top-[3.25rem] md:mx-0 md:rounded-2xl md:border md:border-emerald-500/20">
+      <header className="space-y-2 text-center sm:text-left">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+          <span className="rounded-full bg-gradient-to-r from-sd-lime/20 to-emerald-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-sd-glow ring-1 ring-emerald-400/30">
+            {headline.phaseLabel}
+          </span>
+          {headline.regionLabel && (
+            <span className="rounded-full sd-glass px-3 py-1 text-xs font-semibold text-white ring-1 ring-emerald-400/20">
+              {headline.regionLabel}
+            </span>
           )}
         </div>
-      </div>
+        <p className="text-base font-medium text-white">{headline.roundLine}</p>
+        {headline.mechanicsLine && (
+          <p className="text-sm text-sd-muted">{headline.mechanicsLine}</p>
+        )}
+        {headline.scopeLine && (
+          <p className="text-xs text-sd-muted/80">{headline.scopeLine}</p>
+        )}
+        {lastPublished && (
+          <p className="text-[11px] text-sd-muted/60">
+            Updated{" "}
+            {new Date(lastPublished).toLocaleString("en-PH", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </p>
+        )}
+      </header>
 
-      <div className="mt-3 space-y-2">
+      <div className="mt-4 space-y-2.5">
         <PhaseNav
           active={phase}
           basePath={basePath}
           defaultRegion={region ?? "luzon"}
+          compact
         />
         {showRegions && (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div
+            className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start"
+            role="tablist"
+            aria-label="Region"
+          >
             {regionLinks.map((l) => {
               const active =
                 !fullBoardActive && region && l.href.endsWith(`/${region}`);
@@ -89,7 +91,9 @@ export function StandingsContextBar({
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  role="tab"
+                  aria-selected={active}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                     active ? pillActive : pillIdle
                   }`}
                 >
@@ -99,8 +103,8 @@ export function StandingsContextBar({
             })}
             {seasonSlug === "june_area" && latestPublishedRound >= 3 && (
               <Link
-                href="/june/leaderboard"
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                href={`${basePath}/june/leaderboard`}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                   fullBoardActive ? pillActive : pillIdle
                 }`}
               >

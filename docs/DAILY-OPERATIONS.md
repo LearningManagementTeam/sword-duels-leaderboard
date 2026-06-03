@@ -10,7 +10,7 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 | **Rounds** | Enter and publish scores |
 | **Mechanics** | Edit public “How it works” intro and announcements (rule tables auto-update) |
 | **Competition map** | Set “you are here” on the home page journey + caption |
-| **Branding** | Hero logo, home photo carousel (3 slots), header icon |
+| **Branding** | Hero logo, home photo carousel (4 slots), header icon |
 | **System & stack** | Tech setup, migrations, architecture (IT / troubleshooting) |
 
 Public mechanics: **How it works** on the site header → `/mechanics`
@@ -40,8 +40,8 @@ Optional: **Suggest from latest June round** pre-fills milestone and caption; re
 ## Home photo carousel
 
 1. Admin → **Branding** → **Home photo carousel**
-2. Upload up to **3** photos (slots 1–3). JPG, PNG, or WebP, max **3 MB** each; **1920×1080** landscape recommended.
-3. The home page shows **one** carousel that rotates through uploaded photos. Leave a slot empty if you want fewer than three.
+2. Upload up to **4** photos (slots 1–4). JPG, PNG, or WebP, max **3 MB** each; **1920×1080** landscape recommended.
+3. The home page shows **one** carousel that rotates through uploaded photos. Leave a slot empty if you want fewer than four.
 
 ## Logo (one-time or when it changes)
 

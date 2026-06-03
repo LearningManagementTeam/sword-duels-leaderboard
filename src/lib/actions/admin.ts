@@ -21,9 +21,11 @@ import type { ManualAdvance } from "@/lib/manual-advances";
 import {
   BRANDING_CONTENT_SLUG,
   DEFAULT_BRANDING,
+  finalizeBrandingConfig,
   parseBrandingBody,
   type BrandingConfig,
 } from "@/lib/branding";
+import { revalidateBrandingPublicPaths } from "@/lib/branding-revalidate";
 import {
   COMPETITION_MAP_SLUG,
   type CompetitionMapConfig,
@@ -1095,11 +1097,11 @@ const LOGO_MIME: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 
-/** Home is force-dynamic; skip revalidate here to avoid upload action errors. */
+/** Home uses ISR — revalidate public paths after branding uploads. */
 function scheduleBrandingRevalidation() {
   after(() => {
     try {
-      revalidatePath("/admin/branding");
+      revalidateBrandingPublicPaths();
     } catch {
       // non-fatal
     }
@@ -1121,14 +1123,14 @@ async function upsertBrandingBody(
     ? parseBrandingBody(existing.body)
     : { ...DEFAULT_BRANDING };
 
-  const body: BrandingConfig = {
+  const body: BrandingConfig = finalizeBrandingConfig({
     logo_url: patch.logo_url !== undefined ? patch.logo_url : current.logo_url,
     logo_alt: patch.logo_alt ?? current.logo_alt ?? DEFAULT_BRANDING.logo_alt,
     carousel_slides:
       patch.carousel_slides !== undefined
         ? patch.carousel_slides
         : current.carousel_slides,
-  };
+  });
 
   const { error } = await service.from("site_content").upsert(
     {

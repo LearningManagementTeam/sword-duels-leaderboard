@@ -44,7 +44,23 @@ Label in nav: **How to win** (not “Rules”). No separate **Phases** item — 
 4. **One primary CTA** — Full-width **View standings** below content; short hint line only (no wall of subtitle text on the button).
 5. **Centered layout** — `max-w-3xl mx-auto text-center`; empty state icon + copy; CTA full width `max-w-md`.
 
-Helpers: `src/lib/home-standings-display.ts` (`buildHomeArenaHeadline`, `resolveHomeStandingsCta`, `regionalBoardLinks`).
+Helpers: `src/lib/home-standings-display.ts` (`buildHomeArenaHeadline`, `buildBoardContextHeadline`, `resolveHomeStandingsCta`).
+
+## Standings board (`StandingsContextBar` + `GamifiedLeaderboard`)
+
+**Copy rules:**
+
+1. **No season title as h1** — Do not show `SCORING_CONFIG.name` (“June — Area-wide”) when phase tabs already say June.
+2. **Region once** — Active region is the **region pill**, not a separate “Luzon region” line under the title.
+3. **Headline stack** — Phase badge + optional region badge → round name → mechanics tagline → updated time.
+4. **Status legend** — Use wrapping `StatusLegend` chips, not a horizontal marquee (mobile clips text).
+5. **Empty board** — Centered icon + message; hide search/filters until publish or data exists; tie-breakers in collapsible “How tie-breakers work”.
+6. **Phase nav on board** — Use `PhaseNav compact` (hide sub-labels on mobile).
+
+## Home footer blocks
+
+- **Season journey** and **Share** — `max-w-3xl mx-auto`; share card `max-w-md` centered (QR → full-width copy button → subtle URL).
+- Carousel stays in the same width column as journey + share for visual balance.
 
 ## Gamified copy tone
 
