@@ -42,7 +42,7 @@ function applyCarouselSlides(
 function formatUploadError(err: unknown): string {
   const text = err instanceof Error ? err.message : "Upload failed";
   if (text.includes("Server Components render")) {
-    return "Upload may have completed — check the slot preview below. If the photo appears, you are done; otherwise refresh this page and try again.";
+    return "The upload may have worked — refresh this page (F5 or reload). If the photo appears in the slot below, you are done.";
   }
   return text;
 }
@@ -168,22 +168,6 @@ export function BrandingEditor({ initial }: Props) {
       setMessage(`Photo ${slot} uploaded.`);
     } catch (err) {
       const text = formatUploadError(err);
-      try {
-        const fresh = await refreshBrandingConfig();
-        setBranding(fresh);
-        if (fresh.carousel_slides[slot - 1]) {
-          setCarouselStatus({
-            phase: "success",
-            slot,
-            message: `Photo ${slot} saved (recovered after refresh).`,
-          });
-          setMessage(`Photo ${slot} uploaded.`);
-          if (input) input.value = "";
-          return;
-        }
-      } catch {
-        // ignore refresh failure
-      }
       setCarouselStatus({ phase: "error", slot, message: text });
       setMessage(text);
     } finally {

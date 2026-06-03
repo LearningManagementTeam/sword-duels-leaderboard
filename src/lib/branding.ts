@@ -1,3 +1,5 @@
+import { normalizeBrandingAssetUrl } from "@/lib/branding-storage";
+
 export const BRANDING_CONTENT_SLUG = "branding";
 
 export const CAROUSEL_SLOT_COUNT = 3;
@@ -40,7 +42,9 @@ function normalizeCarouselSlides(raw: unknown): CarouselSlides {
   if (!Array.isArray(raw)) return slots;
   for (let i = 0; i < CAROUSEL_SLOT_COUNT && i < raw.length; i++) {
     const v = raw[i];
-    slots[i] = typeof v === "string" && v.trim() ? v.trim() : null;
+    if (typeof v === "string" && v.trim()) {
+      slots[i] = normalizeBrandingAssetUrl(v.trim());
+    }
   }
   return slots;
 }
@@ -48,8 +52,9 @@ function normalizeCarouselSlides(raw: unknown): CarouselSlides {
 export function parseBrandingBody(raw: unknown): BrandingConfig {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_BRANDING };
   const o = raw as Record<string, unknown>;
+  const logoRaw = typeof o.logo_url === "string" ? o.logo_url : null;
   return {
-    logo_url: typeof o.logo_url === "string" ? o.logo_url : null,
+    logo_url: normalizeBrandingAssetUrl(logoRaw),
     logo_alt:
       typeof o.logo_alt === "string" && o.logo_alt.trim()
         ? o.logo_alt.trim()

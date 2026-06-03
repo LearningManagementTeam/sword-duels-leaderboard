@@ -45,7 +45,7 @@ import {
   isSupabaseConfigured,
   isSupabaseServiceConfigured,
 } from "@/lib/supabase/server";
-import { getSupabasePublicEnv } from "@/lib/supabase/env";
+import { brandingAssetUrl } from "@/lib/branding-storage";
 
 async function requireAdmin() {
   if (!isSupabaseServiceConfigured()) {
@@ -1085,14 +1085,6 @@ function carouselContentType(file: File, ext: string): string {
   return CAROUSEL_EXT_MIME[ext] ?? "image/jpeg";
 }
 
-function brandingStoragePublicUrl(path: string): string {
-  const { url } = getSupabasePublicEnv();
-  if (!url) {
-    throw new Error("Supabase URL is not configured.");
-  }
-  return `${url.replace(/\/$/, "")}/storage/v1/object/public/branding/${path}?v=${Date.now()}`;
-}
-
 /** Home is force-dynamic; skip revalidate here to avoid upload action errors. */
 function scheduleBrandingRevalidation() {
   after(() => {
@@ -1170,8 +1162,7 @@ export async function uploadBrandingLogo(formData: FormData) {
     });
   if (uploadErr) throw new Error(uploadErr.message);
 
-  const { data: urlData } = service.storage.from("branding").getPublicUrl(path);
-  const logoUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+  const logoUrl = brandingAssetUrl(path);
 
   await upsertBrandingBody(service, email, { logo_url: logoUrl });
 
@@ -1284,7 +1275,7 @@ export async function uploadCarouselSlide(formData: FormData) {
     );
   }
 
-  const url = brandingStoragePublicUrl(path);
+  const url = brandingAssetUrl(path);
 
   const { data: existing } = await service
     .from("site_content")
