@@ -1,22 +1,32 @@
-/** Public path for the soft blurred page background */
-export const SD_BACKDROP_IMAGE = "/backgrounds/sd-wave-green.png";
+import { DEFAULT_BACKDROP_PATH, resolveBackdropUrl } from "@/lib/branding";
+import type { BrandingConfig } from "@/lib/branding";
 
-export function ArBackdrop() {
+/** @deprecated use resolveBackdropUrl — kept for imports */
+export const SD_BACKDROP_IMAGE = DEFAULT_BACKDROP_PATH;
+
+interface Props {
+  /** Custom upload from Admin → Branding; falls back to bundled default */
+  backgroundUrl?: string | null;
+  branding?: BrandingConfig | null;
+}
+
+export function ArBackdrop({ backgroundUrl, branding }: Props) {
+  const src = branding
+    ? resolveBackdropUrl(branding)
+    : backgroundUrl?.trim() || DEFAULT_BACKDROP_PATH;
+
   return (
     <div
       className="sd-hud-scan pointer-events-none fixed inset-0 -z-10 overflow-hidden"
       aria-hidden
     >
-      {/* Solid base so edges never flash white */}
       <div className="absolute inset-0 bg-sd-deep" />
 
-      {/* User wave art — heavily blurred and dimmed */}
       <div
         className="sd-backdrop-photo absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${SD_BACKDROP_IMAGE})` }}
+        style={{ backgroundImage: `url(${src})` }}
       />
 
-      {/* Readability scrim over the photo */}
       <div
         className="absolute inset-0"
         style={{
@@ -25,7 +35,6 @@ export function ArBackdrop() {
         }}
       />
 
-      {/* Subtle brand tint (keeps magenta complement without competing with art) */}
       <div
         className="absolute inset-0 opacity-60"
         style={{

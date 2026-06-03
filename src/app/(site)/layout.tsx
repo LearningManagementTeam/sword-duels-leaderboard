@@ -11,7 +11,7 @@ export default async function SiteLayout({
 
   return (
     <>
-      <ArBackdrop />
+      <ArBackdrop branding={branding} />
       <SiteHeader branding={branding} />
       <main className="relative mx-auto w-full max-w-6xl flex-1 px-4 py-8">
         {children}

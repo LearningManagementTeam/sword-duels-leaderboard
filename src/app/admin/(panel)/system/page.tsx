@@ -8,6 +8,11 @@ const migrations = [
   { file: "005_manual_round_advances.sql", note: "Committee extra advancement picks" },
   { file: "006_site_content.sql", note: "Editable public mechanics content" },
   { file: "007_branding_storage.sql", note: "Logo upload bucket + branding row" },
+  { file: "008_tie_breaker_status.sql", note: "Tie-breaker branch status + standings flag" },
+  {
+    file: "009_branding_background_upload.sql",
+    note: "Branding bucket 5MB for custom page backgrounds",
+  },
 ];
 
 const envVars = [

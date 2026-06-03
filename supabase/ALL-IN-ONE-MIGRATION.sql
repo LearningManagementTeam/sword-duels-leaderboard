@@ -259,3 +259,15 @@ ALTER TABLE published_standings
       tie_breaker_in_round >= 1 AND tie_breaker_in_round <= 10
     )
   );
+
+-- 009: Branding bucket 5MB for custom page backgrounds
+UPDATE storage.buckets
+SET
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY[
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+    'image/svg+xml'
+  ]::text[]
+WHERE id = 'branding';

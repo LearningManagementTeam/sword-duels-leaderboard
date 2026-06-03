@@ -1,14 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { BackgroundPreview } from "@/components/branding/BackgroundPreview";
 import { HeroLogo } from "@/components/branding/HeroLogo";
 import { LeaderboardBanner } from "@/components/leaderboard/LeaderboardBanner";
 import {
+  removeBrandingBackground,
   removeBrandingLogo,
   saveBrandingAlt,
+  uploadBrandingBackground,
   uploadBrandingLogo,
 } from "@/lib/actions/admin";
-import type { BrandingConfig } from "@/lib/branding";
+import {
+  BACKGROUND_UPLOAD_SPECS,
+  type BrandingConfig,
+} from "@/lib/branding";
+import { validateBackgroundFile } from "@/lib/validate-background-file";
 
 interface Props {
   initial: BrandingConfig;
@@ -20,7 +27,7 @@ export function BrandingEditor({ initial }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
+  async function handleLogoUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
@@ -40,13 +47,60 @@ export function BrandingEditor({ initial }: Props) {
     }
   }
 
-  async function handleRemove() {
+  async function handleBackgroundUpload(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+    const form = e.currentTarget;
+    const fileInput = form.elements.namedItem("file") as HTMLInputElement | null;
+    const file = fileInput?.files?.[0];
+    if (!file) {
+      setMessage("Choose an image file to upload.");
+      setLoading(false);
+      return;
+    }
+    const validationError = await validateBackgroundFile(file);
+    if (validationError) {
+      setMessage(validationError);
+      setLoading(false);
+      return;
+    }
+    const fd = new FormData(form);
+    try {
+      const result = await uploadBrandingBackground(fd);
+      if (result.background_url) {
+        setBranding((b) => ({ ...b, background_url: result.background_url }));
+      }
+      setMessage("Background uploaded. All pages updated.");
+      form.reset();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRemoveLogo() {
     setLoading(true);
     setMessage("");
     try {
       await removeBrandingLogo();
       setBranding((b) => ({ ...b, logo_url: null }));
       setMessage("Logo removed.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Remove failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRemoveBackground() {
+    setLoading(true);
+    setMessage("");
+    try {
+      await removeBrandingBackground();
+      setBranding((b) => ({ ...b, background_url: null }));
+      setMessage("Custom background removed. Default wave art restored.");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Remove failed");
     } finally {
@@ -68,14 +122,67 @@ export function BrandingEditor({ initial }: Props) {
     }
   }
 
+  const specs = BACKGROUND_UPLOAD_SPECS;
+
   return (
     <div className="space-y-8">
+      <section className="sd-neon-panel space-y-4 p-6">
+        <h2 className="font-semibold text-sd-glow">Page background</h2>
+        <p className="text-sm text-sd-muted">
+          Shown behind every public and admin page (soft blur + dark overlay so
+          text stays readable).
+        </p>
+        <ul className="list-inside list-disc space-y-1 text-sm text-sd-muted">
+          <li>
+            <strong className="text-white">Recommended:</strong>{" "}
+            {specs.recommendedLabel}
+          </li>
+          <li>
+            <strong className="text-white">Minimum:</strong> {specs.minWidthLabel}
+          </li>
+          <li>
+            <strong className="text-white">Orientation:</strong> {specs.aspectHint}
+          </li>
+          <li>
+            <strong className="text-white">Formats:</strong> JPG, PNG, or WebP · max{" "}
+            {specs.maxSizeLabel}
+          </li>
+        </ul>
+        <BackgroundPreview branding={branding} label="Live preview" />
+        <form onSubmit={handleBackgroundUpload} className="space-y-3">
+          <input
+            type="file"
+            name="file"
+            accept={specs.accept}
+            className="block w-full max-w-md text-sm text-sd-muted file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-sd-lime file:to-emerald-400 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-sd-deep"
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+            >
+              {loading ? "Uploading…" : "Upload background"}
+            </button>
+            {branding.background_url && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleRemoveBackground}
+                className="sd-btn-ghost rounded-lg px-4 py-2 text-sm"
+              >
+                Restore default background
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
+
       <section className="sd-neon-panel space-y-3 p-6">
         <h2 className="font-semibold text-sd-glow">Hero logo preview</h2>
         <p className="text-sm text-sd-muted">
-          This is how your logo appears on the home page and leaderboards — nearly
-          full width on mobile, like a game title screen. PNG or SVG with a
-          transparent background works best on dark glass.
+          Nearly full width on mobile, like a game title screen. PNG or SVG with a
+          transparent background works best.
         </p>
         <HeroLogo branding={branding} />
       </section>
@@ -87,7 +194,7 @@ export function BrandingEditor({ initial }: Props) {
         </div>
       </section>
 
-      <form onSubmit={handleUpload} className="sd-neon-panel space-y-3 p-6">
+      <form onSubmit={handleLogoUpload} className="sd-neon-panel space-y-3 p-6">
         <h2 className="font-semibold text-white">Upload logo</h2>
         <p className="text-sm text-sd-muted">
           PNG, JPG, WebP, or SVG · max 2MB · hero splash + small header icon.
@@ -132,7 +239,7 @@ export function BrandingEditor({ initial }: Props) {
         <button
           type="button"
           disabled={loading}
-          onClick={handleRemove}
+          onClick={handleRemoveLogo}
           className="text-sm text-red-400 hover:text-red-300"
         >
           Remove logo

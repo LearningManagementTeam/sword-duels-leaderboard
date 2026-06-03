@@ -1,18 +1,21 @@
 import Link from "next/link";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
+import { getBranding } from "@/lib/data/content-queries";
 import { signOut } from "@/lib/actions/admin";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const branding = await getBranding();
+
   return (
     <div className="relative min-h-screen text-emerald-50">
-      <ArBackdrop />
+      <ArBackdrop branding={branding} />
       <header className="relative border-b border-transparent bg-sd-panel/75 backdrop-blur-xl">
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-emerald-400/50 via-fuchsia-400/30 to-purple-500/40"

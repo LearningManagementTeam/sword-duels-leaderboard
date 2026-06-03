@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
+import { getBranding } from "@/lib/data/content-queries";
 import { PreviewBanner } from "@/components/PreviewBanner";
 import { getDemoStandings } from "@/lib/demo/generate-demo-standings";
 import {
@@ -31,13 +32,14 @@ export default async function PreviewTvPage({
       ? 1
       : getSurvivorCount(slug, 3, region as Region) ?? 32;
 
+  const branding = await getBranding();
   const pillActive =
     "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep";
   const pillIdle = "sd-glass text-sd-muted hover:text-white";
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto p-6">
-      <ArBackdrop />
+      <ArBackdrop branding={branding} />
       <div className="relative mb-4 space-y-3">
         <PreviewBanner />
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -909,12 +909,26 @@ export async function saveMechanicsContent(body: MechanicsPublicBody) {
 }
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+const BACKGROUND_MAX_BYTES = 5 * 1024 * 1024;
 const LOGO_MIME: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",
   "image/svg+xml": "svg",
 };
+const BACKGROUND_MIME: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+};
+
+function revalidateBrandingSurfaces() {
+  revalidatePath("/", "layout");
+  revalidatePath("/admin", "layout");
+  revalidatePath("/admin/branding");
+  revalidatePath("/tv");
+  revalidatePath("/preview", "layout");
+}
 
 async function upsertBrandingBody(
   service: Awaited<ReturnType<typeof createServiceClient>>,
@@ -934,6 +948,10 @@ async function upsertBrandingBody(
   const body: BrandingConfig = {
     logo_url: patch.logo_url !== undefined ? patch.logo_url : current.logo_url,
     logo_alt: patch.logo_alt ?? current.logo_alt ?? DEFAULT_BRANDING.logo_alt,
+    background_url:
+      patch.background_url !== undefined
+        ? patch.background_url
+        : current.background_url,
   };
 
   const { error } = await service.from("site_content").upsert(
@@ -968,6 +986,8 @@ export async function uploadBrandingLogo(formData: FormData) {
   const path = `logo.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  await removeBrandingStorageFiles(service, "logo.");
+
   const { error: uploadErr } = await service.storage
     .from("branding")
     .upload(path, buffer, {
@@ -985,30 +1005,101 @@ export async function uploadBrandingLogo(formData: FormData) {
     path,
   });
 
-  revalidatePath("/", "layout");
-  revalidatePath("/admin/branding");
+  revalidateBrandingSurfaces();
   return { ok: true, logo_url: logoUrl };
+}
+
+async function removeBrandingStorageFiles(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  prefix: string
+) {
+  const { data: list } = await service.storage.from("branding").list("", {
+    limit: 20,
+  });
+  const toRemove =
+    list?.filter((o) => o.name.startsWith(prefix)).map((o) => o.name) ?? [];
+  if (toRemove.length) {
+    await service.storage.from("branding").remove(toRemove);
+  }
 }
 
 export async function removeBrandingLogo() {
   const { email } = await requireAdmin();
   const service = await createServiceClient();
 
-  const { data: list } = await service.storage.from("branding").list("", {
-    limit: 20,
-  });
-  if (list?.length) {
-    await service.storage
-      .from("branding")
-      .remove(list.map((o) => o.name));
-  }
+  await removeBrandingStorageFiles(service, "logo.");
 
   await upsertBrandingBody(service, email, { logo_url: null });
 
   await logAudit(email, "remove_branding_logo", "site_content", BRANDING_CONTENT_SLUG, {});
 
-  revalidatePath("/", "layout");
-  revalidatePath("/admin/branding");
+  revalidateBrandingSurfaces();
+  return { ok: true };
+}
+
+export async function uploadBrandingBackground(formData: FormData) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const file = formData.get("file");
+
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Choose an image file to upload.");
+  }
+  if (file.size > BACKGROUND_MAX_BYTES) {
+    throw new Error("Background must be 5MB or smaller.");
+  }
+  const ext = BACKGROUND_MIME[file.type];
+  if (!ext) {
+    throw new Error("Use JPG, PNG, or WebP for backgrounds.");
+  }
+
+  const path = `background.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  await removeBrandingStorageFiles(service, "background.");
+
+  const { error: uploadErr } = await service.storage
+    .from("branding")
+    .upload(path, buffer, {
+      contentType: file.type,
+      upsert: true,
+    });
+  if (uploadErr) throw new Error(uploadErr.message);
+
+  const { data: urlData } = service.storage.from("branding").getPublicUrl(path);
+  const backgroundUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+
+  await upsertBrandingBody(service, email, { background_url: backgroundUrl });
+
+  await logAudit(
+    email,
+    "upload_branding_background",
+    "site_content",
+    BRANDING_CONTENT_SLUG,
+    { path }
+  );
+
+  revalidateBrandingSurfaces();
+  return { ok: true, background_url: backgroundUrl };
+}
+
+export async function removeBrandingBackground() {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+
+  await removeBrandingStorageFiles(service, "background.");
+
+  await upsertBrandingBody(service, email, { background_url: null });
+
+  await logAudit(
+    email,
+    "remove_branding_background",
+    "site_content",
+    BRANDING_CONTENT_SLUG,
+    {}
+  );
+
+  revalidateBrandingSurfaces();
   return { ok: true };
 }
 
@@ -1018,7 +1109,6 @@ export async function saveBrandingAlt(logoAlt: string) {
   await upsertBrandingBody(service, email, {
     logo_alt: logoAlt.trim() || DEFAULT_BRANDING.logo_alt,
   });
-  revalidatePath("/", "layout");
-  revalidatePath("/admin/branding");
+  revalidateBrandingSurfaces();
   return { ok: true };
 }

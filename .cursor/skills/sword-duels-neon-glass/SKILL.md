@@ -53,7 +53,7 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 | Area | Files |
 |------|--------|
 | Tokens / CSS | `src/app/globals.css` |
-| Backdrop | `src/components/ui/ArBackdrop.tsx` — blurred `public/backgrounds/sd-wave-green.png` + dark scrim |
+| Backdrop | `ArBackdrop` + `resolveBackdropUrl()` — custom upload from Admin → Branding, else `public/backgrounds/sd-wave-green.png` (blur + scrim via `.sd-backdrop-photo`) |
 | Carousel | `src/components/ui/SdCarousel.tsx` |
 | Hero logo | `src/components/branding/HeroLogo.tsx` |
 | Leaderboard | `src/components/leaderboard/*`, `LeaderboardSection.tsx` |
@@ -69,6 +69,14 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 - **SiteHeader:** small logo only
 - **LeaderboardBanner:** subtitle/round line — no duplicate hero image
 - Transparent PNG/SVG on dark glass works best
+
+## Page background rules
+
+- Data: `BrandingConfig.background_url`; fallback `DEFAULT_BACKDROP_PATH` in `src/lib/branding.ts`
+- Specs: `BACKGROUND_UPLOAD_SPECS` (1920×1080 rec., 1280×720 min, landscape aspect, 5MB, JPG/PNG/WebP)
+- Client check: `validateBackgroundFile()` before server action `uploadBrandingBackground`
+- Display: `ArBackdrop` uses `.sd-backdrop-photo` blur + gradient scrim; preview via `BackgroundPreview`
+- Storage: `branding` bucket `background.{ext}`; remove logo/background independently (`logo.` / `background.` prefix)
 
 ## Carousel rules (`SdCarousel`)
 

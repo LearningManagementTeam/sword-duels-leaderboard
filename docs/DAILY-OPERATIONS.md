@@ -9,12 +9,18 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 | **Dashboard** | Workflow cards — weekly round, extra advancement, end of phase |
 | **Rounds** | Enter and publish scores |
 | **Mechanics** | Edit public “How it works” intro and announcements (rule tables auto-update) |
-| **Branding** | Upload hero game logo (full-width splash) + header icon |
+| **Branding** | Hero logo, custom page background, header icon |
 | **System & stack** | Tech setup, migrations, architecture (IT / troubleshooting) |
 
 Public mechanics: **How it works** on the site header → `/mechanics`
 
-The public site and admin panel share the same **neon glass** look (green + magenta accents, blurred wave background). Upload your logo under **Branding** to see the full-width hero on home and leaderboards.
+The public site and admin panel share the same **neon glass** look (green + magenta accents, blurred background). Customize logo and backdrop under **Branding**.
+
+## Page background (optional)
+
+1. Admin → **Branding** → **Page background**
+2. Use a **landscape** photo or artwork: **1920×1080 recommended**, **1280×720 minimum**, JPG/PNG/WebP, max **5 MB**
+3. The app blurs and darkens the image so text stays readable on every page (public, admin, TV). **Restore default background** brings back the built-in green wave art.
 
 ## Logo (one-time or when it changes)
 
