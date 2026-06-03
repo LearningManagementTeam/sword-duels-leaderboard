@@ -45,26 +45,23 @@ import {
   isSupabaseConfigured,
   isSupabaseServiceConfigured,
 } from "@/lib/supabase/server";
+import { requireAdminEmail } from "@/lib/admin-auth";
+import {
+  parseCarouselSlot,
+  removeCarouselSlideSlot,
+  uploadCarouselSlideFile,
+} from "@/lib/branding-carousel";
+
 import { brandingAssetUrl } from "@/lib/branding-storage";
 
 async function requireAdmin() {
-  if (!isSupabaseServiceConfigured()) {
-    throw new Error("Supabase is not configured");
-  }
+  const email = await requireAdminEmail();
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error("Not authenticated");
-
-  const { data: admin } = await supabase
-    .from("admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!admin) throw new Error("Not authorized");
-  return { supabase, user, email: user.email };
+  if (!user) throw new Error("Not authenticated");
+  return { supabase, user, email };
 }
 
 async function logAudit(
@@ -1061,29 +1058,12 @@ export async function suggestCompetitionMilestone(): Promise<{
 }
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-const CAROUSEL_MAX_BYTES = 3 * 1024 * 1024;
 const LOGO_MIME: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",
   "image/svg+xml": "svg",
 };
-const CAROUSEL_MIME: Record<string, string> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/webp": "webp",
-};
-
-const CAROUSEL_EXT_MIME: Record<string, string> = {
-  png: "image/png",
-  jpg: "image/jpeg",
-  webp: "image/webp",
-};
-
-function carouselContentType(file: File, ext: string): string {
-  if (file.type && CAROUSEL_MIME[file.type]) return file.type;
-  return CAROUSEL_EXT_MIME[ext] ?? "image/jpeg";
-}
 
 /** Home is force-dynamic; skip revalidate here to avoid upload action errors. */
 function scheduleBrandingRevalidation() {
@@ -1212,22 +1192,6 @@ export async function saveBrandingAlt(logoAlt: string) {
   return { ok: true };
 }
 
-function parseCarouselSlot(raw: FormDataEntryValue | null): 1 | 2 | 3 {
-  const n = Number(raw);
-  if (n === 1 || n === 2 || n === 3) return n;
-  throw new Error("Invalid carousel slot (use 1, 2, or 3).");
-}
-
-function carouselFileExtension(file: File): string | undefined {
-  const fromMime = CAROUSEL_MIME[file.type];
-  if (fromMime) return fromMime;
-  const name = file.name.toLowerCase();
-  if (name.endsWith(".png")) return "png";
-  if (name.endsWith(".webp")) return "webp";
-  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "jpg";
-  return undefined;
-}
-
 export async function refreshBrandingConfig(): Promise<BrandingConfig> {
   await requireAdmin();
   return getBranding();
@@ -1235,91 +1199,23 @@ export async function refreshBrandingConfig(): Promise<BrandingConfig> {
 
 export async function uploadCarouselSlide(formData: FormData) {
   const { email } = await requireAdmin();
-  const service = await createServiceClient();
   const file = formData.get("file");
   const slot = parseCarouselSlot(formData.get("slot"));
-
-  if (!(file instanceof File) || file.size === 0) {
+  if (!(file instanceof File)) {
     throw new Error("Choose an image file to upload.");
   }
-  if (file.size > CAROUSEL_MAX_BYTES) {
-    throw new Error("Carousel photo must be 3MB or smaller.");
-  }
-  const ext = carouselFileExtension(file);
-  if (!ext) {
-    throw new Error(
-      "Use JPG, PNG, or WebP for carousel photos (iPhone HEIC is not supported — export as JPEG first)."
-    );
-  }
-
-  const path = `carousel-${slot}.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  await removeBrandingStorageFiles(service, `carousel-${slot}.`);
-
-  const { error: uploadErr } = await service.storage
-    .from("branding")
-    .upload(path, buffer, {
-      contentType: carouselContentType(file, ext),
-      upsert: true,
-      cacheControl: "3600",
-    });
-  if (uploadErr) throw new Error(uploadErr.message);
-
-  const { error: verifyErr } = await service.storage
-    .from("branding")
-    .download(path);
-  if (verifyErr) {
-    throw new Error(
-      `Photo saved but could not be read back (${verifyErr.message}). Check that the branding storage bucket is public in Supabase.`
-    );
-  }
-
-  const url = brandingAssetUrl(path);
-
-  const { data: existing } = await service
-    .from("site_content")
-    .select("body")
-    .eq("slug", BRANDING_CONTENT_SLUG)
-    .maybeSingle();
-  const current = existing?.body
-    ? parseBrandingBody(existing.body)
-    : { ...DEFAULT_BRANDING };
-  const slides = [...current.carousel_slides] as BrandingConfig["carousel_slides"];
-  slides[slot - 1] = url;
-
-  await upsertBrandingBody(service, email, { carousel_slides: slides });
-
+  const result = await uploadCarouselSlideFile(email, slot, file);
   await logAudit(email, "upload_carousel_slide", "site_content", BRANDING_CONTENT_SLUG, {
     slot,
-    path,
   });
-
-  return { ok: true, slot, url, carousel_slides: slides };
+  return result;
 }
 
 export async function removeCarouselSlide(slot: 1 | 2 | 3) {
   const { email } = await requireAdmin();
-  const service = await createServiceClient();
-
-  await removeBrandingStorageFiles(service, `carousel-${slot}.`);
-
-  const { data: existing } = await service
-    .from("site_content")
-    .select("body")
-    .eq("slug", BRANDING_CONTENT_SLUG)
-    .maybeSingle();
-  const current = existing?.body
-    ? parseBrandingBody(existing.body)
-    : { ...DEFAULT_BRANDING };
-  const slides = [...current.carousel_slides] as BrandingConfig["carousel_slides"];
-  slides[slot - 1] = null;
-
-  await upsertBrandingBody(service, email, { carousel_slides: slides });
-
+  const result = await removeCarouselSlideSlot(email, slot);
   await logAudit(email, "remove_carousel_slide", "site_content", BRANDING_CONTENT_SLUG, {
     slot,
   });
-
-  return { ok: true, carousel_slides: slides };
+  return result;
 }

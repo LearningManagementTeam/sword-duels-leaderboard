@@ -5,20 +5,19 @@ import { HeroLogo } from "@/components/branding/HeroLogo";
 import { HomePhotoCarousel } from "@/components/home/HomePhotoCarousel";
 import { LeaderboardBanner } from "@/components/leaderboard/LeaderboardBanner";
 import {
-  refreshBrandingConfig,
   removeBrandingLogo,
-  removeCarouselSlide,
   saveBrandingAlt,
   uploadBrandingLogo,
-  uploadCarouselSlide,
 } from "@/lib/actions/admin";
 import {
   CAROUSEL_SLOT_COUNT,
   CAROUSEL_UPLOAD_SPECS,
   getActiveCarouselSlides,
   type BrandingConfig,
-  type CarouselSlides,
 } from "@/lib/branding";
+
+import type { CarouselMutationResult } from "@/lib/branding-carousel";
+import type { CarouselSlides } from "@/lib/branding";
 
 interface Props {
   initial: BrandingConfig;
@@ -39,12 +38,44 @@ function applyCarouselSlides(
   return { ...branding, carousel_slides: slides };
 }
 
-function formatUploadError(err: unknown): string {
-  const text = err instanceof Error ? err.message : "Upload failed";
-  if (text.includes("Server Components render")) {
-    return "The upload may have worked — refresh this page (F5 or reload). If the photo appears in the slot below, you are done.";
+function formatFileSize(bytes: number): string {
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function postCarouselUpload(
+  fd: FormData
+): Promise<CarouselMutationResult> {
+  const res = await fetch("/api/admin/branding/carousel", {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  const data = (await res.json()) as CarouselMutationResult & {
+    error?: string;
+  };
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error ?? `Upload failed (${res.status})`);
   }
-  return text;
+  return data;
+}
+
+async function deleteCarouselSlot(slot: 1 | 2 | 3): Promise<CarouselMutationResult> {
+  const res = await fetch(`/api/admin/branding/carousel?slot=${slot}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  const data = (await res.json()) as CarouselMutationResult & {
+    error?: string;
+  };
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error ?? `Remove failed (${res.status})`);
+  }
+  return data;
+}
+
+function formatUploadError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return "Upload failed";
 }
 
 function CarouselStatusBanner({ status }: { status: CarouselStatus }) {
@@ -99,7 +130,7 @@ export function BrandingEditor({ initial }: Props) {
   function validateCarouselFile(file: File): string | null {
     if (file.size === 0) return "Choose a photo file first.";
     if (file.size > specs.maxBytes) {
-      return `Photo must be ${specs.maxSizeLabel} or smaller.`;
+      return `Photo is ${formatFileSize(file.size)} — max is ${specs.maxSizeLabel}. Compress the image and try again.`;
     }
     const okMime =
       specs.accept.split(",").includes(file.type) ||
@@ -108,12 +139,6 @@ export function BrandingEditor({ initial }: Props) {
       return "Use JPG, PNG, or WebP (export iPhone photos as JPEG if needed).";
     }
     return null;
-  }
-
-  async function syncBrandingFromServer() {
-    const fresh = await refreshBrandingConfig();
-    setBranding(fresh);
-    return fresh;
   }
 
   async function handleCarouselUpload(slot: 1 | 2 | 3) {
@@ -144,20 +169,9 @@ export function BrandingEditor({ initial }: Props) {
     fd.set("slot", String(slot));
 
     try {
-      const result = await uploadCarouselSlide(fd);
-      if (result.carousel_slides) {
-        setBranding((b) => applyCarouselSlides(b, result.carousel_slides));
-        setSlotLoadErrors((prev) => ({ ...prev, [slot]: false }));
-      } else if (result.url) {
-        setBranding((b) => {
-          const slides = [...b.carousel_slides] as CarouselSlides;
-          slides[slot - 1] = result.url;
-          return applyCarouselSlides(b, slides);
-        });
-      } else {
-        await syncBrandingFromServer();
-      }
-
+      const result = await postCarouselUpload(fd);
+      setBranding((b) => applyCarouselSlides(b, result.carousel_slides));
+      setSlotLoadErrors((prev) => ({ ...prev, [slot]: false }));
       if (input) input.value = "";
 
       setCarouselStatus({
@@ -188,12 +202,8 @@ export function BrandingEditor({ initial }: Props) {
     setMessage("");
 
     try {
-      const result = await removeCarouselSlide(slot);
-      if (result.carousel_slides) {
-        setBranding((b) => applyCarouselSlides(b, result.carousel_slides));
-      } else {
-        await syncBrandingFromServer();
-      }
+      const result = await deleteCarouselSlot(slot);
+      setBranding((b) => applyCarouselSlides(b, result.carousel_slides));
       setCarouselStatus({
         phase: "success",
         slot,
