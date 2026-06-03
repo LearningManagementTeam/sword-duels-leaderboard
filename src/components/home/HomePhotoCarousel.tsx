@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  HOME_CAROUSEL_FRAME,
+  HOME_MEDIA_SHELL,
+} from "@/lib/home-media-layout";
 
 const ROTATE_MS = 5000;
 const SLIDE_MS = 600;
-
-/** Fixed 16:9 frame — every slide fills the same box (object-cover). */
-const FRAME_CLASS =
-  "relative mx-auto aspect-video w-full max-w-lg overflow-hidden";
 
 interface Props {
   slides: string[];
@@ -69,7 +69,7 @@ export function HomePhotoCarousel({
 
   return (
     <section
-      className="mx-auto w-full max-w-lg"
+      className={HOME_MEDIA_SHELL}
       aria-roledescription="carousel"
       aria-label={label}
       onMouseEnter={() => setPaused(true)}
@@ -77,7 +77,7 @@ export function HomePhotoCarousel({
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <div className={FRAME_CLASS}>
+      <div className={HOME_CAROUSEL_FRAME}>
         <div
           className="flex h-full w-full"
           style={{
@@ -109,7 +109,7 @@ export function HomePhotoCarousel({
       </div>
 
       {loop && (
-        <div className="mt-3 flex items-center justify-center gap-2">
+        <div className="mt-3 flex items-center justify-center gap-2 sm:mt-4">
           {slides.map((_, i) => (
             <button
               key={i}

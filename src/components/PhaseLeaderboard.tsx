@@ -1,16 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { HeroLogo } from "@/components/branding/HeroLogo";
 import { PhaseHighlightsCarousel } from "@/components/home/PhaseHighlightsCarousel";
-import { StatusTickerCarousel } from "@/components/leaderboard/StatusTickerCarousel";
+import { StandingsContextBar } from "@/components/nav/StandingsContextBar";
+import { PhaseNav } from "@/components/PhaseNav";
 import { getPhaseHighlights } from "@/lib/phase-highlights";
 import { LeaderboardSection } from "./LeaderboardSection";
 import { PhaseJourneyBar } from "./PhaseJourneyBar";
-import { PhaseNav } from "./PhaseNav";
 import { RegionalSnapshotCards } from "./RegionalSnapshotCards";
 import { PreviewBanner } from "./PreviewBanner";
 import { SetupBanner } from "./SetupBanner";
-import { getBranding } from "@/lib/data/content-queries";
 import {
   getLatestPublishedRoundNumber,
   getLastPublishedAt,
@@ -43,7 +41,6 @@ export async function PhaseLeaderboard({
   isPreview = false,
 }: Props) {
   const configured = isSupabaseConfigured();
-  const branding = await getBranding();
   const season =
     !isPreview && configured ? await getSeasonBySlug(slug) : null;
   const latestPublishedRound =
@@ -54,8 +51,11 @@ export async function PhaseLeaderboard({
   const rows =
     isPreview && demoRows
       ? demoRows
-      : season && configured && region
-        ? await getPublishedStandings(season.id, region)
+      : season && configured && (region || slug === "august_finals")
+        ? await getPublishedStandings(
+            season.id,
+            slug === "august_finals" ? undefined : region
+          )
         : [];
   const lastPublished =
     !isPreview && season && configured
@@ -84,115 +84,64 @@ export async function PhaseLeaderboard({
   }
 
   const basePath = isPreview ? "/preview" : "";
-  const exportPath =
-    (phase === "june" || phase === "july") && region
-      ? `/api/export/${phase}?region=${region}`
-      : `/api/export/${phase}`;
-
-  const regionLinks = (["luzon", "ncr", "vismin"] as Region[]).map((r) => ({
-    href: `${basePath}/${phase}/${r}`,
-    label: REGION_LABELS[r],
-  }));
-
   const needsRegion = (phase === "june" || phase === "july") && perRound;
-
+  const showBoard = !needsRegion || !!region;
   const highlights = getPhaseHighlights(slug);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {isPreview && <PreviewBanner />}
-
-      <HeroLogo branding={branding} priority={!isPreview && phase === "june"} />
-
-      {needsRegion && !region && (
-        <PhaseHighlightsCarousel items={highlights} />
-      )}
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white">{config.name}</h2>
-          {region && (
-            <p className="text-sd-glow">{REGION_LABELS[region]} region</p>
-          )}
-          {perRound && latestPublishedRound > 0 && (
-            <p className="mt-1 text-sm text-sd-muted">
-              Standings after Round {latestPublishedRound}
-            </p>
-          )}
-          {isPreview ? (
-            <p className="mt-1 text-xs text-sd-muted/60">
-              Sample data · {rows.length} branches
-              {region ? ` · ${REGION_LABELS[region]}` : ""}
-            </p>
-          ) : (
-            lastPublished && (
-              <p className="mt-1 text-xs text-sd-muted/60">
-                Last updated:{" "}
-                {new Date(lastPublished).toLocaleString("en-PH", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
-              </p>
-            )
-          )}
-        </div>
-        {!isPreview && region && (
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={exportPath}
-              className="rounded-lg border border-sd-glow/30 px-3 py-1.5 text-sm text-sd-muted hover:bg-sd-panel hover:text-white"
-            >
-              Export CSV
-            </a>
-          </div>
-        )}
-      </div>
 
       {!isPreview && !configured && <SetupBanner />}
 
-      {isPreview ? (
-        <PhaseNav active={phase} basePath="/preview" />
-      ) : (
-        <PhaseNav active={phase} />
+      {isPreview && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white">{config.name}</h2>
+            {region && (
+              <p className="text-sd-glow">{REGION_LABELS[region]} region</p>
+            )}
+            <p className="mt-1 text-xs text-sd-muted/60">
+              Sample data · {rows.length} branches
+            </p>
+          </div>
+          <PhaseNav active={phase} basePath="/preview" />
+        </div>
+      )}
+      {!isPreview && (
+        <StandingsContextBar
+          phase={phase}
+          region={region}
+          latestPublishedRound={latestPublishedRound}
+          lastPublished={lastPublished}
+          phaseTitle={config.name}
+          basePath={basePath}
+          showRegions={needsRegion && !!region}
+        />
       )}
 
       {needsRegion && !region && (
-        <div className="flex flex-wrap gap-2">
-          {regionLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="sd-glass rounded-lg px-4 py-2 text-sm text-sd-muted hover:text-sd-glow"
-            >
-              {l.label}
-            </Link>
-          ))}
-          <p className="w-full text-xs text-sd-muted/60">
-            Select a region to view its leaderboard and cut lines.
-          </p>
-        </div>
+        <>
+          <PhaseHighlightsCarousel items={highlights} />
+          <div className="sd-glass rounded-xl p-4">
+            <p className="text-sm font-medium text-white">Choose a region</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(["luzon", "ncr", "vismin"] as Region[]).map((r) => (
+                <Link
+                  key={r}
+                  href={`${basePath}/${phase}/${r}`}
+                  className="sd-btn-primary rounded-lg px-4 py-2 text-sm"
+                >
+                  {REGION_LABELS[r]}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
-      {needsRegion && !region ? null : (
+      {showBoard && (
         <>
-          {region && !isPreview && (
-            <StatusTickerCarousel lastPublished={lastPublished} />
-          )}
-          {perRound && region && (
-            <PhaseJourneyBar
-              seasonSlug={slug}
-              latestPublishedRound={latestPublishedRound}
-              region={region}
-            />
-          )}
-          {region && rows.length > 0 && (
-            <RegionalSnapshotCards
-              rows={rows}
-              seasonSlug={slug}
-              latestPublishedRound={latestPublishedRound}
-              lastPublished={lastPublished}
-            />
-          )}
           <Suspense
             fallback={
               <p className="text-sm text-sd-muted/60">Loading leaderboard…</p>
@@ -218,6 +167,31 @@ export async function PhaseLeaderboard({
               latestPublishedRound={latestPublishedRound}
             />
           </Suspense>
+
+          {!isPreview && ((perRound && region) || slug === "august_finals") ? (
+            <details className="sd-glass rounded-xl">
+              <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-white [&::-webkit-details-marker]:hidden">
+                Round progress &amp; stats
+              </summary>
+              <div className="space-y-4 border-t border-emerald-500/10 px-4 pb-4 pt-3">
+                {perRound && region && (
+                  <PhaseJourneyBar
+                    seasonSlug={slug}
+                    latestPublishedRound={latestPublishedRound}
+                    region={region}
+                  />
+                )}
+                {region && rows.length > 0 && (
+                  <RegionalSnapshotCards
+                    rows={rows}
+                    seasonSlug={slug}
+                    latestPublishedRound={latestPublishedRound}
+                    lastPublished={lastPublished}
+                  />
+                )}
+              </div>
+            </details>
+          ) : null}
         </>
       )}
     </div>

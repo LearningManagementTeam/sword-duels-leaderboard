@@ -8,6 +8,7 @@ import { InfoTip } from "@/components/admin/InfoTip";
 import { getRoundMechanics } from "@/lib/scoring-config";
 import type { Branch } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
+import { REGIONS, REGION_LABELS } from "@/lib/scoring-config";
 
 interface Props {
   roundId: string;
@@ -146,6 +147,32 @@ export function RoundResultsForm({
         wins/losses). Ties at the cut get a <strong className="text-cyan-200">Tie breaker</strong>{" "}
         status until resolved.
       </p>
+
+      {status === "published" && (
+        <div className="sd-glass flex flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-sm">
+          <span className="text-xs font-semibold uppercase tracking-wider text-sd-muted/70">
+            Export CSV
+          </span>
+          {seasonSlug === "august_finals" ? (
+            <a
+              href="/api/export/august"
+              className="rounded-lg border border-sd-glow/30 px-3 py-1 text-sd-muted hover:text-white"
+            >
+              August finals
+            </a>
+          ) : (
+            REGIONS.map((region) => (
+              <a
+                key={region}
+                href={`/api/export/${seasonSlug === "june_area" ? "june" : "july"}?region=${region}`}
+                className="rounded-lg border border-sd-glow/30 px-3 py-1 text-sd-muted hover:text-white"
+              >
+                {REGION_LABELS[region]}
+              </a>
+            ))
+          )}
+        </div>
+      )}
 
       {mechanics && (
         <div className="rounded-lg border border-sd-glow/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50/90">

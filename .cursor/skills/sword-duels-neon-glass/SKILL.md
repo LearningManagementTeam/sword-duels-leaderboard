@@ -64,7 +64,7 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 | Leaderboard | `src/components/leaderboard/*`, `LeaderboardSection.tsx` |
 | Status | `src/components/StatusBadge.tsx` — eliminated uses deep emerald/muted, not slate |
 | Journey | `src/components/PhaseJourneyBar.tsx` |
-| Shell | `SiteHeader.tsx`, `PhaseNav.tsx` |
+| Shell | `SiteHeader.tsx`, `PhaseNav.tsx`, `PublicNav.tsx`, `StandingsContextBar.tsx` |
 | Branding data | `getBranding()`, Admin → `/admin/branding` |
 
 ## Hero logo rules

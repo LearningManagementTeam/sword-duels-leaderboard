@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { AdminAuthError, requireAdminEmail } from "@/lib/admin-auth";
 import { standingsToCsv } from "@/lib/export-csv";
 import { getPublishedStandings, getSeasonBySlug } from "@/lib/data/queries";
 import type { Region, SeasonSlug } from "@/lib/scoring-config";
@@ -9,6 +10,15 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ season: string }> }
 ) {
+  try {
+    await requireAdminEmail();
+  } catch (err) {
+    if (err instanceof AdminAuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
+  }
+
   const { season: seasonParam } = await context.params;
   const slugMap: Record<string, SeasonSlug> = {
     june: "june_area",

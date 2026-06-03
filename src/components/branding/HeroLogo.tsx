@@ -1,24 +1,37 @@
 import { BrandingImage } from "@/components/branding/BrandingImage";
 import type { BrandingConfig } from "@/lib/branding";
+import { HOME_MEDIA_SHELL } from "@/lib/home-media-layout";
 
 interface Props {
   branding: BrandingConfig;
   priority?: boolean;
   tvMode?: boolean;
+  /** Home page: match carousel width and keep logo + photos proportional on mobile */
+  layout?: "default" | "home";
 }
 
-export function HeroLogo({ branding, priority = false, tvMode }: Props) {
+export function HeroLogo({
+  branding,
+  priority = false,
+  tvMode,
+  layout = "default",
+}: Props) {
+  const shellClass =
+    layout === "home"
+      ? HOME_MEDIA_SHELL
+      : `relative mx-auto w-full px-2 ${tvMode ? "max-w-5xl" : "max-w-6xl"}`;
+
+  const heightClass =
+    tvMode
+      ? "max-h-[min(50vh,360px)]"
+      : layout === "home"
+        ? "max-h-[min(34vh,200px)] sm:max-h-[min(38vh,260px)] md:max-h-[min(42vh,300px)]"
+        : "max-h-[min(42vh,280px)] sm:max-h-[min(44vh,320px)]";
+
   return (
-    <section
-      className={`relative w-full px-2 ${tvMode ? "max-w-5xl" : "max-w-6xl"} mx-auto`}
-      aria-label={branding.logo_alt}
-    >
+    <section className={shellClass} aria-label={branding.logo_alt}>
       {branding.logo_url ? (
-        <div
-          className={`relative mx-auto w-full sd-hero-glow ${
-            tvMode ? "max-h-[min(50vh,360px)]" : "max-h-[min(42vh,280px)] sm:max-h-[min(44vh,320px)]"
-          }`}
-        >
+        <div className={`relative mx-auto w-full sd-hero-glow ${heightClass}`}>
           <BrandingImage
             src={branding.logo_url}
             alt={branding.logo_alt}
