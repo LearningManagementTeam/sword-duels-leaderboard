@@ -6,7 +6,7 @@ import {
   getRoundViewConfig,
   participantDisplayName,
 } from "@/lib/leaderboard-display";
-import { getCompetitionMap } from "@/lib/data/content-queries";
+import type { CompetitionMapConfig } from "@/lib/competition-map";
 import {
   getBranchCount,
   getLatestPublishedRoundNumber,
@@ -19,6 +19,7 @@ import {
   parsePublicStandingsPath,
   resolvePublicStandingsHref,
 } from "@/lib/public-standings-route";
+import { resolveArenaHref } from "@/lib/full-board-cta";
 import { REGION_LABELS, SCORING_CONFIG } from "@/lib/scoring-config";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -36,11 +37,13 @@ const julyRegions = [
   { href: "/july/vismin", label: "VisMin" },
 ] as const;
 
-export async function HomeStandingsPreview() {
-  const config = await getCompetitionMap();
+interface Props {
+  mapConfig: CompetitionMapConfig;
+}
+
+export async function HomeStandingsPreview({ mapConfig: config }: Props) {
   const meta = getMilestoneMeta(config.milestoneId);
   const standingsHref = resolvePublicStandingsHref(config);
-  const fullBoardHref = "/june/leaderboard";
   const { seasonSlug, region } = parsePublicStandingsPath(standingsHref);
   const seasonConfig = SCORING_CONFIG[seasonSlug];
   const branchCount = await getBranchCount();
@@ -48,6 +51,7 @@ export async function HomeStandingsPreview() {
   let rows: Awaited<ReturnType<typeof getPublishedStandings>> = [];
   let latestRound = 0;
   let lastPublished: string | null = null;
+  let fullBoardHref = "/june/luzon";
 
   if (isSupabaseConfigured()) {
     const season = await getSeasonBySlug(seasonSlug);
@@ -57,6 +61,7 @@ export async function HomeStandingsPreview() {
       if (region || seasonSlug === "august_finals") {
         rows = await getPublishedStandings(season.id, region);
       }
+      fullBoardHref = resolveArenaHref(seasonSlug, latestRound, region);
     }
   }
 

@@ -36,6 +36,8 @@ Print this page and tick each box when done.
 - [ ] Logged into Admin
 - [ ] Imported branches
 - [ ] Ran `010_competition_map.sql` if project existed before competition map feature
+- [ ] Ran `012_round_finish_order.sql` if using June/July Round 3 finish-order scoring
+- [ ] Ran `013_manually_advanced_after_round.sql` for committee pick badges on live boards
 - [ ] Set **Competition map** (Admin → Competition map) — milestone + caption
 - [ ] Uploaded home **carousel** photos (Admin → Branding) if ready
 - [ ] Published test round

@@ -156,6 +156,9 @@ If upgrading an existing Supabase project, run in SQL Editor (skip any you alrea
 | `007_branding_storage.sql` | Branding bucket (5MB) + logo/carousel settings row |
 | `008_tie_breaker_status.sql` | Tie-breaker status + column |
 | `010_competition_map.sql` | Home page competition map settings |
+| `011_branding_bucket_public.sql` | Public read for branding carousel photos |
+| `012_round_finish_order.sql` | Round 3 finish order (race-to-correct) |
+| `013_manually_advanced_after_round.sql` | Committee pick badge on published standings |
 
 **Note:** Migration `009` (custom page backgrounds) was removed from the repo — backgrounds are built-in only. If you already ran 009, it is harmless. Ensure the branding bucket allows 5MB (included in `ALL-IN-ONE-MIGRATION.sql` tail or re-run the bucket `UPDATE` there).
 

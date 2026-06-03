@@ -14,9 +14,13 @@ const links = [
   { href: "/admin/branding", label: "Branding" },
   { href: "/admin/preview", label: "Preview" },
   { href: "/admin/audit", label: "Audit log" },
+  { href: "/admin#export", label: "Export" },
 ];
 
 function isActive(pathname: string, href: string, exact?: boolean) {
+  if (href.includes("#")) {
+    return pathname === href.split("#")[0];
+  }
   if (exact) return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }

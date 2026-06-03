@@ -469,3 +469,89 @@ export async function getBranchesForRepresentatives() {
     total: branches.length,
   };
 }
+
+export interface PhaseLockOverview {
+  seasonSlug: "june_area" | "july_region";
+  name: string;
+  description: string;
+  lockedAt: string | null;
+  lockedByEmail: string | null;
+  round3Published: boolean;
+  seedCount: number | null;
+}
+
+export async function getPhaseLockOverview(): Promise<PhaseLockOverview[]> {
+  if (!isSupabaseServiceConfigured()) return [];
+  const service = await createServiceClient();
+
+  const phases: {
+    slug: "june_area" | "july_region";
+    description: string;
+  }[] = [
+    {
+      slug: "june_area",
+      description:
+        "Lock June and seed the top 24 branches into July regional competition.",
+    },
+    {
+      slug: "july_region",
+      description:
+        "Lock July and seed regional champions (Luzon, NCR, VisMin) into August finals.",
+    },
+  ];
+
+  const result: PhaseLockOverview[] = [];
+
+  for (const phase of phases) {
+    const { data: season } = await service
+      .from("seasons")
+      .select("id, name")
+      .eq("slug", phase.slug)
+      .maybeSingle();
+    if (!season) continue;
+
+    const [{ data: lock }, { data: r3 }] = await Promise.all([
+      service
+        .from("phase_locks")
+        .select("locked_at, locked_by_email")
+        .eq("season_id", season.id)
+        .maybeSingle(),
+      service
+        .from("rounds")
+        .select("status")
+        .eq("season_id", season.id)
+        .eq("round_number", 3)
+        .maybeSingle(),
+    ]);
+
+    let seedCount: number | null = null;
+    if (phase.slug === "june_area") {
+      const { count } = await service
+        .from("published_standings")
+        .select("*", { count: "exact", head: true })
+        .eq("season_id", season.id)
+        .eq("status", "advanced");
+      seedCount = count;
+    } else {
+      const { data: winners } = await service
+        .from("published_standings")
+        .select("branch_id")
+        .eq("season_id", season.id)
+        .eq("rank", 1)
+        .not("region_filter", "is", null);
+      seedCount = winners?.length ?? 0;
+    }
+
+    result.push({
+      seasonSlug: phase.slug,
+      name: season.name,
+      description: phase.description,
+      lockedAt: lock?.locked_at ?? null,
+      lockedByEmail: lock?.locked_by_email ?? null,
+      round3Published: r3?.status === "published",
+      seedCount,
+    });
+  }
+
+  return result;
+}

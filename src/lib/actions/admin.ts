@@ -383,13 +383,14 @@ export async function publishRound(roundId: string) {
   const seasonRaw = round.seasons as { slug: SeasonSlug } | { slug: SeasonSlug }[];
   const seasonSlug = (Array.isArray(seasonRaw) ? seasonRaw[0] : seasonRaw).slug;
 
-  await service
+  const { error: statusErr } = await service
     .from("rounds")
     .update({
       status: "published",
       published_at: new Date().toISOString(),
     })
     .eq("id", roundId);
+  if (statusErr) throw new Error(statusErr.message);
 
   await recomputeAndPublishStandings(service, seasonSlug, round.season_id);
 
@@ -514,6 +515,7 @@ async function upsertStandings(
     tie_breaker_in_round: s.tie_breaker_in_round ?? null,
     last_active_round: s.last_active_round ?? 0,
     round3_finish_order: s.round3_finish_order ?? null,
+    manually_advanced_after_round: s.manually_advanced_after_round ?? null,
   }));
   const { error } = await service.from("published_standings").insert(rows);
   if (error) throw new Error(error.message);
@@ -548,9 +550,20 @@ export async function lockPhaseAndAdvance(seasonSlug: SeasonSlug) {
     .single();
   if (!season) throw new Error("Season not found");
 
+  const { data: r3 } = await service
+    .from("rounds")
+    .select("status")
+    .eq("season_id", season.id)
+    .eq("round_number", 3)
+    .maybeSingle();
+  if (r3?.status !== "published") {
+    throw new Error("Publish Round 3 for this phase before locking.");
+  }
+
   await service.from("phase_locks").upsert({
     season_id: season.id,
     locked_by_email: email,
+    locked_at: new Date().toISOString(),
   });
 
   if (seasonSlug === "june_area") {

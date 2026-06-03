@@ -117,6 +117,7 @@ export function LeaderboardTable({
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <input
             type="search"
+            aria-label="Search branches or codes"
             placeholder="Search branch name or code… (share: ?highlight=CODE)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -124,6 +125,7 @@ export function LeaderboardTable({
           />
           {showArea && (
             <select
+              aria-label="Filter by area"
               value={areaFilter}
               onChange={(e) => setAreaFilter(e.target.value)}
               className="sd-input rounded-lg px-3 py-2 text-sm"
@@ -137,6 +139,7 @@ export function LeaderboardTable({
             </select>
           )}
           <select
+            aria-label="Filter by status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="sd-input rounded-lg px-3 py-2 text-sm"

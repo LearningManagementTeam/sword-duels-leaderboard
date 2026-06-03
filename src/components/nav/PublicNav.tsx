@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { toPreviewPath } from "@/lib/public-standings-route";
 
 interface Props {
   standingsHref: string;
@@ -22,18 +23,32 @@ const ITEMS: { id: NavId; label: string; hrefKey?: NavId }[] = [
 function resolveHref(
   id: NavId,
   standingsHref: string,
-  phaseHref: string
+  phaseHref: string,
+  isPreview: boolean
 ): string {
-  if (id === "home") return "/";
-  if (id === "standings") return standingsHref;
-  if (id === "phases") return phaseHref;
+  if (id === "home") return isPreview ? "/preview" : "/";
+  if (id === "standings") {
+    return isPreview ? toPreviewPath(standingsHref) : standingsHref;
+  }
+  if (id === "phases") {
+    return isPreview ? toPreviewPath(phaseHref) : phaseHref;
+  }
   return "/mechanics";
 }
 
-function isActive(pathname: string, id: NavId): boolean {
-  if (id === "home") return pathname === "/";
+function isActive(pathname: string, id: NavId, isPreview: boolean): boolean {
+  if (id === "home") {
+    return isPreview ? pathname === "/preview" : pathname === "/";
+  }
   if (id === "rules") return pathname.startsWith("/mechanics");
   if (id === "phases") {
+    if (isPreview) {
+      return (
+        pathname === "/preview/june" ||
+        pathname === "/preview/july" ||
+        pathname === "/preview/august"
+      );
+    }
     return (
       pathname === "/june" ||
       pathname === "/july" ||
@@ -41,8 +56,15 @@ function isActive(pathname: string, id: NavId): boolean {
     );
   }
   if (id === "standings") {
+    if (isPreview) {
+      return (
+        /^\/preview\/(june|july)\/(luzon|ncr|vismin)/.test(pathname) ||
+        pathname === "/preview/august"
+      );
+    }
     return (
       /^\/june\/(luzon|ncr|vismin)/.test(pathname) ||
+      pathname === "/june/leaderboard" ||
       /^\/july\/(luzon|ncr|vismin)/.test(pathname) ||
       pathname === "/august" ||
       pathname.startsWith("/august?")
@@ -59,6 +81,7 @@ function NavLink({
   phaseHref,
   standingsLabel,
   variant,
+  isPreview,
 }: {
   id: NavId;
   label: string;
@@ -67,15 +90,22 @@ function NavLink({
   phaseHref: string;
   standingsLabel: string;
   variant: "mobile" | "desktop";
+  isPreview: boolean;
 }) {
-  const active = isActive(pathname, id);
-  const href = resolveHref(id, standingsHref, phaseHref);
+  const active = isActive(pathname, id, isPreview);
+  const href = resolveHref(id, standingsHref, phaseHref, isPreview);
   const displayLabel =
-    id === "standings" && variant === "desktop" ? standingsLabel : label;
+    id === "standings" && variant === "desktop"
+      ? isPreview
+        ? `Preview · ${standingsLabel}`
+        : standingsLabel
+      : id === "standings" && isPreview
+        ? "Preview"
+        : label;
 
   const base =
     variant === "mobile"
-      ? "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium"
+      ? "flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-medium"
       : "rounded-xl px-4 py-2 text-sm font-medium transition";
 
   const activeClass =
@@ -140,11 +170,25 @@ export function PublicNav({
   standingsLabel,
 }: Props) {
   const pathname = usePathname() ?? "/";
+  const isPreview = pathname.startsWith("/preview");
 
   return (
     <>
+      {isPreview && (
+        <div
+          className="fixed inset-x-0 top-0 z-[60] hidden border-b border-amber-500/30 bg-amber-950/90 py-1.5 text-center text-xs text-amber-100 md:block"
+          role="status"
+        >
+          Sample data preview —{" "}
+          <Link href="/" className="font-medium underline hover:text-white">
+            go to live site
+          </Link>
+        </div>
+      )}
       <nav
-        className="fixed inset-x-0 top-0 z-50 hidden border-b border-emerald-500/15 bg-sd-deep/90 backdrop-blur-xl md:block"
+        className={`fixed inset-x-0 z-50 hidden border-b border-emerald-500/15 bg-sd-deep/90 backdrop-blur-xl md:block ${
+          isPreview ? "top-8" : "top-0"
+        }`}
         aria-label="Site navigation"
       >
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 py-3">
@@ -158,6 +202,7 @@ export function PublicNav({
               phaseHref={phaseHref}
               standingsLabel={standingsLabel}
               variant="desktop"
+              isPreview={isPreview}
             />
           ))}
         </div>
@@ -178,6 +223,7 @@ export function PublicNav({
               phaseHref={phaseHref}
               standingsLabel={standingsLabel}
               variant="mobile"
+              isPreview={isPreview}
             />
           ))}
         </div>

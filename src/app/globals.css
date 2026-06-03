@@ -42,6 +42,21 @@ body {
   color: var(--foreground);
 }
 
+:focus-visible {
+  outline: 2px solid rgb(74 222 128 / 0.85);
+  outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid rgb(74 222 128 / 0.85);
+  outline-offset: 2px;
+}
+
 @keyframes branch-pulse {
   0%,
   100% {
@@ -742,11 +757,16 @@ body {
   background: rgb(74 222 128 / 0.05);
 }
 
+.sd-tie-breaker-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sd-hud-scan::after,
   .sd-light-streak--animated,
   .sd-carousel-track,
   .animate-glow-pulse,
+  .sd-tie-breaker-pulse,
   .sd-cut-shimmer,
   .sd-gradient-scene__mesh,
   .sd-gradient-scene__orb,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminWorkflowCards } from "@/components/admin/AdminWorkflowCards";
+import { ExportStandingsPanel } from "@/components/admin/ExportStandingsPanel";
 import { SetupBanner } from "@/components/SetupBanner";
 import { branchCountLabel } from "@/lib/branch-targets";
 import { getAdminDashboard } from "@/lib/data/admin-queries";
@@ -64,8 +65,15 @@ export default async function AdminDashboardPage() {
               Update the season journey map
             </Link>
           </li>
+          <li>
+            <Link href="/admin#export" className="sd-link">
+              Export standings (CSV)
+            </Link>
+          </li>
         </ul>
       </section>
+
+      <ExportStandingsPanel />
 
       <section className="sd-neon-panel p-5">
         <h2 className="mb-2 font-semibold text-sd-glow">Recent rounds</h2>

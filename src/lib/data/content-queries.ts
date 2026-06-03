@@ -1,3 +1,4 @@
+import { cache } from "react";
 import {
   BRANDING_CONTENT_SLUG,
   DEFAULT_BRANDING,
@@ -21,7 +22,7 @@ import {
   isSupabaseServiceConfigured,
 } from "@/lib/supabase/server";
 
-export async function getMechanicsContent(): Promise<MechanicsPublicBody> {
+export const getMechanicsContent = cache(async (): Promise<MechanicsPublicBody> => {
   if (!isSupabaseServiceConfigured()) {
     return { ...DEFAULT_MECHANICS_BODY };
   }
@@ -34,9 +35,9 @@ export async function getMechanicsContent(): Promise<MechanicsPublicBody> {
 
   if (error || !data) return { ...DEFAULT_MECHANICS_BODY };
   return parseMechanicsBody(data.body);
-}
+});
 
-export async function getBranding(): Promise<BrandingConfig> {
+export const getBranding = cache(async (): Promise<BrandingConfig> => {
   if (!isSupabaseServiceConfigured()) {
     return { ...DEFAULT_BRANDING };
   }
@@ -49,9 +50,9 @@ export async function getBranding(): Promise<BrandingConfig> {
 
   if (error || !data) return { ...DEFAULT_BRANDING };
   return parseBrandingBody(data.body);
-}
+});
 
-export async function getCompetitionMap(): Promise<CompetitionMapConfig> {
+export const getCompetitionMap = cache(async (): Promise<CompetitionMapConfig> => {
   if (!isSupabaseServiceConfigured()) {
     return { ...DEFAULT_COMPETITION_MAP_CONFIG };
   }
@@ -64,4 +65,4 @@ export async function getCompetitionMap(): Promise<CompetitionMapConfig> {
 
   if (error || !data) return { ...DEFAULT_COMPETITION_MAP_CONFIG };
   return parseCompetitionMapBody(data.body);
-}
+});

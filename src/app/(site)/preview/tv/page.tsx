@@ -96,6 +96,7 @@ export default async function PreviewTvPage({
           cutLineLabel={cutLineLabel}
           lastPublished={null}
           showArea={slug === "june_area"}
+          tvBasePath="/preview/tv"
         />
       </Suspense>
     </div>

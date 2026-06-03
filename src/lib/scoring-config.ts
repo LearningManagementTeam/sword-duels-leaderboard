@@ -189,6 +189,10 @@ export function getRoundMechanics(
   return ROUND_MECHANICS[seasonSlug]?.[roundNumber] ?? null;
 }
 
+export function juneRoundDisplayName(round: 1 | 2 | 3): string {
+  return getRoundMechanics("june_area", round)?.roundName ?? `Round ${round}`;
+}
+
 export function validateRoundPoints(
   seasonSlug: SeasonSlug,
   roundNumber: number,

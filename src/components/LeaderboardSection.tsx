@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { BranchHighlightControls } from "@/components/BranchHighlight";
 import { GamifiedLeaderboard } from "@/components/leaderboard/GamifiedLeaderboard";
+import { StatusTickerCarousel } from "@/components/leaderboard/StatusTickerCarousel";
 import type { StandingRow } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
 
@@ -18,6 +19,7 @@ interface Props {
   showDetailToggle?: boolean;
   seasonSlug?: SeasonSlug;
   latestPublishedRound?: number;
+  lastPublished?: string | null;
   region?: import("@/lib/scoring-config").Region;
 }
 
@@ -25,6 +27,7 @@ export function LeaderboardSection({
   bannerSubtitle,
   tvMode = false,
   showDetailToggle = true,
+  lastPublished = null,
   ...rest
 }: Props) {
   const searchParams = useSearchParams();
@@ -32,6 +35,7 @@ export function LeaderboardSection({
 
   return (
     <div className="space-y-4">
+      {!tvMode && <StatusTickerCarousel lastPublished={lastPublished} />}
       {!tvMode && <BranchHighlightControls />}
       <GamifiedLeaderboard
         bannerSubtitle={bannerSubtitle}

@@ -22,6 +22,8 @@ interface Props {
   cutLineLabel?: string;
   lastPublished: string | null;
   showArea: boolean;
+  /** Base path for rotate navigation — `/tv` or `/preview/tv` */
+  tvBasePath?: string;
 }
 
 export function TvLeaderboardView({
@@ -35,6 +37,7 @@ export function TvLeaderboardView({
   cutLineLabel,
   lastPublished,
   showArea,
+  tvBasePath = "/tv",
 }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -44,7 +47,9 @@ export function TvLeaderboardView({
   const displayRows = useMemo(
     () =>
       rows.filter(
-        (r) => r.status !== "eliminated" && r.rank <= advancementCutoff
+        (r) =>
+          r.status !== "eliminated" &&
+          (r.status === "tie_breaker" || r.rank <= advancementCutoff)
       ),
     [rows, advancementCutoff]
   );
@@ -72,12 +77,12 @@ export function TvLeaderboardView({
         const next = REGIONS[(i + 1) % REGIONS.length];
         const params = new URLSearchParams(searchParams.toString());
         params.set("region", next);
-        router.replace(`/tv?${params.toString()}`, { scroll: false });
+        router.replace(`${tvBasePath}?${params.toString()}`, { scroll: false });
         return next;
       });
     }, rotateSec * 1000);
     return () => clearInterval(id);
-  }, [rotateSec, phase, router, searchParams]);
+  }, [rotateSec, phase, router, searchParams, tvBasePath]);
 
   useEffect(() => {
     setRegion(initialRegion);

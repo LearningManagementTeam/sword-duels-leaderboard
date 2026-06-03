@@ -47,6 +47,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
+  if (isAdminRoute && user) {
+    const { data: admin } = await supabase
+      .from("admins")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!admin) {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(
+        new URL(
+          "/admin/login?error=" +
+            encodeURIComponent("Not authorized for admin access"),
+          request.url
+        )
+      );
+    }
+  }
+
   if (request.nextUrl.pathname === "/admin/login" && user) {
     const { data: admin } = await supabase
       .from("admins")

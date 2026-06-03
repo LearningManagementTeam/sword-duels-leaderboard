@@ -1,5 +1,6 @@
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
 import { PublicNav } from "@/components/nav/PublicNav";
+import { SiteMain } from "@/components/nav/SiteMain";
 import { getCompetitionMap } from "@/lib/data/content-queries";
 import {
   resolvePublicPhaseHref,
@@ -25,9 +26,7 @@ export default async function SiteLayout({
         phaseHref={phaseHref}
         standingsLabel={standingsLabel}
       />
-      <main className="relative mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-6 md:pb-8 md:pt-[4.5rem]">
-        {children}
-      </main>
+      <SiteMain>{children}</SiteMain>
       <footer className="sd-glass relative mb-20 mt-8 py-4 text-center text-xs text-sd-muted/70 md:mb-0">
         Sword Duels · June–August competition
       </footer>

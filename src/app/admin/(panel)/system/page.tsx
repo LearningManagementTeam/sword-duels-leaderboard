@@ -2,8 +2,7 @@ import Link from "next/link";
 
 const migrations = [
   { file: "001_initial_schema.sql", note: "Core tables" },
-  { file: "002_representatives.sql", note: "Rep columns on branches" },
-  { file: "003_*.sql", note: "Representatives (if split)" },
+  { file: "003_branch_representatives.sql", note: "Representative columns on branches" },
   { file: "004_round_elimination.sql", note: "Per-round elimination columns" },
   { file: "005_manual_round_advances.sql", note: "Committee extra advancement picks" },
   { file: "006_site_content.sql", note: "Editable public mechanics content" },
@@ -15,6 +14,18 @@ const migrations = [
   {
     file: "010_competition_map.sql",
     note: "Home page competition map site_content row",
+  },
+  {
+    file: "011_branding_bucket_public.sql",
+    note: "Public read for branding carousel photos",
+  },
+  {
+    file: "012_round_finish_order.sql",
+    note: "Round 3 finish order for race-to-correct rounds",
+  },
+  {
+    file: "013_manually_advanced_after_round.sql",
+    note: "Committee pick badge persisted on published standings",
   },
 ];
 

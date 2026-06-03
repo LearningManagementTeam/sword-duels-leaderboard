@@ -1,15 +1,35 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
 import { signOut } from "@/lib/actions/admin";
+import { AdminAuthError, requireAdminEmail } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  try {
+    await requireAdminEmail();
+  } catch (err) {
+    if (err instanceof AdminAuthError) {
+      if (err.status === 503) {
+        redirect("/admin/login?setup=1");
+      }
+      if (err.status === 403) {
+        redirect(
+          "/admin/login?error=" +
+            encodeURIComponent("Not authorized for admin access")
+        );
+      }
+      redirect("/admin/login");
+    }
+    throw err;
+  }
+
   return (
     <div className="relative min-h-screen text-emerald-50">
       <ArBackdrop />

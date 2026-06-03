@@ -1,9 +1,11 @@
 import { HomePhotoCarousel } from "@/components/home/HomePhotoCarousel";
-import { getActiveCarouselSlides } from "@/lib/branding";
-import { getBranding } from "@/lib/data/content-queries";
+import { getActiveCarouselSlides, type BrandingConfig } from "@/lib/branding";
 
-export async function HomeCarouselSection() {
-  const branding = await getBranding();
+interface Props {
+  branding: BrandingConfig;
+}
+
+export async function HomeCarouselSection({ branding }: Props) {
   const slides = getActiveCarouselSlides(branding);
 
   if (slides.length === 0) {

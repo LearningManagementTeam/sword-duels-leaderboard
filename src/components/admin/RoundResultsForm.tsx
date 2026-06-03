@@ -6,6 +6,10 @@ import { saveRoundResults, publishRound } from "@/lib/actions/admin";
 import { DraftStandingsPreview } from "@/components/admin/DraftStandingsPreview";
 import { InfoTip } from "@/components/admin/InfoTip";
 import {
+  checkPublishReadiness,
+  formatPublishConfirmMessage,
+} from "@/lib/publish-readiness";
+import {
   getRoundMechanics,
   requiredSurvivorsPerRegion,
   type Region,
@@ -127,9 +131,24 @@ export function RoundResultsForm({
   }
 
   async function handlePublish() {
-    if (!confirm(`Publish ${roundName}? This updates the public leaderboard.`)) {
+    const readiness = checkPublishReadiness(
+      seasonSlug,
+      roundNumber,
+      values,
+      tieBreakerBranches.length
+    );
+
+    if (readiness.blockers.length > 0) {
+      setMessage(`Cannot publish: ${readiness.blockers.join(" ")}`);
       return;
     }
+
+    if (
+      !confirm(formatPublishConfirmMessage(roundName, readiness))
+    ) {
+      return;
+    }
+
     setLoading(true);
     setMessage("");
     try {
@@ -144,6 +163,17 @@ export function RoundResultsForm({
       setLoading(false);
     }
   }
+
+  const publishReadiness = useMemo(
+    () =>
+      checkPublishReadiness(
+        seasonSlug,
+        roundNumber,
+        values,
+        tieBreakerBranches.length
+      ),
+    [seasonSlug, roundNumber, values, tieBreakerBranches.length]
+  );
 
   function updateRow(index: number, patch: Partial<RowValue>) {
     setValues((prev) => {
@@ -331,6 +361,29 @@ export function RoundResultsForm({
         getDraftResults={getDraftResults}
       />
 
+      {publishReadiness.blockers.length > 0 && (
+        <div className="rounded-lg border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">
+          <p className="font-medium">Publish blocked</p>
+          <ul className="mt-1 list-inside list-disc text-red-200/90">
+            {publishReadiness.blockers.map((b) => (
+              <li key={b}>{b}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {publishReadiness.warnings.length > 0 &&
+        publishReadiness.blockers.length === 0 && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+            <p className="font-medium">Review before publishing</p>
+            <ul className="mt-1 list-inside list-disc text-amber-200/90">
+              {publishReadiness.warnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -342,7 +395,9 @@ export function RoundResultsForm({
         </button>
         <button
           type="button"
-          disabled={loading}
+          disabled={
+            loading || publishReadiness.blockers.length > 0
+          }
           onClick={handlePublish}
           className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >

@@ -1,24 +1,47 @@
 import Link from "next/link";
 import { branchCountLabel } from "@/lib/branch-targets";
-import { getBranchCount } from "@/lib/data/queries";
+import type { CompetitionMapConfig } from "@/lib/competition-map";
+import {
+  getBranchCount,
+  getLatestPublishedRoundNumber,
+  getSeasonBySlug,
+} from "@/lib/data/queries";
+import {
+  buildScopeLabel,
+  resolveFullBoardCta,
+} from "@/lib/full-board-cta";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
 
-export async function HomeFullLeaderboardCta() {
+interface Props {
+  mapConfig: CompetitionMapConfig;
+}
+
+export async function HomeFullLeaderboardCta({ mapConfig }: Props) {
   const branchCount = await getBranchCount();
-  const subtitle =
-    branchCount > 0
-      ? `${branchCountLabel(branchCount)} · all regions · more room to climb the ranks`
-      : "All regions · more room to explore the full arena";
+  const scopeLabel = buildScopeLabel(branchCount, branchCountLabel);
+
+  let junePublishedRound = 0;
+  if (isSupabaseConfigured()) {
+    const juneSeason = await getSeasonBySlug("june_area");
+    if (juneSeason) {
+      junePublishedRound = await getLatestPublishedRoundNumber(juneSeason.id);
+    }
+  }
+
+  const { href, ctaLine, subtitle } = resolveFullBoardCta(
+    mapConfig.milestoneId,
+    junePublishedRound,
+    scopeLabel
+  );
 
   return (
     <section className="text-center">
       <Link
-        href="/june/leaderboard"
+        href={href}
         className="sd-btn-primary inline-flex w-full max-w-md flex-col items-center gap-1 rounded-2xl px-6 py-4 text-base font-semibold sm:mx-auto"
       >
-        <span>Go to full leaderboard</span>
-        <span className="text-xs font-normal opacity-90">
-          Round 3 · three regions side-by-side · {subtitle}
-        </span>
+        <span>{ctaLine}</span>
+        <span className="text-xs font-normal opacity-90">{subtitle}</span>
       </Link>
     </section>
   );

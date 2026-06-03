@@ -1,5 +1,6 @@
 "use client";
 
+import { BranchHighlightBlock } from "@/components/BranchHighlight";
 import {
   branchSubtext,
   formatHeroMetric,
@@ -25,11 +26,11 @@ interface Props {
 }
 
 const rankBadgeColors: Record<number, string> = {
-  4: "bg-violet-600",
-  5: "bg-fuchsia-600",
-  6: "bg-pink-600",
-  7: "bg-rose-600",
-  8: "bg-orange-600",
+  4: "bg-emerald-600",
+  5: "bg-emerald-700",
+  6: "bg-fuchsia-700",
+  7: "bg-fuchsia-800",
+  8: "bg-violet-800",
 };
 
 function rankBadgeClass(rank: number): string {
@@ -99,6 +100,11 @@ export function GamifiedRankList({
                   {cutLineLabel}
                 </div>
               )}
+              <BranchHighlightBlock
+                branchId={row.branch_id}
+                branchCode={row.branch_code}
+                highlightCode={highlightCode ?? null}
+              >
               <div
                 className={`sd-row-hover flex flex-wrap items-center gap-2 rounded-2xl border px-3 py-2 sm:flex-nowrap sm:gap-3 ${
                   tvMode ? "px-4 py-3" : ""
@@ -110,7 +116,7 @@ export function GamifiedRankList({
                       : view.layoutVariant === "survival_roster" &&
                           !inZone &&
                           row.round2_points === 0
-                        ? "sd-glass border-amber-900/30 opacity-70"
+                        ? "sd-glass border-fuchsia-900/30 opacity-70"
                         : "sd-glass border-emerald-900/20 opacity-85"
                 }`}
               >
@@ -151,7 +157,7 @@ export function GamifiedRankList({
                       view.layoutVariant === "survival_roster"
                         ? hero === "Survived"
                           ? "text-emerald-200"
-                          : "text-amber-200/90"
+                          : "text-fuchsia-200/90"
                         : ""
                     }`}
                   >
@@ -170,6 +176,7 @@ export function GamifiedRankList({
                   />
                 </div>
               </div>
+              </BranchHighlightBlock>
             </li>
           );
         })}

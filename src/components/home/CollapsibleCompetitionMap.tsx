@@ -1,6 +1,11 @@
 import { CompetitionMapPanel } from "@/components/competition/CompetitionMapPanel";
+import type { CompetitionMapConfig } from "@/lib/competition-map";
 
-export async function CollapsibleCompetitionMap() {
+interface Props {
+  mapConfig: CompetitionMapConfig;
+}
+
+export async function CollapsibleCompetitionMap({ mapConfig }: Props) {
   return (
     <details className="group sd-glass-strong rounded-2xl">
       <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-white [&::-webkit-details-marker]:hidden">
@@ -19,7 +24,7 @@ export async function CollapsibleCompetitionMap() {
         </span>
       </summary>
       <div className="border-t border-emerald-500/10 px-2 pb-2 pt-2 sm:px-3">
-        <CompetitionMapPanel />
+        <CompetitionMapPanel config={mapConfig} />
       </div>
     </details>
   );

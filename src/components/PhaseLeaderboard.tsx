@@ -160,6 +160,7 @@ export async function PhaseLeaderboard({
               showRepresentatives
               seasonSlug={slug}
               latestPublishedRound={latestPublishedRound}
+              lastPublished={lastPublished}
               region={region}
             />
           </Suspense>

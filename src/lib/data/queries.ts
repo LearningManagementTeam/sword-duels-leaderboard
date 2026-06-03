@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import type { Region, SeasonSlug } from "@/lib/scoring-config";
 import type {
@@ -19,7 +20,9 @@ export async function getSeasons(): Promise<Season[]> {
   return (data ?? []) as Season[];
 }
 
-export async function getSeasonBySlug(slug: SeasonSlug): Promise<Season | null> {
+export const getSeasonBySlug = cache(async function getSeasonBySlug(
+  slug: SeasonSlug
+): Promise<Season | null> {
   if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -29,7 +32,7 @@ export async function getSeasonBySlug(slug: SeasonSlug): Promise<Season | null> 
     .maybeSingle();
   if (error) throw error;
   return data as Season | null;
-}
+});
 
 export async function getBranches(): Promise<Branch[]> {
   if (!isSupabaseConfigured()) return [];
@@ -42,7 +45,7 @@ export async function getBranches(): Promise<Branch[]> {
   return (data ?? []) as Branch[];
 }
 
-export async function getBranchCount(): Promise<number> {
+export const getBranchCount = cache(async function getBranchCount(): Promise<number> {
   if (!isSupabaseConfigured()) return 0;
   const supabase = await createClient();
   const { count, error } = await supabase
@@ -50,7 +53,7 @@ export async function getBranchCount(): Promise<number> {
     .select("*", { count: "exact", head: true });
   if (error) throw error;
   return count ?? 0;
-}
+});
 
 export async function getSeasonParticipants(
   seasonId: string
@@ -65,7 +68,7 @@ export async function getSeasonParticipants(
   return (data ?? []).map((r) => r.branch_id);
 }
 
-export async function getPublishedStandings(
+export const getPublishedStandings = cache(async function getPublishedStandings(
   seasonId: string,
   regionFilter?: Region
 ): Promise<StandingRow[]> {
@@ -87,6 +90,7 @@ export async function getPublishedStandings(
       tie_breaker_in_round,
       last_active_round,
       round3_finish_order,
+      manually_advanced_after_round,
       branch:branches (
         id,
         branch_code,
@@ -115,14 +119,17 @@ export async function getPublishedStandings(
     const lastActive = row.last_active_round ?? 3;
     const mapRound = (n: number, val: number) =>
       lastActive >= n ? Number(val) : null;
+    const manualAdvanceRound = row.manually_advanced_after_round ?? null;
     const advancing_to_round =
-      row.eliminated_in_round === null &&
-      (row.tie_breaker_in_round ?? null) === null &&
-      lastActive > 0 &&
-      lastActive < 3 &&
-      row.status === "active"
-        ? lastActive + 1
-        : null;
+      manualAdvanceRound != null
+        ? manualAdvanceRound + 1
+        : row.eliminated_in_round === null &&
+            (row.tie_breaker_in_round ?? null) === null &&
+            lastActive > 0 &&
+            lastActive < 3 &&
+            row.status === "active"
+          ? lastActive + 1
+          : null;
     return {
       branch_id: b.id,
       branch_code: b.branch_code,
@@ -143,13 +150,15 @@ export async function getPublishedStandings(
       last_active_round: row.last_active_round ?? null,
       advancing_to_round,
       round3_finish_order: row.round3_finish_order ?? null,
+      manually_advanced_after_round: manualAdvanceRound,
     };
   });
-}
+});
 
-export async function getLatestPublishedRoundNumber(
-  seasonId: string
-): Promise<number> {
+export const getLatestPublishedRoundNumber = cache(
+  async function getLatestPublishedRoundNumber(
+    seasonId: string
+  ): Promise<number> {
   if (!isSupabaseConfigured()) return 0;
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -162,9 +171,10 @@ export async function getLatestPublishedRoundNumber(
     .maybeSingle();
   if (error) throw error;
   return data?.round_number ?? 0;
-}
+  }
+);
 
-export async function getLastPublishedAt(
+export const getLastPublishedAt = cache(async function getLastPublishedAt(
   seasonId: string
 ): Promise<string | null> {
   if (!isSupabaseConfigured()) return null;
@@ -178,7 +188,7 @@ export async function getLastPublishedAt(
     .maybeSingle();
   if (error) throw error;
   return data?.published_at ?? null;
-}
+});
 
 export async function getRoundsForSeason(seasonId: string): Promise<Round[]> {
   if (!isSupabaseConfigured()) return [];

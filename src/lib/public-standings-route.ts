@@ -77,6 +77,20 @@ export function parsePublicStandingsPath(href: string): {
   return { seasonSlug: "june_area", region: DEFAULT_REGION };
 }
 
+/** Map a live standings/phase URL to its preview equivalent. */
+export function toPreviewPath(liveHref: string): string {
+  if (liveHref === "/august" || liveHref.startsWith("/august?")) {
+    return "/preview/august";
+  }
+  if (liveHref === "/june") return "/preview/june";
+  if (liveHref === "/july") return "/preview/july";
+  const regional = liveHref.match(/^\/(june|july)\/(luzon|ncr|vismin)/);
+  if (regional) {
+    return `/preview/${regional[1]}/${regional[2]}`;
+  }
+  return "/preview/june/luzon";
+}
+
 export function standingsNavLabel(config: CompetitionMapConfig): string {
   const meta = getMilestoneMeta(config.milestoneId);
   if (meta.group === "august" || meta.group === "end") {

@@ -4,7 +4,7 @@ const styles: Record<BranchStatus, string> = {
   active: "bg-emerald-600/40 text-emerald-100 ring-1 ring-emerald-400/40",
   advanced: "bg-emerald-600/90 text-white",
   tie_breaker:
-    "bg-fuchsia-500/25 text-fuchsia-100 ring-1 ring-fuchsia-400/70 animate-pulse",
+    "bg-fuchsia-500/25 text-fuchsia-100 ring-1 ring-fuchsia-400/70 sd-tie-breaker-pulse",
   eliminated:
     "bg-emerald-950/80 text-emerald-200/50 ring-1 ring-emerald-800/40",
   regional_finalist:

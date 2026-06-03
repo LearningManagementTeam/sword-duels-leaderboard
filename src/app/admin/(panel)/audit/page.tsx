@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AuditLogFilters } from "@/components/admin/AuditLogFilters";
 import { SdDataTable } from "@/components/ui/SdDataTable";
 import { getAuditLog } from "@/lib/data/queries";
+import { formatAuditDetails } from "@/lib/format-audit-details";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function AuditPage({
@@ -37,12 +38,13 @@ export default async function AuditPage({
             <th>Admin</th>
             <th>Action</th>
             <th>Entity</th>
+            <th>Details</th>
           </tr>
         </thead>
         <tbody>
           {entries.length === 0 ? (
             <tr>
-              <td colSpan={4} className="py-6 text-center text-sd-muted/60">
+              <td colSpan={5} className="py-6 text-center text-sd-muted/60">
                 No entries yet.
               </td>
             </tr>
@@ -57,6 +59,9 @@ export default async function AuditPage({
                 <td className="text-sd-muted/80">
                   {e.entity_type}
                   {e.entity_id ? ` · ${e.entity_id.slice(0, 8)}…` : ""}
+                </td>
+                <td className="max-w-xs text-xs text-sd-muted/70">
+                  {formatAuditDetails(e)}
                 </td>
               </tr>
             ))
