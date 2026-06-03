@@ -18,7 +18,16 @@ export function SiteHeader() {
             <p className="text-xs text-amber-200/70">Dynamic Leaderboard · 2026</p>
           </div>
         </Link>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <Link href="/" className="text-slate-300 hover:text-white">
+            Leaderboard
+          </Link>
+          <Link
+            href="/mechanics"
+            className="text-slate-400 hover:text-amber-200"
+          >
+            How it works
+          </Link>
           <Link
             href="/preview"
             className="text-slate-400 hover:text-amber-200"

@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { LeaderboardTable } from "./LeaderboardTable";
+import { Suspense } from "react";
+import { LeaderboardSection } from "./LeaderboardSection";
+import { PhaseJourneyBar } from "./PhaseJourneyBar";
 import { PhaseNav } from "./PhaseNav";
+import { RegionalSnapshotCards } from "./RegionalSnapshotCards";
 import { PreviewBanner } from "./PreviewBanner";
 import { SetupBanner } from "./SetupBanner";
 import {
@@ -157,16 +160,39 @@ export async function PhaseLeaderboard({
       )}
 
       {needsRegion && !region ? null : (
-        <LeaderboardTable
-          rows={rows}
-          advancementCutoff={cutoff}
-          cutLineLabel={cutLineLabel}
-          showArea={slug === "june_area"}
-          showRegion={false}
-          showRepresentatives
-          seasonSlug={slug}
-          latestPublishedRound={latestPublishedRound}
-        />
+        <>
+          {perRound && region && (
+            <PhaseJourneyBar
+              seasonSlug={slug}
+              latestPublishedRound={latestPublishedRound}
+              region={region}
+            />
+          )}
+          {region && rows.length > 0 && (
+            <RegionalSnapshotCards
+              rows={rows}
+              seasonSlug={slug}
+              latestPublishedRound={latestPublishedRound}
+              lastPublished={lastPublished}
+            />
+          )}
+          <Suspense
+            fallback={
+              <p className="text-sm text-slate-500">Loading leaderboard…</p>
+            }
+          >
+            <LeaderboardSection
+              rows={rows}
+              advancementCutoff={cutoff}
+              cutLineLabel={cutLineLabel}
+              showArea={slug === "june_area"}
+              showRegion={false}
+              showRepresentatives
+              seasonSlug={slug}
+              latestPublishedRound={latestPublishedRound}
+            />
+          </Suspense>
+        </>
       )}
     </div>
   );

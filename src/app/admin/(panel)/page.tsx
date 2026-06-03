@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminWorkflowCards } from "@/components/admin/AdminWorkflowCards";
 import { SetupBanner } from "@/components/SetupBanner";
 import { getAdminDashboard } from "@/lib/data/admin-queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
@@ -28,6 +29,8 @@ export default async function AdminDashboardPage() {
           <p className="text-2xl font-bold">{rounds.length}</p>
         </div>
       </div>
+
+      <AdminWorkflowCards rounds={rounds} />
 
       <section>
         <h2 className="mb-2 font-semibold">Quick links</h2>

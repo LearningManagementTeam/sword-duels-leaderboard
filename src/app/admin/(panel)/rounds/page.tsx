@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AdminCallout } from "@/components/admin/AdminCallout";
+import { InfoTip } from "@/components/admin/InfoTip";
 import { getAdminDashboard } from "@/lib/data/admin-queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -29,8 +31,18 @@ export default async function AdminRoundsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Rounds</h1>
       <p className="text-sm text-slate-400">
-        Enter results per round. Save as draft, then publish when ready.
+        Enter results per round. Save as draft, then publish when ready.{" "}
+        <InfoTip>
+          Draft saves scores without updating the public site. Publish applies
+          elimination for that round. After publish on June/July, use
+          advancement picks if many branches tied at the cut.
+        </InfoTip>
       </p>
+
+      <AdminCallout title="Round status">
+        <strong>Draft</strong> — only admins see scores.{" "}
+        <strong>Published</strong> — public leaderboards and cut lines update.
+      </AdminCallout>
 
       {Object.entries(grouped).map(([seasonName, seasonRounds]) => (
         <section key={seasonName}>

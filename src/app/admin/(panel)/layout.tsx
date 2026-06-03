@@ -8,8 +8,9 @@ const links = [
   { href: "/admin/branches", label: "Branches" },
   { href: "/admin/representatives", label: "Representatives" },
   { href: "/admin/rounds", label: "Rounds" },
-  { href: "/admin/preview", label: "Preview" },
   { href: "/admin/advancement", label: "Advancement" },
+  { href: "/admin/mechanics", label: "Mechanics" },
+  { href: "/admin/preview", label: "Preview" },
   { href: "/admin/audit", label: "Audit log" },
 ];
 
@@ -36,14 +37,22 @@ export default function AdminLayout({
               </Link>
             ))}
           </nav>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="text-sm text-slate-400 hover:text-white"
+          <div className="flex items-center gap-3">
+            <Link
+              href="/admin/system"
+              className="text-sm text-slate-500 hover:text-amber-300"
             >
-              Sign out
-            </button>
-          </form>
+              System & stack
+            </Link>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="text-sm text-slate-400 hover:text-white"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>

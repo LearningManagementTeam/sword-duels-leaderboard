@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { BranchHighlightRow } from "./BranchHighlight";
 import { StatusBadge } from "./StatusBadge";
 import type { StandingRow } from "@/lib/types";
 import {
@@ -23,8 +24,17 @@ interface Props {
   showRegion?: boolean;
   showRepresentatives?: boolean;
   compact?: boolean;
+  tvMode?: boolean;
   seasonSlug?: SeasonSlug;
   latestPublishedRound?: number;
+  highlightCode?: string | null;
+}
+
+function rankFlair(rank: number): string {
+  if (rank === 1) return "text-amber-300 font-bold ring-2 ring-amber-400/60 rounded-full px-2";
+  if (rank === 2) return "text-slate-200 font-bold ring-2 ring-slate-400/50 rounded-full px-2";
+  if (rank === 3) return "text-amber-600/90 font-bold ring-2 ring-amber-700/50 rounded-full px-2";
+  return "text-slate-300";
 }
 
 export function LeaderboardTable({
@@ -35,10 +45,24 @@ export function LeaderboardTable({
   showRegion = false,
   showRepresentatives = false,
   compact = false,
+  tvMode = false,
   seasonSlug,
   latestPublishedRound = 0,
+  highlightCode = null,
 }: Props) {
+  const storageKey = seasonSlug ? `sd-search-${seasonSlug}` : "sd-search";
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = sessionStorage.getItem(storageKey);
+    if (saved && !highlightCode) setSearch(saved);
+  }, [storageKey, highlightCode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !search) return;
+    sessionStorage.setItem(storageKey, search);
+  }, [search, storageKey]);
   const [areaFilter, setAreaFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
@@ -77,13 +101,23 @@ export function LeaderboardTable({
       ? `Cut line — top ${advancementCutoff} advance to Round ${latestPublishedRound + 1}`
       : `Cut line — top ${advancementCutoff} advance`);
 
+  const textSize = tvMode ? "text-base" : "text-sm";
+  const cellPad = tvMode ? "px-4 py-3" : "px-3 py-2";
+
+  const columnCount =
+    6 +
+    (showArea ? 1 : 0) +
+    (showRegion ? 1 : 0) +
+    (showRepresentatives && !tvMode ? 1 : 0) +
+    (tvMode ? 0 : 1);
+
   return (
     <div className="space-y-4">
-      {!compact && (
+      {!compact && !tvMode && (
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <input
             type="search"
-            placeholder="Search branch name or code…"
+            placeholder="Search branch name or code… (share: ?highlight=CODE)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="min-w-[200px] flex-1 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500"
@@ -117,12 +151,14 @@ export function LeaderboardTable({
         </div>
       )}
 
-      <p className="text-xs text-slate-400">
-        Tie-breakers: {tieBreakers.join(" → ")}
-      </p>
+      {!tvMode && (
+        <p className="text-xs text-slate-400">
+          Tie-breakers: {tieBreakers.join(" → ")}
+        </p>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-slate-700">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className={`w-full min-w-[640px] text-left ${textSize}`}>
           <thead className="bg-slate-800/80 text-slate-300">
             <tr>
               <th className="px-3 py-2 font-medium">Rank</th>
@@ -131,26 +167,22 @@ export function LeaderboardTable({
               {showRegion && (
                 <th className="px-3 py-2 font-medium">Region</th>
               )}
-              {showRepresentatives && (
+              {showRepresentatives && !tvMode && (
                 <th className="px-3 py-2 font-medium">Representatives</th>
               )}
               <th className="px-3 py-2 font-medium text-right">R1</th>
               <th className="px-3 py-2 font-medium text-right">R2</th>
               <th className="px-3 py-2 font-medium text-right">R3</th>
               <th className="px-3 py-2 font-medium text-right">Total</th>
-              <th className="px-3 py-2 font-medium">Status</th>
+              {!tvMode && (
+                <th className="px-3 py-2 font-medium">Status</th>
+              )}
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td
-                  colSpan={
-                    7 +
-                    (showArea ? 1 : 0) +
-                    (showRegion ? 1 : 0) +
-                    (showRepresentatives ? 1 : 0)
-                  }
+                <td colSpan={columnCount}
                   className="px-3 py-8 text-center text-slate-400"
                 >
                   No standings published yet.
@@ -163,57 +195,69 @@ export function LeaderboardTable({
                   row.rank === advancementCutoff + 1 &&
                   filtered.some((r) => r.rank === advancementCutoff);
 
-                const colSpan =
-                  7 +
-                  (showArea ? 1 : 0) +
-                  (showRegion ? 1 : 0) +
-                  (showRepresentatives ? 1 : 0);
                 const items = [];
+
+                const inSurvivorZone =
+                  row.status !== "eliminated" && row.rank <= advancementCutoff;
+                const rowClasses = `border-t border-slate-800 animate-row-in ${
+                  inSurvivorZone
+                    ? "border-l-4 border-l-emerald-500/70 bg-emerald-950/25"
+                    : ""
+                } ${row.status === "eliminated" ? "opacity-70" : ""}`;
 
                 if (showCutLine) {
                   items.push(
                     <tr key={`cut-${row.branch_id}`}>
                       <td
-                        colSpan={colSpan}
-                        className="border-y-2 border-dashed border-amber-500/60 bg-amber-500/10 px-3 py-1 text-center text-xs font-medium text-amber-300"
+                        colSpan={columnCount}
+                        className="border-y-2 border-amber-500/70 bg-amber-500/15 px-3 py-2 text-center text-xs font-semibold text-amber-200"
                       >
                         {defaultCutLabel}
+                        <span className="mt-0.5 block font-normal text-amber-200/70">
+                          Below this line — eliminated unless committee pick
+                        </span>
                       </td>
                     </tr>
                   );
                 }
 
-                items.push(
-                  <tr
-                    key={row.branch_id}
-                    className={`border-t border-slate-800 ${
-                      row.status !== "eliminated" &&
-                      row.rank <= advancementCutoff
-                        ? "bg-emerald-950/30"
-                        : ""
-                    } ${row.status === "eliminated" ? "opacity-75" : ""}`}
-                  >
-                    <td className="px-3 py-2 font-mono text-slate-300">
-                      {row.rank}
+                const rowCells = (
+                  <>
+                    <td className={`${cellPad} font-mono ${rankFlair(row.rank)}`}>
+                      {row.rank <= 3 ? (
+                        <span title={`Rank ${row.rank}`}>{row.rank}</span>
+                      ) : (
+                        row.rank
+                      )}
                     </td>
-                    <td className="px-3 py-2">
-                      <div className="font-medium text-white">
+                    <td className={cellPad}>
+                      <div
+                        className={`font-medium text-white ${tvMode ? "text-lg" : ""}`}
+                      >
                         {row.branch_name}
+                        {inSurvivorZone && !tvMode && (
+                          <span
+                            className="ml-2 text-xs text-emerald-400/80"
+                            title="Advancing"
+                          >
+                            ↑
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-slate-500">
                         {row.branch_code}
                       </div>
                     </td>
                     {showArea && (
-                      <td className="px-3 py-2 text-slate-300">{row.area}</td>
+                      <td className={`${cellPad} text-slate-300`}>{row.area}</td>
                     )}
                     {showRegion && (
-                      <td className="px-3 py-2 text-slate-300">
+                      <td className={`${cellPad} text-slate-300`}>
                         {REGION_LABELS[row.region as Region]}
                       </td>
                     )}
-                    {showRepresentatives && (
-                      <td className="px-3 py-2 text-slate-300">
+                    {showRepresentatives && !tvMode && (
+                      <td className={`${cellPad} text-slate-300`}>
                         <div className="text-xs">
                           {row.representative_1 || "—"}
                         </div>
@@ -224,27 +268,51 @@ export function LeaderboardTable({
                         )}
                       </td>
                     )}
-                    <td className="px-3 py-2 text-right tabular-nums text-slate-300">
+                    <td
+                      className={`${cellPad} text-right tabular-nums text-slate-300`}
+                    >
                       {formatRoundPoints(row.round1_points)}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-slate-300">
+                    <td
+                      className={`${cellPad} text-right tabular-nums text-slate-300`}
+                    >
                       {formatRoundPoints(row.round2_points)}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-slate-300">
+                    <td
+                      className={`${cellPad} text-right tabular-nums text-slate-300`}
+                    >
                       {formatRoundPoints(row.round3_points)}
                     </td>
-                    <td className="px-3 py-2 text-right font-semibold tabular-nums text-amber-300">
+                    <td
+                      className={`${cellPad} text-right font-semibold tabular-nums text-amber-300`}
+                    >
                       {row.total_points}
                     </td>
-                    <td className="px-3 py-2">
-                      <StatusBadge
-                        status={row.status}
-                        eliminatedInRound={row.eliminated_in_round}
-                        advancingToRound={row.advancing_to_round}
-                        manuallyAdvancedAfterRound={row.manually_advanced_after_round}
-                      />
-                    </td>
-                  </tr>
+                    {!tvMode && (
+                      <td className={cellPad}>
+                        <StatusBadge
+                          status={row.status}
+                          eliminatedInRound={row.eliminated_in_round}
+                          advancingToRound={row.advancing_to_round}
+                          manuallyAdvancedAfterRound={
+                            row.manually_advanced_after_round
+                          }
+                        />
+                      </td>
+                    )}
+                  </>
+                );
+
+                items.push(
+                  <BranchHighlightRow
+                    key={row.branch_id}
+                    branchId={row.branch_id}
+                    branchCode={row.branch_code}
+                    highlightCode={highlightCode}
+                    rowClassName={rowClasses}
+                  >
+                    {rowCells}
+                  </BranchHighlightRow>
                 );
                 return items;
               })

@@ -16,6 +16,10 @@ import {
 } from "@/lib/scoring-config";
 import { SCORING_CONFIG, REGIONS } from "@/lib/scoring-config";
 import type { ManualAdvance } from "@/lib/manual-advances";
+import {
+  MECHANICS_CONTENT_SLUG,
+  type MechanicsPublicBody,
+} from "@/lib/mechanics-content";
 import type { StandingRow } from "@/lib/types";
 import {
   createClient,
@@ -866,5 +870,36 @@ export async function saveManualAdvances(
 
   revalidatePath("/", "layout");
   revalidatePath("/admin");
+  return { ok: true };
+}
+
+export async function saveMechanicsContent(body: MechanicsPublicBody) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+
+  const payload = {
+    intro: body.intro ?? "",
+    announcements: body.announcements ?? "",
+    custom_sections: body.custom_sections ?? [],
+  };
+
+  const { error } = await service.from("site_content").upsert(
+    {
+      slug: MECHANICS_CONTENT_SLUG,
+      body: payload,
+      updated_at: new Date().toISOString(),
+      updated_by_email: email,
+    },
+    { onConflict: "slug" }
+  );
+
+  if (error) throw new Error(error.message);
+
+  await logAudit(email, "save_mechanics_content", "site_content", MECHANICS_CONTENT_SLUG, {
+    sections: payload.custom_sections.length,
+  });
+
+  revalidatePath("/mechanics");
+  revalidatePath("/admin/mechanics");
   return { ok: true };
 }

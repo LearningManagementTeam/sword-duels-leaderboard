@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { saveRoundResults, publishRound } from "@/lib/actions/admin";
 import { DraftStandingsPreview } from "@/components/admin/DraftStandingsPreview";
+import { InfoTip } from "@/components/admin/InfoTip";
 import { getRoundMechanics } from "@/lib/scoring-config";
 import type { Branch } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
@@ -127,6 +128,17 @@ export function RoundResultsForm({
         </span>
       </div>
 
+      <ol className="flex flex-wrap gap-2 text-xs text-slate-400">
+        <li className="rounded bg-slate-800 px-2 py-1">1. Enter scores</li>
+        <li className="rounded bg-slate-800 px-2 py-1">2. Draft preview</li>
+        <li className="rounded bg-slate-800 px-2 py-1">3. Publish</li>
+        {supportsManualAdvances && (
+          <li className="rounded bg-amber-500/20 px-2 py-1 text-amber-200">
+            4. Advancement picks
+          </li>
+        )}
+      </ol>
+
       {supportsManualAdvances && (
         <p className="text-sm">
           <Link
@@ -141,6 +153,16 @@ export function RoundResultsForm({
           </span>
         </p>
       )}
+
+      <p className="text-xs text-slate-500">
+        <Link href="/admin/mechanics" className="text-amber-400/80 hover:underline">
+          Competition rules
+        </Link>{" "}
+        · public{" "}
+        <Link href="/mechanics" className="hover:underline" target="_blank">
+          /mechanics
+        </Link>
+      </p>
 
       {mechanics && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
@@ -256,14 +278,20 @@ export function RoundResultsForm({
         >
           Save draft
         </button>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handlePublish}
-          className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-50"
-        >
-          Save & publish
-        </button>
+        <span className="inline-flex items-center">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={handlePublish}
+            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-50"
+          >
+            Save & publish
+          </button>
+          <InfoTip>
+            Publishing updates public leaderboards and applies regional elimination
+            for this round. Only enter scores for branches still in the competition.
+          </InfoTip>
+        </span>
       </div>
       {message && <p className="text-sm text-amber-200">{message}</p>}
     </div>

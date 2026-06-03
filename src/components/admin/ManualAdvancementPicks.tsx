@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { InfoTip } from "@/components/admin/InfoTip";
 import { saveManualAdvances } from "@/lib/actions/admin";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
 import type { AdvancementPickBranch } from "@/lib/data/admin-queries";
@@ -83,7 +84,14 @@ export function ManualAdvancementPicks({
         >
           ← Back to {roundName}
         </Link>
-        <h1 className="mt-2 text-2xl font-bold">Manage advancement</h1>
+        <h1 className="mt-2 text-2xl font-bold">
+          Manage advancement
+          <InfoTip>
+            The system keeps the top N per region automatically. Check extra
+            branches here only when the committee wants more than the automatic
+            cut (e.g. many 10/10 scores). Save separately for each region.
+          </InfoTip>
+        </h1>
         <p className="mt-1 text-sm text-slate-400">
           After Round {roundNumber}, add extra branches per region that should
           still advance to Round {nextRound} (e.g. many tied perfect scores).

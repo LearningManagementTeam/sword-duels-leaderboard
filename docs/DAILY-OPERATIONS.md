@@ -2,6 +2,17 @@
 
 No technical steps. Use any laptop with internet and your admin bookmark.
 
+## Admin pages (quick map)
+
+| Page | Use for |
+|------|---------|
+| **Dashboard** | Workflow cards — weekly round, extra advancement, end of phase |
+| **Rounds** | Enter and publish scores |
+| **Mechanics** | Edit public “How it works” intro and announcements (rule tables auto-update) |
+| **System & stack** | Tech setup, migrations, architecture (IT / troubleshooting) |
+
+Public mechanics: **How it works** on the site header → `/mechanics`
+
 ## Before June (one-time)
 
 1. Admin → **Branches**
@@ -101,3 +112,4 @@ If upgrading an existing Supabase project, run in SQL Editor:
 
 - `supabase/migrations/004_round_elimination.sql`
 - `supabase/migrations/005_manual_round_advances.sql` (committee extra advancement picks)
+- `supabase/migrations/006_site_content.sql` (editable public mechanics page)
