@@ -59,7 +59,8 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 | Carousel (text ticker) | `src/components/ui/SdCarousel.tsx` — phase/status strips on hubs only (not home) |
 | Home photo carousel | `HomePhotoCarousel` — 3 admin uploads in Branding (max 3MB each) |
 | Preview / TV | Live `/tv` and `/preview/tv` both use `TvLeaderboardView` + `GamifiedLeaderboard` |
-| Hero logo | `src/components/branding/HeroLogo.tsx` |
+| Hero logo | `HeroLogo` + `BrandingImage` (never raw `next/image` for `/api/branding/storage/*`) |
+| Branding files | `src/lib/branding-storage.ts` → `/api/branding/storage/[path]`; `next.config.ts` `images.localPatterns` |
 | Leaderboard | `src/components/leaderboard/*`, `LeaderboardSection.tsx` |
 | Status | `src/components/StatusBadge.tsx` — eliminated uses deep emerald/muted, not slate |
 | Journey | `src/components/PhaseJourneyBar.tsx` |

@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { BrandingImage } from "@/components/branding/BrandingImage";
 import type { BrandingConfig } from "@/lib/branding";
 
 interface Props {
@@ -17,12 +17,11 @@ export function SiteHeader({ branding }: Props) {
         <Link href="/" className="group flex items-center gap-3">
           {branding.logo_url ? (
             <div className="relative h-10 w-10 shrink-0 ring-1 ring-emerald-400/30 rounded-lg overflow-hidden">
-              <Image
+              <BrandingImage
                 src={branding.logo_url}
                 alt=""
                 fill
                 className="object-contain"
-                unoptimized={branding.logo_url.endsWith(".svg")}
               />
             </div>
           ) : (

@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // Next.js 16: local /api branding URLs use ?v= cache-bust (see branding-storage.ts)
+    localPatterns: [
+      {
+        pathname: "/api/branding/storage/**",
+      },
+    ],
     remotePatterns: [
       {
         protocol: "https",

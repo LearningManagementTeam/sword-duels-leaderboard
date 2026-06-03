@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { BrandingImage } from "@/components/branding/BrandingImage";
 import type { BrandingConfig } from "@/lib/branding";
 
 interface Props {
@@ -19,7 +19,7 @@ export function HeroLogo({ branding, priority = false, tvMode }: Props) {
             tvMode ? "max-h-[min(50vh,360px)]" : "max-h-[min(42vh,280px)] sm:max-h-[min(44vh,320px)]"
           }`}
         >
-          <Image
+          <BrandingImage
             src={branding.logo_url}
             alt={branding.logo_alt}
             width={1200}
@@ -27,7 +27,6 @@ export function HeroLogo({ branding, priority = false, tvMode }: Props) {
             priority={priority}
             sizes="(max-width: 640px) 96vw, (max-width: 1024px) 90vw, 72rem"
             className="h-auto w-full max-h-[inherit] object-contain"
-            unoptimized={branding.logo_url.endsWith(".svg")}
           />
         </div>
       ) : (

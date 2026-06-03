@@ -14,6 +14,15 @@ export function brandingAssetUrl(
   return `/api/branding/storage/${storagePath}?v=${cacheBust}`;
 }
 
+export function isBrandingAssetUrl(url: string): boolean {
+  return url.startsWith("/api/branding/storage/");
+}
+
+/** Skip next/image optimizer for same-origin branding API URLs (dynamic, cache-busted). */
+export function shouldUnoptimizeBrandingUrl(url: string): boolean {
+  return isBrandingAssetUrl(url) || url.endsWith(".svg");
+}
+
 export function extractBrandingStoragePath(url: string): string | null {
   const trimmed = url.trim();
   const apiMatch = trimmed.match(/\/api\/branding\/storage\/([^?#]+)/i);
