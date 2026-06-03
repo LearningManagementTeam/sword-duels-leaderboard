@@ -3,29 +3,49 @@
 import { useMemo, useState } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { StandingRow } from "@/lib/types";
-import { REGION_LABELS, TIE_BREAKER_LABELS } from "@/lib/scoring-config";
-import type { Region } from "@/lib/scoring-config";
+import {
+  CUMULATIVE_TIE_BREAKER_LABELS,
+  REGION_LABELS,
+  TIE_BREAKER_LABELS,
+  usesPerRoundElimination,
+} from "@/lib/scoring-config";
+import type { Region, SeasonSlug } from "@/lib/scoring-config";
+
+function formatRoundPoints(value: number | null): string {
+  return value === null ? "—" : String(value);
+}
 
 interface Props {
   rows: StandingRow[];
   advancementCutoff?: number;
+  cutLineLabel?: string;
   showArea?: boolean;
   showRegion?: boolean;
   showRepresentatives?: boolean;
   compact?: boolean;
+  seasonSlug?: SeasonSlug;
+  latestPublishedRound?: number;
 }
 
 export function LeaderboardTable({
   rows,
   advancementCutoff = 24,
+  cutLineLabel,
   showArea = true,
   showRegion = false,
   showRepresentatives = false,
   compact = false,
+  seasonSlug,
+  latestPublishedRound = 0,
 }: Props) {
   const [search, setSearch] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  const perRound = seasonSlug ? usesPerRoundElimination(seasonSlug) : false;
+  const tieBreakers = perRound
+    ? TIE_BREAKER_LABELS
+    : CUMULATIVE_TIE_BREAKER_LABELS;
 
   const areas = useMemo(
     () => [...new Set(rows.map((r) => r.area))].sort(),
@@ -50,6 +70,12 @@ export function LeaderboardTable({
       return true;
     });
   }, [rows, search, areaFilter, statusFilter]);
+
+  const defaultCutLabel =
+    cutLineLabel ??
+    (perRound && latestPublishedRound > 0
+      ? `Cut line — top ${advancementCutoff} advance to Round ${latestPublishedRound + 1}`
+      : `Cut line — top ${advancementCutoff} advance`);
 
   return (
     <div className="space-y-4">
@@ -82,17 +108,17 @@ export function LeaderboardTable({
             className="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white"
           >
             <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="advanced">Advancing</option>
+            <option value="active">Active / advancing</option>
+            <option value="advanced">Advancing to next phase</option>
             <option value="eliminated">Eliminated</option>
-            <option value="regional_finalist">Regional finalist</option>
+            <option value="regional_finalist">Regional champion</option>
             <option value="champion">Champion</option>
           </select>
         </div>
       )}
 
       <p className="text-xs text-slate-400">
-        Tie-breakers: {TIE_BREAKER_LABELS.join(" → ")}
+        Tie-breakers: {tieBreakers.join(" → ")}
       </p>
 
       <div className="overflow-x-auto rounded-xl border border-slate-700">
@@ -151,68 +177,73 @@ export function LeaderboardTable({
                         colSpan={colSpan}
                         className="border-y-2 border-dashed border-amber-500/60 bg-amber-500/10 px-3 py-1 text-center text-xs font-medium text-amber-300"
                       >
-                        Cut line — top {advancementCutoff} advance
+                        {defaultCutLabel}
                       </td>
                     </tr>
                   );
                 }
 
                 items.push(
-                    <tr
-                      key={row.branch_id}
-                      className={`border-t border-slate-800 ${
-                        row.rank <= advancementCutoff
-                          ? "bg-emerald-950/30"
-                          : ""
-                      }`}
-                    >
-                      <td className="px-3 py-2 font-mono text-slate-300">
-                        {row.rank}
+                  <tr
+                    key={row.branch_id}
+                    className={`border-t border-slate-800 ${
+                      row.status !== "eliminated" &&
+                      row.rank <= advancementCutoff
+                        ? "bg-emerald-950/30"
+                        : ""
+                    } ${row.status === "eliminated" ? "opacity-75" : ""}`}
+                  >
+                    <td className="px-3 py-2 font-mono text-slate-300">
+                      {row.rank}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="font-medium text-white">
+                        {row.branch_name}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {row.branch_code}
+                      </div>
+                    </td>
+                    {showArea && (
+                      <td className="px-3 py-2 text-slate-300">{row.area}</td>
+                    )}
+                    {showRegion && (
+                      <td className="px-3 py-2 text-slate-300">
+                        {REGION_LABELS[row.region as Region]}
                       </td>
-                      <td className="px-3 py-2">
-                        <div className="font-medium text-white">
-                          {row.branch_name}
+                    )}
+                    {showRepresentatives && (
+                      <td className="px-3 py-2 text-slate-300">
+                        <div className="text-xs">
+                          {row.representative_1 || "—"}
                         </div>
-                        <div className="text-xs text-slate-500">
-                          {row.branch_code}
-                        </div>
-                      </td>
-                      {showArea && (
-                        <td className="px-3 py-2 text-slate-300">{row.area}</td>
-                      )}
-                      {showRegion && (
-                        <td className="px-3 py-2 text-slate-300">
-                          {REGION_LABELS[row.region as Region]}
-                        </td>
-                      )}
-                      {showRepresentatives && (
-                        <td className="px-3 py-2 text-slate-300">
-                          <div className="text-xs">
-                            {row.representative_1 || "—"}
+                        {row.representative_2 && (
+                          <div className="text-xs text-slate-500">
+                            {row.representative_2}
                           </div>
-                          {row.representative_2 && (
-                            <div className="text-xs text-slate-500">
-                              {row.representative_2}
-                            </div>
-                          )}
-                        </td>
-                      )}
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {row.round1_points}
+                        )}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {row.round2_points}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {row.round3_points}
-                      </td>
-                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-amber-300">
-                        {row.total_points}
-                      </td>
-                      <td className="px-3 py-2">
-                        <StatusBadge status={row.status} />
-                      </td>
-                    </tr>
+                    )}
+                    <td className="px-3 py-2 text-right tabular-nums text-slate-300">
+                      {formatRoundPoints(row.round1_points)}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums text-slate-300">
+                      {formatRoundPoints(row.round2_points)}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums text-slate-300">
+                      {formatRoundPoints(row.round3_points)}
+                    </td>
+                    <td className="px-3 py-2 text-right font-semibold tabular-nums text-amber-300">
+                      {row.total_points}
+                    </td>
+                    <td className="px-3 py-2">
+                      <StatusBadge
+                        status={row.status}
+                        eliminatedInRound={row.eliminated_in_round}
+                        advancingToRound={row.advancing_to_round}
+                      />
+                    </td>
+                  </tr>
                 );
                 return items;
               })

@@ -52,13 +52,17 @@ export interface StandingRow {
   region: Region;
   rank: number;
   total_points: number;
-  round1_points: number;
-  round2_points: number;
-  round3_points: number;
+  round1_points: number | null;
+  round2_points: number | null;
+  round3_points: number | null;
   total_wins: number;
   status: BranchStatus;
   representative_1?: string | null;
   representative_2?: string | null;
+  eliminated_in_round?: number | null;
+  last_active_round?: number | null;
+  advancing_to_round?: number | null;
+  latest_published_round?: number;
 }
 
 export interface AuditEntry {

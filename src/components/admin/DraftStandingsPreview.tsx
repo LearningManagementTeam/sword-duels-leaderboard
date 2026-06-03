@@ -6,7 +6,11 @@ import {
   previewDraftStandings,
   type DraftPreviewResult,
 } from "@/lib/actions/admin";
-import { SCORING_CONFIG, REGION_LABELS } from "@/lib/scoring-config";
+import {
+  getSurvivorCount,
+  REGION_LABELS,
+  usesPerRoundElimination,
+} from "@/lib/scoring-config";
 import type { Region, SeasonSlug } from "@/lib/scoring-config";
 
 interface DraftResultInput {
@@ -22,6 +26,12 @@ interface Props {
   getDraftResults: () => DraftResultInput[];
 }
 
+function cutoffForRegion(preview: DraftPreviewResult, region: Region): number {
+  const rows = preview.byRegion?.[region] ?? [];
+  const latest = rows[0]?.latest_published_round ?? 1;
+  return getSurvivorCount(preview.seasonSlug, latest, region) ?? 32;
+}
+
 export function DraftStandingsPreview({
   roundId,
   seasonSlug,
@@ -32,13 +42,7 @@ export function DraftStandingsPreview({
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<DraftPreviewResult | null>(null);
 
-  const config = SCORING_CONFIG[seasonSlug];
-  const cutoff =
-    seasonSlug === "july_region"
-      ? SCORING_CONFIG.july_region.advancementPerRegion
-      : "advancementCount" in config
-        ? (config.advancementCount ?? 1)
-        : 1;
+  const perRound = usesPerRoundElimination(seasonSlug);
 
   async function handlePreview() {
     setLoading(true);
@@ -82,25 +86,33 @@ export function DraftStandingsPreview({
           </div>
 
           {preview.byRegion ? (
-            (["luzon", "ncr", "vismin"] as Region[]).map((region) => (
-              <div key={region} className="space-y-2">
-                <h3 className="text-sm font-medium text-slate-300">
-                  {REGION_LABELS[region]}
-                </h3>
-                <LeaderboardTable
-                  rows={preview.byRegion?.[region] ?? []}
-                  advancementCutoff={cutoff}
-                  showRepresentatives
-                  compact
-                />
-              </div>
-            ))
+            (["luzon", "ncr", "vismin"] as Region[]).map((region) => {
+              const rows = preview.byRegion?.[region] ?? [];
+              const latest = rows[0]?.latest_published_round ?? 0;
+              return (
+                <div key={region} className="space-y-2">
+                  <h3 className="text-sm font-medium text-slate-300">
+                    {REGION_LABELS[region]}
+                    {latest > 0 && ` · after Round ${latest}`}
+                  </h3>
+                  <LeaderboardTable
+                    rows={rows}
+                    advancementCutoff={cutoffForRegion(preview, region)}
+                    showRepresentatives
+                    seasonSlug={seasonSlug}
+                    latestPublishedRound={latest}
+                    compact
+                  />
+                </div>
+              );
+            })
           ) : (
             <LeaderboardTable
               rows={preview.rows}
-              advancementCutoff={cutoff}
+              advancementCutoff={1}
               showArea={seasonSlug === "june_area"}
               showRepresentatives
+              seasonSlug={perRound ? undefined : seasonSlug}
               compact
             />
           )}

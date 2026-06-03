@@ -12,6 +12,8 @@ interface Props {
   status: string;
   seasonSlug: SeasonSlug;
   branches: Branch[];
+  eliminatedBranches?: Branch[];
+  priorRoundNumber?: number | null;
   initial: Map<string, { points: number; wins: number; losses: number }>;
 }
 
@@ -21,8 +23,11 @@ export function RoundResultsForm({
   status,
   seasonSlug,
   branches,
+  eliminatedBranches = [],
+  priorRoundNumber,
   initial,
 }: Props) {
+  const [showEliminated, setShowEliminated] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [values, setValues] = useState(() =>
@@ -106,6 +111,29 @@ export function RoundResultsForm({
           {status}
         </span>
       </div>
+
+      {eliminatedBranches.length > 0 && priorRoundNumber && (
+        <div className="rounded-lg border border-slate-700 bg-slate-900/40">
+          <button
+            type="button"
+            onClick={() => setShowEliminated(!showEliminated)}
+            className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-slate-400 hover:text-slate-200"
+          >
+            <span>
+              Eliminated after Round {priorRoundNumber} ({eliminatedBranches.length}{" "}
+              branches — read-only)
+            </span>
+            <span>{showEliminated ? "▲" : "▼"}</span>
+          </button>
+          {showEliminated && (
+            <ul className="max-h-40 overflow-auto border-t border-slate-800 px-4 py-2 text-xs text-slate-500">
+              {eliminatedBranches.map((b) => (
+                <li key={b.id}>{b.branch_name}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="max-h-[60vh] overflow-auto rounded-lg border border-slate-700">
         <table className="w-full text-sm">

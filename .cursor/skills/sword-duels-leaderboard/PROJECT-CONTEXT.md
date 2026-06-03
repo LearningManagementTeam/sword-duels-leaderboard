@@ -8,11 +8,13 @@ Dynamic public leaderboard + central admin for a 3-phase branch competition (Phi
 
 | Phase | Season slug | Public route | Advancement |
 |-------|-------------|--------------|-------------|
-| June Area-wide | `june_area` | `/june` | Top **24** |
-| July Regional | `july_region` | `/july`, `/july/{luzon\|ncr\|vismin}` | **1** per region |
-| August Finals | `august_finals` | `/august` | **1** champion |
+| June Area-wide | `june_area` | `/june`, `/june/{luzon\|ncr\|vismin}` | Per-round cuts: 32→16→8 per region → **24** |
+| July Regional | `july_region` | `/july`, `/july/{luzon\|ncr\|vismin}` | Per-round: 4→2→1 per region |
+| August Finals | `august_finals` | `/august` | **1** champion (format TBD) |
 
-**Preview routes (sample data, no DB):** `/preview`, `/preview/june`, `/preview/july/[region]`, `/preview/august`, `/preview/tv`
+**Elimination:** June/July use **round-only** scores; eliminated branches show **—** for future rounds. See `docs/mechanics.md`.
+
+**Preview routes:** `/preview`, `/preview/june/[region]`, `/preview/july/[region]`, `/preview/august`, `/preview/tv`
 
 **Live site:** https://sword-duels-leaderboard.vercel.app  
 **GitHub:** LearningManagementTeam/sword-duels-leaderboard  
@@ -78,6 +80,7 @@ Build fails if URL invalid. Admin routes `force-dynamic`.
 | Invalid region "Area 14" on CSV | Comma in branch name unquoted | CSV UTF-8, quoted name |
 | Invalid supabaseUrl on Vercel | Bad/missing env | Fix 3 vars, redeploy |
 | column representative_1 does not exist | Migration 003 not applied | MCP or SQL 003 |
+| column eliminated_in_round does not exist | Migration 004 not applied | MCP or SQL 004 |
 | Not an admin | Missing `admins` row | SQL insert from template |
 
 ## Docs for humans

@@ -386,8 +386,11 @@ async function recomputeAndPublishStandings(
 
   const agg = aggregatePublishedResults(mapped);
   const publishedAt = new Date().toISOString();
+  const publishedRoundNumbers = (publishedRounds ?? [])
+    .map((r) => r.round_number)
+    .sort((a, b) => a - b);
 
-  if (seasonSlug === "july_region") {
+  if (seasonSlug === "july_region" || seasonSlug === "june_area") {
     await service
       .from("published_standings")
       .delete()
@@ -398,7 +401,7 @@ async function recomputeAndPublishStandings(
         seasonSlug,
         branchList ?? [],
         agg,
-        { filterRegion: region }
+        { filterRegion: region, publishedRoundNumbers }
       );
       await upsertStandings(service, seasonId, standings, publishedAt, region);
     }
@@ -427,13 +430,15 @@ async function upsertStandings(
     branch_id: s.branch_id,
     rank: s.rank,
     total_points: s.total_points,
-    round1_points: s.round1_points,
-    round2_points: s.round2_points,
-    round3_points: s.round3_points,
+    round1_points: s.round1_points ?? 0,
+    round2_points: s.round2_points ?? 0,
+    round3_points: s.round3_points ?? 0,
     total_wins: s.total_wins,
     status: s.status,
     region_filter: region,
     published_at: publishedAt,
+    eliminated_in_round: s.eliminated_in_round ?? null,
+    last_active_round: s.last_active_round ?? 0,
   }));
   const { error } = await service.from("published_standings").insert(rows);
   if (error) throw new Error(error.message);
@@ -478,8 +483,7 @@ export async function lockPhaseAndAdvance(seasonSlug: SeasonSlug) {
       .from("published_standings")
       .select("branch_id")
       .eq("season_id", season.id)
-      .is("region_filter", null)
-      .lte("rank", SCORING_CONFIG.june_area.advancementCount);
+      .eq("status", "advanced");
 
     const july = await service
       .from("seasons")
@@ -638,6 +642,10 @@ export async function previewDraftStandings(
   }
 
   const agg = aggregatePublishedResults(mapped);
+  const publishedRoundNumbers = (seasonRounds ?? [])
+    .filter((r) => r.status === "published" || r.id === roundId)
+    .map((r) => r.round_number)
+    .sort((a, b) => a - b);
 
   const attachReps = (rows: StandingRow[]): StandingRow[] => {
     const byId = new Map((branchList ?? []).map((b) => [b.id, b]));
@@ -660,12 +668,13 @@ export async function previewDraftStandings(
       region: b.region as Region,
     })) ?? [];
 
-  if (seasonSlug === "july_region") {
+  if (seasonSlug === "july_region" || seasonSlug === "june_area") {
     const byRegion: Partial<Record<Region, StandingRow[]>> = {};
     for (const region of REGIONS) {
       byRegion[region] = attachReps(
         computeStandings(seasonSlug, branchInputs, agg, {
           filterRegion: region,
+          publishedRoundNumbers,
         })
       );
     }
@@ -677,7 +686,7 @@ export async function previewDraftStandings(
   }
 
   const rows = attachReps(
-    computeStandings(seasonSlug, branchInputs, agg)
+    computeStandings(seasonSlug, branchInputs, agg, { publishedRoundNumbers })
   );
   return { seasonSlug, rows };
 }

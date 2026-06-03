@@ -73,6 +73,8 @@ export async function getPublishedStandings(
       round3_points,
       total_wins,
       status,
+      eliminated_in_round,
+      last_active_round,
       branch:branches (
         id,
         branch_code,
@@ -98,6 +100,16 @@ export async function getPublishedStandings(
 
   return (data ?? []).map((row) => {
     const b = row.branch as unknown as Branch;
+    const lastActive = row.last_active_round ?? 3;
+    const mapRound = (n: number, val: number) =>
+      lastActive >= n ? Number(val) : null;
+    const advancing_to_round =
+      row.eliminated_in_round === null &&
+      lastActive > 0 &&
+      lastActive < 3 &&
+      row.status === "active"
+        ? lastActive + 1
+        : null;
     return {
       branch_id: b.id,
       branch_code: b.branch_code,
@@ -106,15 +118,35 @@ export async function getPublishedStandings(
       region: b.region,
       rank: row.rank,
       total_points: Number(row.total_points),
-      round1_points: Number(row.round1_points),
-      round2_points: Number(row.round2_points),
-      round3_points: Number(row.round3_points),
+      round1_points: mapRound(1, row.round1_points),
+      round2_points: mapRound(2, row.round2_points),
+      round3_points: mapRound(3, row.round3_points),
       total_wins: row.total_wins,
       status: row.status,
       representative_1: b.representative_1 ?? null,
       representative_2: b.representative_2 ?? null,
+      eliminated_in_round: row.eliminated_in_round ?? null,
+      last_active_round: row.last_active_round ?? null,
+      advancing_to_round,
     };
   });
+}
+
+export async function getLatestPublishedRoundNumber(
+  seasonId: string
+): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("rounds")
+    .select("round_number")
+    .eq("season_id", seasonId)
+    .eq("status", "published")
+    .order("round_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.round_number ?? 0;
 }
 
 export async function getLastPublishedAt(

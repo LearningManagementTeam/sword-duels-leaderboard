@@ -7,9 +7,19 @@ const previewLinks = [
     description: "Overview of all sample leaderboards",
   },
   {
-    href: "/preview/june",
-    label: "June preview",
-    description: "142 branches · area-wide · top 24 cut line",
+    href: "/preview/june/luzon",
+    label: "June — Luzon",
+    description: "Per-round elimination · 32→16→8 survivors",
+  },
+  {
+    href: "/preview/june/ncr",
+    label: "June — NCR",
+    description: "Per-round elimination sample",
+  },
+  {
+    href: "/preview/june/vismin",
+    label: "June — VisMin",
+    description: "Per-round elimination sample",
   },
   {
     href: "/preview/july/luzon",

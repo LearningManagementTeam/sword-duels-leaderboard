@@ -18,6 +18,8 @@ export default async function AdminRoundPage({
       status={data.round.status}
       seasonSlug={data.seasonSlug}
       branches={data.branches}
+      eliminatedBranches={data.eliminatedBranches}
+      priorRoundNumber={data.priorRoundNumber}
       initial={data.resultMap}
     />
   );

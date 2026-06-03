@@ -10,58 +10,77 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 4. Or edit names later: **Representatives** → table → **Save all**
 5. Admin → **Rounds** → **June — Round 1** → enter scores → publish
 
-## Every round (June, July, August)
+## Weekly rounds (June & July) — elimination flow
 
-1. Open **Admin** → **Rounds**.
-2. Open the correct season and round (e.g. June — Round 2).
-3. Enter **Points** (main score). Wins/Losses are optional.
-4. While still checking numbers → **Save draft** (public site unchanged).
-5. Optional: click **Preview standings (draft)** to see what the board would look like before publishing.
-6. When everything is correct → **Save & publish**.
-7. Open the **public** site → confirm the right phase (June / July / region / August).
-8. Optional: click **Export CSV** on the public page for announcements (includes representative names when set).
+Each round is one week. **That round’s score only** decides who advances (not cumulative).
+
+### June survivor counts (per region)
+
+| After round | Luzon / NCR / VisMin each | Total |
+|-------------|---------------------------|-------|
+| Round 1 | 32 | 96 |
+| Round 2 | 16 | 48 |
+| Round 3 | 8 | **24 → July** |
+
+### July survivor counts (per region)
+
+| After round | Per region | Total |
+|-------------|------------|-------|
+| Round 1 | 4 | 12 |
+| Round 2 | 2 | 6 |
+| Round 3 | 1 | **3 → August** |
+
+### Every round
+
+1. Open **Admin** → **Rounds** → correct round (e.g. June — Round 2).
+2. Enter **Points** for **survivors only** (eliminated branches are hidden; see read-only list if needed).
+3. **Save draft** while checking → public site unchanged.
+4. Optional: **Preview standings (draft)**.
+5. **Save & publish** when correct.
+6. Public site → pick **June or July** → pick **region** (Luzon / NCR / VisMin).
+7. Confirm badges: **Advancing to R2** / **Eliminated — R1**, and **—** for rounds not played.
 
 ## Do not
 
 - Share the admin URL on mass chat (only central team).
-- Publish until all branches for that round are entered.
-- Run **Lock & advance** until the whole phase is finished and final standings are published.
+- Publish until all **eligible** branches for that round are entered.
+- Run **Lock & advance** until Round 3 is published for the phase.
 
 ## End of June
 
-1. Publish final June round.
-2. Check public **June** page — top 24 look correct.
+1. Publish **June — Round 3**.
+2. Check each regional **June** page — 8 survivors per region (24 total).
 3. Admin → **Advancement** → **Lock & advance** for **June**.
-4. July rounds now only show the 24 survivors.
+4. July Round 1 shows only those 24 branches.
 
 ## End of July
 
-1. Publish final July rounds for Luzon, NCR, VisMin.
-2. Check each regional page on the public site.
+1. Publish **July — Round 3** for all regions.
+2. Check each regional page — 1 champion per region.
 3. **Lock & advance** for **July**.
 4. August shows three regional champions.
 
 ## TV at an event
 
-Open: `https://YOUR-SITE/tv?phase=june` (or `july` / `august`) on a browser in fullscreen (F11).
+Open e.g. `https://YOUR-SITE/tv?phase=june&region=luzon` (switch region tabs on screen). Fullscreen (F11).
 
 ## Preview leaderboards (sample data)
-
-Use **preview** pages to demo the site before real scores exist. They use fake data only — nothing is saved to the database.
 
 | Page | URL |
 |------|-----|
 | Preview hub | `/preview` |
-| June sample | `/preview/june` |
-| July by region | `/preview/july/luzon`, `/ncr`, `/vismin` |
+| June by region | `/preview/june/luzon`, `/ncr`, `/vismin` |
+| July by region | `/preview/july/luzon`, etc. |
 | August sample | `/preview/august` |
-| TV preview | `/preview/tv?phase=june` |
+| TV preview | `/preview/tv?phase=june&region=luzon` |
 | Admin links | Admin → **Preview** |
-
-Share the **official** URL from the home page QR card once you are ready to go live.
 
 ## If something looks wrong
 
 1. Note the round and branch name.
-2. Fix scores in Admin → re-publish that round.
-3. If access issues → contact whoever set up Supabase admin (Step 1.5 in setup guide).
+2. Fix scores in Admin → re-publish that round (elimination recalculates automatically).
+3. If access issues → contact whoever set up Supabase admin.
+
+## Database note (one-time)
+
+If upgrading an existing Supabase project, run `supabase/migrations/004_round_elimination.sql` in SQL Editor.

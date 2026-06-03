@@ -77,6 +77,8 @@ CREATE TABLE published_standings (
   total_wins INT NOT NULL DEFAULT 0,
   status branch_status NOT NULL DEFAULT 'active',
   region_filter region_type,
+  eliminated_in_round INT CHECK (eliminated_in_round IS NULL OR (eliminated_in_round >= 1 AND eliminated_in_round <= 10)),
+  last_active_round INT CHECK (last_active_round IS NULL OR (last_active_round >= 0 AND last_active_round <= 10)),
   published_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (season_id, branch_id, region_filter)
 );

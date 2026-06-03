@@ -23,6 +23,13 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const region = searchParams.get("region") as Region | null;
 
+  if ((slug === "june_area" || slug === "july_region") && !region) {
+    return NextResponse.json(
+      { error: "region query param required for june/july export" },
+      { status: 400 }
+    );
+  }
+
   const season = await getSeasonBySlug(slug);
   if (!season) {
     return NextResponse.json({ error: "Season not found" }, { status: 404 });
@@ -30,14 +37,14 @@ export async function GET(
 
   const rows = await getPublishedStandings(
     season.id,
-    slug === "july_region" && region ? region : undefined
+    slug === "august_finals" ? undefined : region ?? undefined
   );
 
   const csv = standingsToCsv(rows);
   const filename =
-    slug === "july_region" && region
-      ? `sword-duels-${seasonParam}-${region}.csv`
-      : `sword-duels-${seasonParam}.csv`;
+    slug === "august_finals"
+      ? `sword-duels-${seasonParam}.csv`
+      : `sword-duels-${seasonParam}-${region}.csv`;
 
   return new NextResponse(csv, {
     headers: {

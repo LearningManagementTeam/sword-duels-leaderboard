@@ -4,11 +4,17 @@ import { PhaseNav } from "./PhaseNav";
 import { PreviewBanner } from "./PreviewBanner";
 import { SetupBanner } from "./SetupBanner";
 import {
+  getLatestPublishedRoundNumber,
   getLastPublishedAt,
   getPublishedStandings,
   getSeasonBySlug,
 } from "@/lib/data/queries";
-import { SCORING_CONFIG, REGION_LABELS } from "@/lib/scoring-config";
+import {
+  getSurvivorCount,
+  SCORING_CONFIG,
+  REGION_LABELS,
+  usesPerRoundElimination,
+} from "@/lib/scoring-config";
 import type { Region, SeasonSlug } from "@/lib/scoring-config";
 import type { StandingRow } from "@/lib/types";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
@@ -31,10 +37,15 @@ export async function PhaseLeaderboard({
   const configured = isSupabaseConfigured();
   const season =
     !isPreview && configured ? await getSeasonBySlug(slug) : null;
+  const latestPublishedRound =
+    season && configured && !isPreview
+      ? await getLatestPublishedRoundNumber(season.id)
+      : demoRows?.[0]?.latest_published_round ?? 3;
+
   const rows =
     isPreview && demoRows
       ? demoRows
-      : season && configured
+      : season && configured && region
         ? await getPublishedStandings(season.id, region)
         : [];
   const lastPublished =
@@ -43,26 +54,38 @@ export async function PhaseLeaderboard({
       : null;
 
   const config = SCORING_CONFIG[slug];
-  const cutoff =
-    slug === "july_region"
-      ? SCORING_CONFIG.july_region.advancementPerRegion
-      : "advancementCount" in config
-        ? (config.advancementCount ?? 1)
-        : 1;
+  const perRound = usesPerRoundElimination(slug);
+
+  let cutoff = 24;
+  let cutLineLabel: string | undefined;
+
+  if (perRound && region && latestPublishedRound > 0) {
+    cutoff =
+      getSurvivorCount(slug, latestPublishedRound, region) ??
+      (slug === "june_area" ? 32 : 4);
+    if (latestPublishedRound < config.roundCount) {
+      cutLineLabel = `Cut line — top ${cutoff} advance to Round ${latestPublishedRound + 1}`;
+    } else if (slug === "june_area") {
+      cutLineLabel = `Cut line — top ${cutoff} advance to July`;
+    } else {
+      cutLineLabel = `Cut line — top ${cutoff} advance to August`;
+    }
+  } else if (slug === "august_finals") {
+    cutoff = 1;
+  }
 
   const basePath = isPreview ? "/preview" : "";
   const exportPath =
-    phase === "july" && region
-      ? `/api/export/july?region=${region}`
+    (phase === "june" || phase === "july") && region
+      ? `/api/export/${phase}?region=${region}`
       : `/api/export/${phase}`;
 
-  const navPhase = phase;
-  const julyRegionLinks = (["luzon", "ncr", "vismin"] as Region[]).map(
-    (r) => ({
-      href: `${basePath}/july/${r}`,
-      label: REGION_LABELS[r],
-    })
-  );
+  const regionLinks = (["luzon", "ncr", "vismin"] as Region[]).map((r) => ({
+    href: `${basePath}/${phase}/${r}`,
+    label: REGION_LABELS[r],
+  }));
+
+  const needsRegion = (phase === "june" || phase === "july") && perRound;
 
   return (
     <div className="space-y-6">
@@ -74,9 +97,15 @@ export async function PhaseLeaderboard({
           {region && (
             <p className="text-amber-300">{REGION_LABELS[region]} region</p>
           )}
+          {perRound && latestPublishedRound > 0 && (
+            <p className="mt-1 text-sm text-slate-400">
+              Standings after Round {latestPublishedRound}
+            </p>
+          )}
           {isPreview ? (
             <p className="mt-1 text-xs text-slate-500">
               Sample data · {rows.length} branches
+              {region ? ` · ${REGION_LABELS[region]}` : ""}
             </p>
           ) : (
             lastPublished && (
@@ -90,7 +119,7 @@ export async function PhaseLeaderboard({
             )
           )}
         </div>
-        {!isPreview && (
+        {!isPreview && region && (
           <div className="flex flex-wrap gap-2">
             <a
               href={exportPath}
@@ -105,14 +134,14 @@ export async function PhaseLeaderboard({
       {!isPreview && !configured && <SetupBanner />}
 
       {isPreview ? (
-        <PhaseNav active={navPhase} basePath="/preview" />
+        <PhaseNav active={phase} basePath="/preview" />
       ) : (
-        <PhaseNav active={navPhase} />
+        <PhaseNav active={phase} />
       )}
 
-      {phase === "july" && !region && (
+      {needsRegion && !region && (
         <div className="flex flex-wrap gap-2">
-          {julyRegionLinks.map((l) => (
+          {regionLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -122,18 +151,21 @@ export async function PhaseLeaderboard({
             </Link>
           ))}
           <p className="w-full text-xs text-slate-500">
-            Select a region to view its leaderboard.
+            Select a region to view its leaderboard and cut lines.
           </p>
         </div>
       )}
 
-      {phase === "july" && !region ? null : (
+      {needsRegion && !region ? null : (
         <LeaderboardTable
           rows={rows}
-          advancementCutoff={cutoff ?? 24}
+          advancementCutoff={cutoff}
+          cutLineLabel={cutLineLabel}
           showArea={slug === "june_area"}
-          showRegion={slug === "july_region" && !region}
+          showRegion={false}
           showRepresentatives
+          seasonSlug={slug}
+          latestPublishedRound={latestPublishedRound}
         />
       )}
     </div>

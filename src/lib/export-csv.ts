@@ -14,8 +14,10 @@ export function standingsToCsv(rows: StandingRow[]): string {
     "round3_points",
     "total_points",
     "total_wins",
+    "eliminated_in_round",
     "status",
   ].join(",");
+  const fmt = (v: number | null) => (v === null ? "" : String(v));
   const lines = rows.map((r) =>
     [
       r.rank,
@@ -25,11 +27,12 @@ export function standingsToCsv(rows: StandingRow[]): string {
       `"${(r.representative_2 ?? "").replace(/"/g, '""')}"`,
       `"${r.area.replace(/"/g, '""')}"`,
       r.region,
-      r.round1_points,
-      r.round2_points,
-      r.round3_points,
+      fmt(r.round1_points),
+      fmt(r.round2_points),
+      fmt(r.round3_points),
       r.total_points,
       r.total_wins,
+      r.eliminated_in_round ?? "",
       r.status,
     ].join(",")
   );
