@@ -63,8 +63,16 @@ export function JuneThreeColumnLeaderboard({
 
       {isComparePreview && (
         <p className="text-center text-sm text-sd-muted">
-          Round 1 & 2 use the same three-column shell with different in-round
-          styling.{" "}
+          {latestPublishedRound === 1 ? (
+            <>
+              Round 1: ranked quiz list with top-32 advancing zone and cut line
+              (no podium).{" "}
+            </>
+          ) : latestPublishedRound === 2 ? (
+            <>Round 2: survival roster — still standing vs fallen. </>
+          ) : (
+            <>Round 3: finish-order podium plus qualifiers. </>
+          )}
           <Link href="/june/luzon" className="sd-link">
             Single-region boards
           </Link>{" "}

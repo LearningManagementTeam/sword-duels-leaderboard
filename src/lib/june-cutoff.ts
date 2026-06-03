@@ -12,6 +12,18 @@ export function buildJuneCutoffForRegion(
   }
   const cutoff =
     getSurvivorCount("june_area", latestPublishedRound, region) ?? 32;
+  if (latestPublishedRound === 1) {
+    return {
+      cutoff,
+      cutLineLabel: `Cut line — top ${cutoff} advance to Last KaBingoPlus Standing`,
+    };
+  }
+  if (latestPublishedRound === 2) {
+    return {
+      cutoff,
+      cutLineLabel: `Cut line — top ${cutoff} advance to Clash of the Knowledge Swords`,
+    };
+  }
   if (latestPublishedRound < 3) {
     return {
       cutoff,

@@ -5,6 +5,7 @@ import {
   formatHeroMetric,
   participantDisplayName,
   participantInitials,
+  resolveCutLineRank,
   type RoundViewConfig,
 } from "@/lib/leaderboard-display";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -51,6 +52,13 @@ export function GamifiedRankList({
       ? rows.filter((r) => r.rank > 3)
       : rows;
 
+  const cutLineRank =
+    view.layoutVariant === "quiz_ladder"
+      ? resolveCutLineRank(listRows, advancementCutoff, (row) => row.round1_points)
+      : advancementCutoff > 0
+        ? advancementCutoff + 1
+        : null;
+
   if (listRows.length === 0 && !zoneLabel) return null;
 
   return (
@@ -63,9 +71,9 @@ export function GamifiedRankList({
       <ul className={`space-y-2 ${tvMode ? "space-y-3" : ""}`}>
         {listRows.map((row) => {
           const showCutLine =
-            advancementCutoff > 0 &&
-            row.rank === advancementCutoff + 1 &&
-            listRows.some((r) => r.rank === advancementCutoff);
+            cutLineRank != null &&
+            row.rank === cutLineRank &&
+            listRows.some((r) => r.rank < cutLineRank);
 
           const inZone =
             row.status !== "eliminated" &&

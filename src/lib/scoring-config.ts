@@ -116,7 +116,7 @@ const ROUND_MECHANICS: Partial<
       description: "10-question quiz — enter 0–10 per branch",
       maxPoints: 10,
       layoutVariant: "quiz_ladder",
-      bannerTagline: "10-question quiz · Top 32 per region advance",
+      bannerTagline: "10-question quiz · Top 32 advance to Last KaBingoPlus Standing",
     },
     2: {
       kind: "last_man_standing",

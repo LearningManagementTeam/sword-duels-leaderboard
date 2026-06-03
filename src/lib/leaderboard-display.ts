@@ -123,8 +123,8 @@ export function getRoundViewConfig(
       cutLineLabel,
       emptyMessage: "No scores published yet.",
       heroLabel: "Quiz score",
-      showPodium: true,
-      podiumMode: "quiz_score",
+      showPodium: false,
+      podiumMode: "none",
     };
   }
 
@@ -273,4 +273,46 @@ export function survivalCounts(rows: StandingRow[]): {
     else if (round2Survived(row) === false) fallen++;
   }
   return { standing, fallen };
+}
+
+export function advancingZoneCounts(
+  rows: StandingRow[],
+  _advancementCutoff: number
+): { advancing: number; tieBreaker: number; eliminated: number } {
+  let advancing = 0;
+  let tieBreaker = 0;
+  let eliminated = 0;
+  for (const row of rows) {
+    if (row.status === "tie_breaker") tieBreaker++;
+    else if (row.status === "eliminated") eliminated++;
+    else advancing++;
+  }
+  return { advancing, tieBreaker, eliminated };
+}
+
+/** Rank where the cut line should render — after any tied score block at the cutoff. */
+export function resolveCutLineRank(
+  rows: StandingRow[],
+  advancementCutoff: number,
+  scoreFn: (row: StandingRow) => number | null
+): number | null {
+  if (advancementCutoff <= 0 || rows.length <= advancementCutoff) return null;
+
+  const cutoffScore = scoreFn(rows[advancementCutoff - 1]);
+  if (cutoffScore === null) return advancementCutoff + 1;
+
+  let blockStart = advancementCutoff - 1;
+  while (blockStart > 0 && scoreFn(rows[blockStart - 1]) === cutoffScore) {
+    blockStart--;
+  }
+  let blockEnd = advancementCutoff - 1;
+  while (
+    blockEnd < rows.length - 1 &&
+    scoreFn(rows[blockEnd + 1]) === cutoffScore
+  ) {
+    blockEnd++;
+  }
+
+  const lineRank = blockEnd + 2;
+  return lineRank <= rows.length ? lineRank : null;
 }

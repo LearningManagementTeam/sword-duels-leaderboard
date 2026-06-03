@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  getRoundViewConfig,
+  advancingZoneCounts,
   sortRowsForRoundView,
   splitQualificationRows,
   splitSurvivalRows,
@@ -119,6 +119,97 @@ export function RoundBoardShell({
             seasonSlug={seasonSlug}
             zoneLabel="Eliminated"
           />
+        )}
+      </div>
+    );
+  }
+
+  if (view.layoutVariant === "quiz_ladder") {
+    const counts = advancingZoneCounts(sorted, advancementCutoff);
+    const zoneLabel =
+      seasonSlug === "june_area" && view.latestPublishedRound === 1
+        ? "Advancing to Last KaBingoPlus Standing"
+        : "Advancing to Round 2";
+
+    const advancing = sorted.filter(
+      (r) => r.status !== "tie_breaker" && r.status !== "eliminated"
+    );
+    const tieBreak = sorted.filter((r) => r.status === "tie_breaker");
+    const eliminated = sorted.filter((r) => r.status === "eliminated");
+
+    if (tieBreak.length === 0) {
+      return (
+        <div className="space-y-4">
+          {!compact && (
+            <p className="text-center text-xs text-sd-muted">
+              {counts.advancing} advancing · {counts.eliminated} eliminated
+            </p>
+          )}
+          <GamifiedRankList
+            rows={sorted}
+            advancementCutoff={advancementCutoff}
+            cutLineLabel={cutLineLabel}
+            highlightCode={highlightCode}
+            tvMode={tvMode}
+            view={view}
+            seasonSlug={seasonSlug}
+            zoneLabel={zoneLabel}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {!compact && (
+          <p className="text-center text-xs text-sd-muted">
+            {counts.advancing} advancing
+            {counts.tieBreaker > 0 && ` · ${counts.tieBreaker} tie breaker`}
+            {` · ${counts.eliminated} eliminated`}
+          </p>
+        )}
+        {advancing.length > 0 && (
+          <GamifiedRankList
+            rows={advancing}
+            advancementCutoff={advancementCutoff}
+            cutLineLabel={cutLineLabel}
+            highlightCode={highlightCode}
+            tvMode={tvMode}
+            view={view}
+            seasonSlug={seasonSlug}
+            zoneLabel={zoneLabel}
+          />
+        )}
+        {tieBreak.length > 0 && (
+          <GamifiedRankList
+            rows={tieBreak}
+            advancementCutoff={0}
+            cutLineLabel={cutLineLabel}
+            highlightCode={highlightCode}
+            tvMode={tvMode}
+            view={view}
+            seasonSlug={seasonSlug}
+            zoneLabel="Tie breaker at cut line"
+          />
+        )}
+        {eliminated.length > 0 && (
+          <>
+            {tieBreak.length > 0 && (
+              <div className="sd-cut-shimmer rounded-lg border border-sd-glow/40 bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-sd-glow">
+                {cutLineLabel}
+              </div>
+            )}
+            <GamifiedRankList
+              rows={eliminated}
+              advancementCutoff={0}
+              cutLineLabel=""
+              highlightCode={highlightCode}
+              tvMode={tvMode}
+              view={view}
+              seasonSlug={seasonSlug}
+              zoneLabel="Eliminated"
+            />
+          </>
         )}
       </div>
     );

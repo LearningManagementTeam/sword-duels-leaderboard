@@ -39,8 +39,8 @@ export default function CompareLeaderboardPickerPage() {
           Preview Round 1 & 2 in three columns
         </h2>
         <p className="text-sm text-sd-muted">
-          Same layout shell, different round styling (quiz ladder vs survival
-          roster).
+          Same layout shell, different round styling. Round 1: ranked quiz list
+          with top-32 cut line (no podium). Round 2: survival roster.
         </p>
         <div className="flex flex-wrap gap-2">
           {PREVIEW_ROUNDS.map((r) => (

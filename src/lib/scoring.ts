@@ -60,12 +60,14 @@ function applyRegionalSurvivorCut(
 
   const autoSlotsAtCut = survivorCut - aboveCut.length;
 
-  atCut.forEach((entry, idx) => {
-    if (idx >= autoSlotsAtCut) {
+  // When more branches tie at the cutoff score than remaining auto slots,
+  // mark the entire tied group for tie-breaker resolution (same status for all).
+  if (atCut.length > autoSlotsAtCut) {
+    for (const entry of atCut) {
       state.get(entry.branch.id)!.tieBreakerInRound = roundNum;
       alive.delete(entry.branch.id);
     }
-  });
+  }
 
   for (const entry of belowCut) {
     state.get(entry.branch.id)!.eliminatedInRound = roundNum;
