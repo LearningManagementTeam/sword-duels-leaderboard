@@ -4,8 +4,7 @@ export const SPONSOR_LOGO_SLOT_H = "h-10 sm:h-10";
 export const SPONSOR_LOGO_IMG_CLASS =
   "max-h-full max-w-full object-contain object-center opacity-90";
 
-export const SPONSOR_LOGO_STRIP_CLASS =
-  "relative overflow-hidden rounded-xl bg-sd-deep/30 px-4 py-3 ring-1 ring-emerald-500/10";
+export const SPONSOR_LOGO_STRIP_CLASS = "relative overflow-hidden";
 
 export const SPONSOR_LOGO_FRAME_H = "h-11 sm:h-12";
 
