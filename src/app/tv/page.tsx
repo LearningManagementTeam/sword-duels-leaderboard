@@ -66,7 +66,7 @@ export default async function TvPage({
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto p-6">
-      <ArBackdrop branding={branding} />
+      <ArBackdrop />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
           {(["june", "july", "august"] as const).map((p) => (

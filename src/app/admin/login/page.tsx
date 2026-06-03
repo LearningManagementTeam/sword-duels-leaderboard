@@ -1,7 +1,6 @@
 import { signInWithPassword } from "@/lib/actions/auth";
 import Link from "next/link";
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
-import { getBranding } from "@/lib/data/content-queries";
 
 export default async function AdminLoginPage({
   searchParams,
@@ -9,10 +8,9 @@ export default async function AdminLoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
-  const branding = await getBranding();
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4">
-      <ArBackdrop branding={branding} />
+      <ArBackdrop />
       <div className="sd-neon-panel relative w-full max-w-md space-y-6 p-8">
         <div>
           <h1 className="text-xl font-bold text-white">Admin sign in</h1>

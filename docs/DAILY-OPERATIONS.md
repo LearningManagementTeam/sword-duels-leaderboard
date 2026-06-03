@@ -9,18 +9,24 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 | **Dashboard** | Workflow cards — weekly round, extra advancement, end of phase |
 | **Rounds** | Enter and publish scores |
 | **Mechanics** | Edit public “How it works” intro and announcements (rule tables auto-update) |
-| **Branding** | Hero logo, custom page background, header icon |
+| **Competition map** | Set “you are here” on the home page journey + caption |
+| **Branding** | Hero logo + header icon (animated background is built-in) |
 | **System & stack** | Tech setup, migrations, architecture (IT / troubleshooting) |
 
 Public mechanics: **How it works** on the site header → `/mechanics`
 
-The public site and admin panel share the same **neon glass** look (green + magenta accents, blurred background). Customize logo and backdrop under **Branding**.
+The public site and admin panel share the same **neon glass** look (green + magenta accents) with a built-in animated AR-style background on every page.
 
-## Page background (optional)
+## Competition map (home)
 
-1. Admin → **Branding** → **Page background**
-2. Use a **landscape** photo or artwork: **1920×1080 recommended**, **1280×720 minimum**, JPG/PNG/WebP, max **5 MB**
-3. The app blurs and darkens the image so text stays readable on every page (public, admin, TV). **Restore default background** brings back the built-in green wave art.
+After each major beat (round published, phase transition, finals week):
+
+1. Admin → **Competition map**
+2. Pick the **milestone** that matches where the event is (e.g. June Round 2, July → August transition).
+3. Set **region highlight** (all regions or one) and write a short **public caption** (“You are here: …”).
+4. Save. The home page shows the journey map and a **remaining contestants** list from live standings (updates when you publish scores — no need to re-save the map for list counts).
+
+Optional: **Suggest from latest June round** pre-fills milestone and caption; review before saving.
 
 ## Logo (one-time or when it changes)
 

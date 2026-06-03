@@ -10,6 +10,7 @@ const links = [
   { href: "/admin/rounds", label: "Rounds" },
   { href: "/admin/advancement", label: "Advancement" },
   { href: "/admin/mechanics", label: "Mechanics" },
+  { href: "/admin/competition", label: "Competition map" },
   { href: "/admin/branding", label: "Branding" },
   { href: "/admin/preview", label: "Preview" },
   { href: "/admin/audit", label: "Audit log" },

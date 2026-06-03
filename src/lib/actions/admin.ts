@@ -23,9 +23,15 @@ import {
   type BrandingConfig,
 } from "@/lib/branding";
 import {
+  COMPETITION_MAP_SLUG,
+  type CompetitionMapConfig,
+  type CompetitionMilestoneId,
+} from "@/lib/competition-map";
+import {
   MECHANICS_CONTENT_SLUG,
   type MechanicsPublicBody,
 } from "@/lib/mechanics-content";
+import { getLatestPublishedRoundNumber, getSeasonBySlug } from "@/lib/data/queries";
 import type { StandingRow } from "@/lib/types";
 import {
   createClient,
@@ -908,26 +914,89 @@ export async function saveMechanicsContent(body: MechanicsPublicBody) {
   return { ok: true };
 }
 
+export async function saveCompetitionMap(config: CompetitionMapConfig) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+
+  const payload = {
+    milestoneId: config.milestoneId,
+    regionHighlight: config.regionHighlight,
+    publicCaption: config.publicCaption ?? "",
+    showContestantList: config.showContestantList ?? true,
+  };
+
+  const { error } = await service.from("site_content").upsert(
+    {
+      slug: COMPETITION_MAP_SLUG,
+      body: payload,
+      updated_at: new Date().toISOString(),
+      updated_by_email: email,
+    },
+    { onConflict: "slug" }
+  );
+
+  if (error) throw new Error(error.message);
+
+  await logAudit(
+    email,
+    "save_competition_map",
+    "site_content",
+    COMPETITION_MAP_SLUG,
+    { milestoneId: payload.milestoneId }
+  );
+
+  revalidatePath("/");
+  revalidatePath("/admin/competition");
+  return { ok: true };
+}
+
+/** Pre-fill editor from latest published June round (best-effort). */
+export async function suggestCompetitionMilestone(): Promise<{
+  milestoneId: CompetitionMilestoneId;
+  publicCaption: string;
+}> {
+  await requireAdmin();
+
+  const june = await getSeasonBySlug("june_area");
+  if (!june) {
+    return {
+      milestoneId: "pre_season",
+      publicCaption: "Competition has not started yet.",
+    };
+  }
+
+  const round = await getLatestPublishedRoundNumber(june.id);
+  if (round <= 0) {
+    return {
+      milestoneId: "pre_season",
+      publicCaption: "June Round 1 scores not published yet.",
+    };
+  }
+
+  const milestoneMap: Record<number, CompetitionMilestoneId> = {
+    1: "june_r1",
+    2: "june_r2",
+    3: "june_r3",
+  };
+  const milestoneId = milestoneMap[Math.min(round, 3)] ?? "june_r3";
+  return {
+    milestoneId,
+    publicCaption: `You are here: after June Round ${round} — check regional standings for who advances.`,
+  };
+}
+
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-const BACKGROUND_MAX_BYTES = 5 * 1024 * 1024;
 const LOGO_MIME: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",
   "image/svg+xml": "svg",
 };
-const BACKGROUND_MIME: Record<string, string> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/webp": "webp",
-};
 
 function revalidateBrandingSurfaces() {
   revalidatePath("/", "layout");
   revalidatePath("/admin", "layout");
   revalidatePath("/admin/branding");
-  revalidatePath("/tv");
-  revalidatePath("/preview", "layout");
 }
 
 async function upsertBrandingBody(
@@ -948,10 +1017,6 @@ async function upsertBrandingBody(
   const body: BrandingConfig = {
     logo_url: patch.logo_url !== undefined ? patch.logo_url : current.logo_url,
     logo_alt: patch.logo_alt ?? current.logo_alt ?? DEFAULT_BRANDING.logo_alt,
-    background_url:
-      patch.background_url !== undefined
-        ? patch.background_url
-        : current.background_url,
   };
 
   const { error } = await service.from("site_content").upsert(
@@ -1032,72 +1097,6 @@ export async function removeBrandingLogo() {
   await upsertBrandingBody(service, email, { logo_url: null });
 
   await logAudit(email, "remove_branding_logo", "site_content", BRANDING_CONTENT_SLUG, {});
-
-  revalidateBrandingSurfaces();
-  return { ok: true };
-}
-
-export async function uploadBrandingBackground(formData: FormData) {
-  const { email } = await requireAdmin();
-  const service = await createServiceClient();
-  const file = formData.get("file");
-
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("Choose an image file to upload.");
-  }
-  if (file.size > BACKGROUND_MAX_BYTES) {
-    throw new Error("Background must be 5MB or smaller.");
-  }
-  const ext = BACKGROUND_MIME[file.type];
-  if (!ext) {
-    throw new Error("Use JPG, PNG, or WebP for backgrounds.");
-  }
-
-  const path = `background.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  await removeBrandingStorageFiles(service, "background.");
-
-  const { error: uploadErr } = await service.storage
-    .from("branding")
-    .upload(path, buffer, {
-      contentType: file.type,
-      upsert: true,
-    });
-  if (uploadErr) throw new Error(uploadErr.message);
-
-  const { data: urlData } = service.storage.from("branding").getPublicUrl(path);
-  const backgroundUrl = `${urlData.publicUrl}?v=${Date.now()}`;
-
-  await upsertBrandingBody(service, email, { background_url: backgroundUrl });
-
-  await logAudit(
-    email,
-    "upload_branding_background",
-    "site_content",
-    BRANDING_CONTENT_SLUG,
-    { path }
-  );
-
-  revalidateBrandingSurfaces();
-  return { ok: true, background_url: backgroundUrl };
-}
-
-export async function removeBrandingBackground() {
-  const { email } = await requireAdmin();
-  const service = await createServiceClient();
-
-  await removeBrandingStorageFiles(service, "background.");
-
-  await upsertBrandingBody(service, email, { background_url: null });
-
-  await logAudit(
-    email,
-    "remove_branding_background",
-    "site_content",
-    BRANDING_CONTENT_SLUG,
-    {}
-  );
 
   revalidateBrandingSurfaces();
   return { ok: true };

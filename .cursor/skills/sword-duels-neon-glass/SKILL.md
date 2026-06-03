@@ -53,7 +53,8 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 | Area | Files |
 |------|--------|
 | Tokens / CSS | `src/app/globals.css` |
-| Backdrop | `ArBackdrop` + `resolveBackdropUrl()` — custom upload from Admin → Branding, else `public/backgrounds/sd-wave-green.png` (blur + scrim via `.sd-backdrop-photo`) |
+| Backdrop | `ArBackdrop` + `ArLandscapeScene` — CSS-only animated AR landscape (`.sd-landscape__*` in `globals.css`) + scrim/HUD |
+| Competition map | `CompetitionMapPanel` (home), `CompetitionMapDisplay`, Admin → `/admin/competition`, `site_content` slug `competition_map` |
 | Carousel | `src/components/ui/SdCarousel.tsx` |
 | Hero logo | `src/components/branding/HeroLogo.tsx` |
 | Leaderboard | `src/components/leaderboard/*`, `LeaderboardSection.tsx` |
@@ -70,13 +71,16 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 - **LeaderboardBanner:** subtitle/round line — no duplicate hero image
 - Transparent PNG/SVG on dark glass works best
 
-## Page background rules
+## Backdrop rules
 
-- Data: `BrandingConfig.background_url`; fallback `DEFAULT_BACKDROP_PATH` in `src/lib/branding.ts`
-- Specs: `BACKGROUND_UPLOAD_SPECS` (1920×1080 rec., 1280×720 min, landscape aspect, 5MB, JPG/PNG/WebP)
-- Client check: `validateBackgroundFile()` before server action `uploadBrandingBackground`
-- Display: `ArBackdrop` uses `.sd-backdrop-photo` blur + gradient scrim; preview via `BackgroundPreview`
-- Storage: `branding` bucket `background.{ext}`; remove logo/background independently (`logo.` / `background.` prefix)
+- No admin background upload; logo only in `BrandingConfig`
+- Animate with `transform` / `opacity` only on landscape layers; respect `prefers-reduced-motion`
+- Do not animate full-viewport `filter: blur()`
+
+## Competition map rules
+
+- Admin sets `CompetitionMapConfig` milestone + caption; list from `getRemainingContestantsForMap()`
+- Home page only for public map; phase pages keep `PhaseJourneyBar`
 
 ## Carousel rules (`SdCarousel`)
 

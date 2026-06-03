@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HeroLogo } from "@/components/branding/HeroLogo";
+import { CompetitionMapPanel } from "@/components/competition/CompetitionMapPanel";
 import {
   HomeRegionCarousel,
   HomeSeasonCarousel,
@@ -9,6 +10,8 @@ import { SetupBanner } from "@/components/SetupBanner";
 import { ShareCard } from "@/components/ShareCard";
 import { getBranding } from "@/lib/data/content-queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -32,6 +35,8 @@ export default async function HomePage() {
 
       <HomeSeasonCarousel />
       <HomeRegionCarousel />
+
+      <CompetitionMapPanel />
 
       <section className="sd-neon-panel relative overflow-hidden p-6 sm:p-8">
         <div className="relative z-10 space-y-4">

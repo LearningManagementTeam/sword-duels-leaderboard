@@ -318,17 +318,227 @@ body {
     drop-shadow(0 0 28px rgb(217 70 239 / 0.2));
 }
 
-/* Full-page wave background (image in public/backgrounds/) */
-.sd-backdrop-photo {
-  transform: scale(1.08);
-  filter: blur(32px) saturate(1.05) brightness(0.65);
-  opacity: 0.55;
+/* CSS-only AR landscape (ArLandscapeScene) */
+.sd-landscape__sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgb(2 12 8) 0%,
+    rgb(4 26 18) 35%,
+    rgb(6 40 28) 70%,
+    rgb(4 26 18) 100%
+  );
+  background-size: 100% 200%;
+  animation: sd-landscape-sky 24s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sd-backdrop-photo {
-    filter: blur(40px) saturate(0.9) brightness(0.5);
-    opacity: 0.4;
+.sd-landscape__horizon-grid {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  top: 28%;
+  height: 42%;
+  opacity: 0.35;
+  background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(74 222 128 / 0.12) 50%,
+      transparent 100%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgb(74 222 128 / 0.08) 0,
+      rgb(74 222 128 / 0.08) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgb(74 222 128 / 0.06) 0,
+      rgb(74 222 128 / 0.06) 1px,
+      transparent 1px,
+      transparent 32px
+    );
+  transform: perspective(400px) rotateX(58deg);
+  transform-origin: center top;
+  animation: sd-landscape-horizon 40s linear infinite;
+}
+
+.sd-landscape__hill {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.sd-landscape__hill--a {
+  left: -10%;
+  bottom: 18%;
+  width: 55%;
+  height: 28%;
+  background: rgb(20 83 45 / 0.45);
+  animation: sd-landscape-hill-a 18s ease-in-out infinite;
+}
+
+.sd-landscape__hill--b {
+  right: -5%;
+  bottom: 22%;
+  width: 45%;
+  height: 22%;
+  background: rgb(6 78 59 / 0.35);
+  animation: sd-landscape-hill-b 22s ease-in-out infinite;
+}
+
+.sd-landscape__hill--c {
+  left: 25%;
+  bottom: 12%;
+  width: 50%;
+  height: 18%;
+  background: rgb(88 28 135 / 0.12);
+  animation: sd-landscape-hill-c 20s ease-in-out infinite;
+}
+
+.sd-landscape__floor-grid {
+  position: absolute;
+  left: -30%;
+  right: -30%;
+  bottom: -5%;
+  height: 55%;
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(
+      90deg,
+      rgb(74 222 128 / 0.15) 0,
+      rgb(74 222 128 / 0.15) 1px,
+      transparent 1px,
+      transparent 56px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgb(217 70 239 / 0.08) 0,
+      rgb(217 70 239 / 0.08) 1px,
+      transparent 1px,
+      transparent 40px
+    );
+  transform: perspective(320px) rotateX(72deg);
+  transform-origin: center bottom;
+  animation: sd-landscape-floor 28s linear infinite;
+}
+
+.sd-landscape__glow-line {
+  position: absolute;
+  height: 1px;
+  width: 70%;
+  max-width: 36rem;
+  border-radius: 9999px;
+  opacity: 0.5;
+}
+
+.sd-landscape__glow-line--green {
+  left: 10%;
+  top: 42%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(74 222 128 / 0.6),
+    transparent
+  );
+  animation: sd-landscape-glow-green 8s ease-in-out infinite;
+}
+
+.sd-landscape__glow-line--magenta {
+  right: 8%;
+  top: 48%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(217 70 239 / 0.5),
+    transparent
+  );
+  animation: sd-landscape-glow-magenta 10s ease-in-out infinite;
+}
+
+@keyframes sd-landscape-sky {
+  0%,
+  100% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 0% 100%;
+  }
+}
+
+@keyframes sd-landscape-horizon {
+  0% {
+    transform: perspective(400px) rotateX(58deg) translateX(0);
+  }
+  100% {
+    transform: perspective(400px) rotateX(58deg) translateX(-48px);
+  }
+}
+
+@keyframes sd-landscape-floor {
+  0% {
+    transform: perspective(320px) rotateX(72deg) translateX(0);
+  }
+  100% {
+    transform: perspective(320px) rotateX(72deg) translateX(56px);
+  }
+}
+
+@keyframes sd-landscape-hill-a {
+  0%,
+  100% {
+    transform: translateX(0) scale(1);
+  }
+  50% {
+    transform: translateX(4%) scale(1.03);
+  }
+}
+
+@keyframes sd-landscape-hill-b {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-3%);
+  }
+}
+
+@keyframes sd-landscape-hill-c {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.2;
+    transform: translateY(-2%);
+  }
+}
+
+@keyframes sd-landscape-glow-green {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 0.65;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes sd-landscape-glow-magenta {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 0.55;
+    transform: translateX(-20px);
   }
 }
 
@@ -500,7 +710,12 @@ body {
   .sd-light-streak--animated,
   .sd-carousel-track,
   .animate-glow-pulse,
-  .sd-cut-shimmer {
+  .sd-cut-shimmer,
+  .sd-landscape__sky,
+  .sd-landscape__horizon-grid,
+  .sd-landscape__floor-grid,
+  .sd-landscape__hill,
+  .sd-landscape__glow-line {
     animation: none !important;
   }
 

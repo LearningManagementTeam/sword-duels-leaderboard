@@ -1,20 +1,6 @@
-import { DEFAULT_BACKDROP_PATH, resolveBackdropUrl } from "@/lib/branding";
-import type { BrandingConfig } from "@/lib/branding";
+import { ArLandscapeScene } from "@/components/ui/ArLandscapeScene";
 
-/** @deprecated use resolveBackdropUrl — kept for imports */
-export const SD_BACKDROP_IMAGE = DEFAULT_BACKDROP_PATH;
-
-interface Props {
-  /** Custom upload from Admin → Branding; falls back to bundled default */
-  backgroundUrl?: string | null;
-  branding?: BrandingConfig | null;
-}
-
-export function ArBackdrop({ backgroundUrl, branding }: Props) {
-  const src = branding
-    ? resolveBackdropUrl(branding)
-    : backgroundUrl?.trim() || DEFAULT_BACKDROP_PATH;
-
+export function ArBackdrop() {
   return (
     <div
       className="sd-hud-scan pointer-events-none fixed inset-0 -z-10 overflow-hidden"
@@ -22,16 +8,13 @@ export function ArBackdrop({ backgroundUrl, branding }: Props) {
     >
       <div className="absolute inset-0 bg-sd-deep" />
 
-      <div
-        className="sd-backdrop-photo absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${src})` }}
-      />
+      <ArLandscapeScene />
 
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, rgb(4 26 18 / 0.82) 0%, rgb(4 26 18 / 0.88) 45%, rgb(4 26 18 / 0.92) 100%)",
+            "linear-gradient(180deg, rgb(4 26 18 / 0.78) 0%, rgb(4 26 18 / 0.86) 45%, rgb(4 26 18 / 0.92) 100%)",
         }}
       />
 
@@ -43,8 +26,8 @@ export function ArBackdrop({ backgroundUrl, branding }: Props) {
         }}
       />
 
-      <div className="sd-light-streak sd-light-streak--green opacity-40" />
-      <div className="sd-light-streak sd-light-streak--magenta opacity-30" />
+      <div className="sd-light-streak sd-light-streak--green sd-light-streak--animated opacity-40" />
+      <div className="sd-light-streak sd-light-streak--magenta sd-light-streak--animated opacity-30" />
 
       <div
         className="absolute inset-0 opacity-[0.03]"

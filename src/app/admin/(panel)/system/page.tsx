@@ -11,7 +11,11 @@ const migrations = [
   { file: "008_tie_breaker_status.sql", note: "Tie-breaker branch status + standings flag" },
   {
     file: "009_branding_background_upload.sql",
-    note: "Branding bucket 5MB for custom page backgrounds",
+    note: "Branding bucket 5MB (legacy; backgrounds retired)",
+  },
+  {
+    file: "010_competition_map.sql",
+    note: "Home page competition map site_content row",
   },
 ];
 

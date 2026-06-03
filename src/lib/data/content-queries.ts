@@ -5,6 +5,12 @@ import {
   type BrandingConfig,
 } from "@/lib/branding";
 import {
+  COMPETITION_MAP_SLUG,
+  DEFAULT_COMPETITION_MAP_CONFIG,
+  parseCompetitionMapBody,
+  type CompetitionMapConfig,
+} from "@/lib/competition-map";
+import {
   DEFAULT_MECHANICS_BODY,
   MECHANICS_CONTENT_SLUG,
   parseMechanicsBody,
@@ -43,4 +49,19 @@ export async function getBranding(): Promise<BrandingConfig> {
 
   if (error || !data) return { ...DEFAULT_BRANDING };
   return parseBrandingBody(data.body);
+}
+
+export async function getCompetitionMap(): Promise<CompetitionMapConfig> {
+  if (!isSupabaseServiceConfigured()) {
+    return { ...DEFAULT_COMPETITION_MAP_CONFIG };
+  }
+  const service = await createServiceClient();
+  const { data, error } = await service
+    .from("site_content")
+    .select("body")
+    .eq("slug", COMPETITION_MAP_SLUG)
+    .maybeSingle();
+
+  if (error || !data) return { ...DEFAULT_COMPETITION_MAP_CONFIG };
+  return parseCompetitionMapBody(data.body);
 }

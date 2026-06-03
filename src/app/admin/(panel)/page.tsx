@@ -58,6 +58,11 @@ export default async function AdminDashboardPage() {
               Lock phase & advance
             </Link>
           </li>
+          <li>
+            <Link href="/admin/competition" className="sd-link">
+              Competition map (home)
+            </Link>
+          </li>
         </ul>
       </section>
 
