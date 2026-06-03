@@ -27,32 +27,38 @@ export function CompetitionMapDisplay({ config, remaining }: Props) {
     <div className="sd-neon-panel space-y-5 p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white sm:text-2xl">
-            Competition map
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300/80">
+            Quest log
+          </p>
+          <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">
+            Season journey
           </h2>
           <p className="mt-1 text-sm text-sd-muted">
-            Live progress across June → July → August
-          </p>
-          <p className="mt-2 text-xs text-sd-muted/80 max-w-xl">
-            Caption is manual. Round bars on regional pages update automatically
-            when you publish.
+            June → July → August — follow the path as the competition unfolds
           </p>
         </div>
-        <span className="sd-glass rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider text-sd-glow">
+        <span className="animate-glow-pulse sd-glass rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-sd-glow ring-1 ring-emerald-400/30">
           You are here
         </span>
       </div>
 
-      <p className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-100">
-        {caption}
-      </p>
+      <div className="relative overflow-hidden rounded-xl sd-glass-strong px-4 py-3.5 sm:px-5">
+        <div
+          className="sd-light-streak sd-light-streak--green left-0 top-3"
+          aria-hidden
+        />
+        <p className="relative text-sm font-medium leading-relaxed text-emerald-50 sm:text-base">
+          {caption}
+        </p>
+        <p className="relative mt-1 text-xs text-sd-muted/80">{meta.label}</p>
+      </div>
 
       <CompetitionMapTrack activeMilestoneId={config.milestoneId} />
 
       {meta.usesRegions && (
-        <div className="sd-inset flex flex-wrap gap-2 rounded-xl p-3">
-          <span className="w-full text-xs uppercase tracking-wider text-sd-muted/70">
-            Region focus
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="w-full text-[10px] font-bold uppercase tracking-[0.2em] text-sd-muted/60">
+            Region spotlight
           </span>
           {(["all", ...REGIONS] as const).map((r) => {
             const label = r === "all" ? "All regions" : REGION_LABELS[r];
@@ -63,9 +69,9 @@ export function CompetitionMapDisplay({ config, remaining }: Props) {
             return (
               <span
                 key={r}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                   highlighted
-                    ? "bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep"
+                    ? "bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep shadow-[0_0_12px_rgb(163_230_53/0.25)]"
                     : "sd-glass text-sd-muted"
                 }`}
               >
@@ -77,11 +83,16 @@ export function CompetitionMapDisplay({ config, remaining }: Props) {
       )}
 
       {showList && (
-        <details className="group sd-inset rounded-xl" open>
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-white [&::-webkit-details-marker]:hidden">
+        <details className="group sd-glass-strong rounded-xl" open>
+          <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-white [&::-webkit-details-marker]:hidden">
             <span className="flex items-center justify-between gap-2">
-              Remaining contestants
-              <span className="text-sd-glow">
+              <span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-sd-muted/70">
+                  Roster
+                </span>
+                <span className="mt-0.5 block">Remaining contestants</span>
+              </span>
+              <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-sm text-sd-glow">
                 {remaining.configured ? remaining.totalCount : "—"}
               </span>
             </span>
@@ -89,8 +100,7 @@ export function CompetitionMapDisplay({ config, remaining }: Props) {
           <div className="border-t border-emerald-500/15 px-4 pb-4 pt-2">
             {!remaining.configured && (
               <p className="text-sm text-sd-muted">
-                Connect Supabase and publish standings to see live remaining
-                branches.
+                Standings will appear here once the season data is live.
               </p>
             )}
             {remaining.configured && remaining.totalCount === 0 && (
@@ -115,7 +125,7 @@ export function CompetitionMapDisplay({ config, remaining }: Props) {
                   {g.rows.map((row) => (
                     <li
                       key={row.branch_id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sd-deep/50 px-2 py-1.5"
+                      className="sd-row-hover flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sd-deep/40 px-2 py-1.5"
                     >
                       <span>
                         <span className="font-medium text-white">

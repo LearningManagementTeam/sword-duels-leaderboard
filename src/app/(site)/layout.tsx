@@ -1,18 +1,13 @@
-import { SiteHeader } from "@/components/SiteHeader";
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
-import { getBranding } from "@/lib/data/content-queries";
 
-export default async function SiteLayout({
+export default function SiteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const branding = await getBranding();
-
   return (
     <>
       <ArBackdrop />
-      <SiteHeader branding={branding} />
       <main className="relative mx-auto w-full max-w-6xl flex-1 px-4 py-8">
         {children}
       </main>

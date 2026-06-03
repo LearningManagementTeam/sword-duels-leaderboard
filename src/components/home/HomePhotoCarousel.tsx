@@ -5,6 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 const ROTATE_MS = 5000;
 const SLIDE_MS = 600;
 
+/** Fixed 16:9 frame — every slide fills the same box (object-cover). */
+const FRAME_CLASS =
+  "relative mx-auto aspect-video w-full max-w-lg overflow-hidden";
+
 interface Props {
   slides: string[];
   label?: string;
@@ -65,7 +69,7 @@ export function HomePhotoCarousel({
 
   return (
     <section
-      className="sd-neon-panel mx-auto w-full max-w-[18rem] overflow-hidden p-2.5 sm:max-w-sm sm:p-3 md:max-w-md"
+      className="mx-auto w-full max-w-lg"
       aria-roledescription="carousel"
       aria-label={label}
       onMouseEnter={() => setPaused(true)}
@@ -73,9 +77,9 @@ export function HomePhotoCarousel({
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <div className="sd-inset relative aspect-[16/9] max-h-[10.5rem] overflow-hidden rounded-xl bg-sd-deep sm:max-h-[12rem] md:max-h-[13.5rem]">
+      <div className={FRAME_CLASS}>
         <div
-          className="flex h-full"
+          className="flex h-full w-full"
           style={{
             width: `${trackSlides.length * 100}%`,
             transform: `translateX(-${(pos * 100) / trackSlides.length}%)`,
@@ -92,25 +96,20 @@ export function HomePhotoCarousel({
               style={{ width: `${100 / trackSlides.length}%` }}
               aria-hidden={i !== pos}
             >
-              {/* Native img: Supabase URLs + cache-bust query must not go through next/image */}
               <img
                 src={src}
                 alt={`Featured photo ${(i % slides.length) + 1} of ${slides.length}`}
-                className="h-full w-full object-cover"
+                className="block h-full w-full object-cover object-center"
                 loading={i === 0 ? "eager" : "lazy"}
                 decoding="async"
               />
             </div>
           ))}
         </div>
-        <div
-          className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-sd-deep/40 via-transparent to-transparent"
-          aria-hidden
-        />
       </div>
 
       {loop && (
-        <div className="mt-2 flex items-center justify-center gap-2">
+        <div className="mt-3 flex items-center justify-center gap-2">
           {slides.map((_, i) => (
             <button
               key={i}
@@ -118,10 +117,10 @@ export function HomePhotoCarousel({
               aria-label={`Show photo ${i + 1} of ${slides.length}`}
               aria-current={i === dotIndex ? "true" : undefined}
               onClick={() => goTo(i)}
-              className={`h-2 rounded-full transition-all ${
+              className={`h-1.5 rounded-full transition-all ${
                 i === dotIndex
-                  ? "w-6 bg-gradient-to-r from-sd-lime to-emerald-400"
-                  : "w-2 bg-emerald-900/80 hover:bg-emerald-600/60"
+                  ? "w-5 bg-emerald-400"
+                  : "w-1.5 bg-emerald-800/70 hover:bg-emerald-600/80"
               }`}
             />
           ))}

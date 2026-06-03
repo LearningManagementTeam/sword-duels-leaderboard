@@ -9,6 +9,8 @@ import {
 import { brandingAssetUrl } from "@/lib/branding-storage";
 import { createServiceClient } from "@/lib/supabase/server";
 
+import { checkCarouselUploadFile } from "@/lib/branding-upload-validation";
+
 export const CAROUSEL_MAX_BYTES = CAROUSEL_UPLOAD_SPECS.maxBytes;
 
 const CAROUSEL_MIME: Record<string, string> = {
@@ -111,14 +113,9 @@ export async function uploadCarouselSlideFile(
   slot: CarouselSlot,
   file: File
 ): Promise<CarouselMutationResult> {
-  if (file.size === 0) {
-    throw new Error("Choose an image file to upload.");
-  }
-  if (file.size > CAROUSEL_MAX_BYTES) {
-    const mb = (file.size / (1024 * 1024)).toFixed(1);
-    throw new Error(
-      `Photo is ${mb} MB — must be ${CAROUSEL_UPLOAD_SPECS.maxSizeLabel} or smaller. Try compressing the image.`
-    );
+  const check = checkCarouselUploadFile(file);
+  if (!check.ok) {
+    throw new Error(check.message);
   }
 
   const ext = carouselFileExtension(file);

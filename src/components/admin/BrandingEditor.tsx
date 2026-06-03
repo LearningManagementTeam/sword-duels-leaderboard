@@ -14,10 +14,15 @@ import {
   CAROUSEL_UPLOAD_SPECS,
   getActiveCarouselSlides,
   type BrandingConfig,
+  type CarouselSlides,
 } from "@/lib/branding";
-
 import type { CarouselMutationResult } from "@/lib/branding-carousel";
-import type { CarouselSlides } from "@/lib/branding";
+import {
+  checkCarouselUploadFile,
+  checkLogoUploadFile,
+  LOGO_UPLOAD_SPECS,
+  type BrandingFileCheck,
+} from "@/lib/branding-upload-validation";
 
 interface Props {
   initial: BrandingConfig;
@@ -36,10 +41,6 @@ function applyCarouselSlides(
   slides: CarouselSlides
 ): BrandingConfig {
   return { ...branding, carousel_slides: slides };
-}
-
-function formatFileSize(bytes: number): string {
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 async function postCarouselUpload(
@@ -76,6 +77,22 @@ async function deleteCarouselSlot(slot: 1 | 2 | 3): Promise<CarouselMutationResu
 function formatUploadError(err: unknown): string {
   if (err instanceof Error) return err.message;
   return "Upload failed";
+}
+
+function FilePickNotice({ check }: { check: BrandingFileCheck | undefined }) {
+  if (!check) return null;
+  if (check.ok) {
+    return (
+      <p role="status" className="text-xs text-emerald-200/90">
+        Ready: {check.fileName} ({check.sizeLabel})
+      </p>
+    );
+  }
+  return (
+    <p role="alert" className="rounded-lg bg-amber-950/40 px-2 py-1.5 text-xs text-amber-100">
+      {check.message}
+    </p>
+  );
 }
 
 function CarouselStatusBanner({ status }: { status: CarouselStatus }) {
@@ -116,6 +133,12 @@ export function BrandingEditor({ initial }: Props) {
   const [slotLoadErrors, setSlotLoadErrors] = useState<
     Partial<Record<1 | 2 | 3, boolean>>
   >({});
+  const [slotFileChecks, setSlotFileChecks] = useState<
+    Partial<Record<1 | 2 | 3, BrandingFileCheck>>
+  >({});
+  const [logoFileCheck, setLogoFileCheck] = useState<
+    BrandingFileCheck | undefined
+  >();
   const [message, setMessage] = useState("");
   const fileInputRefs = useRef<Record<1 | 2 | 3, HTMLInputElement | null>>({
     1: null,
@@ -127,18 +150,24 @@ export function BrandingEditor({ initial }: Props) {
   const activeSlides = getActiveCarouselSlides(branding);
   const specs = CAROUSEL_UPLOAD_SPECS;
 
-  function validateCarouselFile(file: File): string | null {
-    if (file.size === 0) return "Choose a photo file first.";
-    if (file.size > specs.maxBytes) {
-      return `Photo is ${formatFileSize(file.size)} — max is ${specs.maxSizeLabel}. Compress the image and try again.`;
+  function handleCarouselFileChange(slot: 1 | 2 | 3) {
+    const input = fileInputRefs.current[slot];
+    const file = input?.files?.[0];
+    const check = checkCarouselUploadFile(file);
+    setSlotFileChecks((prev) => ({ ...prev, [slot]: check }));
+
+    if (!check.ok) {
+      setCarouselStatus({
+        phase: "error",
+        slot,
+        message: check.message,
+      });
+      return;
     }
-    const okMime =
-      specs.accept.split(",").includes(file.type) ||
-      /\.(jpe?g|png|webp)$/i.test(file.name);
-    if (!okMime) {
-      return "Use JPG, PNG, or WebP (export iPhone photos as JPEG if needed).";
+
+    if (carouselStatus.phase === "error" && carouselStatus.slot === slot) {
+      setCarouselStatus({ phase: "idle", message: "" });
     }
-    return null;
   }
 
   async function handleCarouselUpload(slot: 1 | 2 | 3) {
@@ -146,12 +175,14 @@ export function BrandingEditor({ initial }: Props) {
 
     const input = fileInputRefs.current[slot];
     const file = input?.files?.[0];
-    const validationError = file ? validateCarouselFile(file) : "Choose a photo file first.";
-    if (validationError) {
+    const check = checkCarouselUploadFile(file);
+    setSlotFileChecks((prev) => ({ ...prev, [slot]: check }));
+
+    if (!check.ok) {
       setCarouselStatus({
         phase: "error",
         slot,
-        message: validationError,
+        message: check.message,
       });
       return;
     }
@@ -172,6 +203,11 @@ export function BrandingEditor({ initial }: Props) {
       const result = await postCarouselUpload(fd);
       setBranding((b) => applyCarouselSlides(b, result.carousel_slides));
       setSlotLoadErrors((prev) => ({ ...prev, [slot]: false }));
+      setSlotFileChecks((prev) => {
+        const next = { ...prev };
+        delete next[slot];
+        return next;
+      });
       if (input) input.value = "";
 
       setCarouselStatus({
@@ -222,9 +258,19 @@ export function BrandingEditor({ initial }: Props) {
   async function handleLogoUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (carouselLocked) return;
+
+    const form = e.currentTarget;
+    const file = form.elements.namedItem("file") as HTMLInputElement | null;
+    const check = checkLogoUploadFile(file?.files?.[0]);
+    setLogoFileCheck(check);
+
+    if (!check.ok) {
+      setMessage(check.message);
+      return;
+    }
+
     setLogoBusy(true);
     setMessage("");
-    const form = e.currentTarget;
     const fd = new FormData(form);
     try {
       const result = await uploadBrandingLogo(fd);
@@ -232,6 +278,7 @@ export function BrandingEditor({ initial }: Props) {
         setBranding((b) => ({ ...b, logo_url: result.logo_url }));
       }
       setMessage("Logo uploaded. Public site updated.");
+      setLogoFileCheck(undefined);
       form.reset();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Upload failed");
@@ -307,6 +354,9 @@ export function BrandingEditor({ initial }: Props) {
           {([1, 2, 3] as const).map((slot) => {
             const url = branding.carousel_slides[slot - 1];
             const isThisSlotBusy = carouselBusySlot === slot;
+            const fileCheck = slotFileChecks[slot];
+            const uploadBlocked =
+              carouselLocked || (fileCheck !== undefined && !fileCheck.ok);
             return (
               <div
                 key={slot}
@@ -372,15 +422,12 @@ export function BrandingEditor({ initial }: Props) {
                     accept={specs.accept}
                     disabled={carouselLocked}
                     className="block w-full text-xs text-sd-muted disabled:cursor-not-allowed disabled:opacity-50"
-                    onChange={() => {
-                      if (carouselStatus.phase === "error" && carouselStatus.slot === slot) {
-                        setCarouselStatus({ phase: "idle", message: "" });
-                      }
-                    }}
+                    onChange={() => handleCarouselFileChange(slot)}
                   />
+                  <FilePickNotice check={fileCheck} />
                   <button
                     type="button"
-                    disabled={carouselLocked}
+                    disabled={uploadBlocked}
                     aria-busy={isThisSlotBusy}
                     onClick={() => handleCarouselUpload(slot)}
                     className={`w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -438,18 +485,31 @@ export function BrandingEditor({ initial }: Props) {
       <form onSubmit={handleLogoUpload} className="sd-neon-panel space-y-3 p-6">
         <h2 className="font-semibold text-white">Upload logo</h2>
         <p className="text-sm text-sd-muted">
-          PNG, JPG, WebP, or SVG · max 2MB · hero splash + small header icon.
+          PNG, JPG, WebP, or SVG · max {LOGO_UPLOAD_SPECS.maxSizeLabel} · hero splash +
+          small header icon.
         </p>
         <input
           type="file"
           name="file"
-          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          accept={LOGO_UPLOAD_SPECS.accept}
           disabled={logoBusy || carouselLocked}
           className="block text-sm text-sd-muted disabled:opacity-50"
+          onChange={(e) => {
+            const check = checkLogoUploadFile(e.target.files?.[0]);
+            setLogoFileCheck(check);
+            if (!check.ok) {
+              setMessage(check.message);
+            } else {
+              setMessage("");
+            }
+          }}
         />
+        <FilePickNotice check={logoFileCheck} />
         <button
           type="submit"
-          disabled={logoBusy || carouselLocked}
+          disabled={
+            logoBusy || carouselLocked || (logoFileCheck !== undefined && !logoFileCheck.ok)
+          }
           className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
         >
           {logoBusy ? "Uploading…" : "Upload logo"}

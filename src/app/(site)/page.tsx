@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { HeroLogo } from "@/components/branding/HeroLogo";
 import { CompetitionMapPanel } from "@/components/competition/CompetitionMapPanel";
 import { HomeCarouselSection } from "@/components/home/HomeCarouselSection";
@@ -32,16 +31,6 @@ export default async function HomePage() {
       <HomeLastPublished />
 
       <ShareCard url={siteUrl} />
-
-      <p className="text-sm text-sd-muted/70">
-        Want to see sample data first?{" "}
-        <Link
-          href="/preview"
-          className="text-sd-glow underline hover:text-emerald-200"
-        >
-          Open preview leaderboards
-        </Link>
-      </p>
     </div>
   );
 }
