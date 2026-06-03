@@ -11,7 +11,11 @@ import {
   computeStandings,
 } from "@/lib/scoring";
 import type { Region, SeasonSlug } from "@/lib/scoring-config";
+import {
+  validateRoundPoints,
+} from "@/lib/scoring-config";
 import { SCORING_CONFIG, REGIONS } from "@/lib/scoring-config";
+import type { ManualAdvance } from "@/lib/manual-advances";
 import type { StandingRow } from "@/lib/types";
 import {
   createClient,
@@ -294,6 +298,24 @@ export async function saveRoundResults(
   const { email } = await requireAdmin();
   const service = await createServiceClient();
 
+  const { data: round, error: roundErr } = await service
+    .from("rounds")
+    .select("round_number, seasons(slug)")
+    .eq("id", roundId)
+    .single();
+  if (roundErr || !round) throw new Error("Round not found");
+
+  const seasonRaw = round.seasons as { slug: SeasonSlug } | { slug: SeasonSlug }[];
+  const seasonSlug = (Array.isArray(seasonRaw) ? seasonRaw[0] : seasonRaw).slug;
+
+  for (const r of results) {
+    const err = validateRoundPoints(seasonSlug, round.round_number, r.points);
+    if (err) throw new Error(err);
+    if (r.wins < 0 || r.losses < 0) {
+      throw new Error("Wins and losses cannot be negative.");
+    }
+  }
+
   const payload = results.map((r) => ({
     round_id: roundId,
     branch_id: r.branch_id,
@@ -344,6 +366,22 @@ export async function publishRound(roundId: string) {
   return { ok: true };
 }
 
+async function fetchManualAdvancesForSeason(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  seasonId: string
+): Promise<ManualAdvance[]> {
+  const { data, error } = await service
+    .from("manual_round_advances")
+    .select("round_number, region, branch_id")
+    .eq("season_id", seasonId);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({
+    round_number: row.round_number,
+    region: row.region as Region,
+    branch_id: row.branch_id,
+  }));
+}
+
 async function recomputeAndPublishStandings(
   service: Awaited<ReturnType<typeof createServiceClient>>,
   seasonSlug: SeasonSlug,
@@ -390,6 +428,8 @@ async function recomputeAndPublishStandings(
     .map((r) => r.round_number)
     .sort((a, b) => a - b);
 
+  const manualAdvances = await fetchManualAdvancesForSeason(service, seasonId);
+
   if (seasonSlug === "july_region" || seasonSlug === "june_area") {
     await service
       .from("published_standings")
@@ -401,7 +441,7 @@ async function recomputeAndPublishStandings(
         seasonSlug,
         branchList ?? [],
         agg,
-        { filterRegion: region, publishedRoundNumbers }
+        { filterRegion: region, publishedRoundNumbers, manualAdvances }
       );
       await upsertStandings(service, seasonId, standings, publishedAt, region);
     }
@@ -668,6 +708,11 @@ export async function previewDraftStandings(
       region: b.region as Region,
     })) ?? [];
 
+  const manualAdvances = await fetchManualAdvancesForSeason(
+    service,
+    round.season_id
+  );
+
   if (seasonSlug === "july_region" || seasonSlug === "june_area") {
     const byRegion: Partial<Record<Region, StandingRow[]>> = {};
     for (const region of REGIONS) {
@@ -675,6 +720,7 @@ export async function previewDraftStandings(
         computeStandings(seasonSlug, branchInputs, agg, {
           filterRegion: region,
           publishedRoundNumbers,
+          manualAdvances,
         })
       );
     }
@@ -689,4 +735,136 @@ export async function previewDraftStandings(
     computeStandings(seasonSlug, branchInputs, agg, { publishedRoundNumbers })
   );
   return { seasonSlug, rows };
+}
+
+export async function saveManualAdvances(
+  roundId: string,
+  region: Region,
+  branchIds: string[]
+) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+
+  const { data: round, error: roundErr } = await service
+    .from("rounds")
+    .select("id, season_id, round_number, status, seasons(slug)")
+    .eq("id", roundId)
+    .single();
+  if (roundErr || !round) throw new Error("Round not found");
+  if (round.status !== "published") {
+    throw new Error("Publish this round before managing advancement picks.");
+  }
+
+  const seasonRaw = round.seasons as { slug: SeasonSlug } | { slug: SeasonSlug }[];
+  const seasonSlug = (Array.isArray(seasonRaw) ? seasonRaw[0] : seasonRaw).slug;
+  if (seasonSlug !== "june_area" && seasonSlug !== "july_region") {
+    throw new Error("Manual advancement picks are only for June and July.");
+  }
+
+  const participantIds = await getParticipantBranchIds(
+    service,
+    round.season_id,
+    seasonSlug
+  );
+  let branchQuery = service
+    .from("branches")
+    .select("id, branch_code, branch_name, area, region");
+  if (participantIds.length > 0) {
+    branchQuery = branchQuery.in("id", participantIds);
+  }
+  const { data: branchList } = await branchQuery;
+
+  const { data: publishedRounds } = await service
+    .from("rounds")
+    .select("id, round_number")
+    .eq("season_id", round.season_id)
+    .eq("status", "published");
+
+  const publishedRoundNumbers = (publishedRounds ?? [])
+    .map((r) => r.round_number)
+    .filter((n) => n <= round.round_number)
+    .sort((a, b) => a - b);
+
+  const roundIds = (publishedRounds ?? [])
+    .filter((r) => r.round_number <= round.round_number)
+    .map((r) => r.id);
+
+  const { data: results } = await service
+    .from("round_results")
+    .select("branch_id, points, wins, losses, rounds(round_number)")
+    .in("round_id", roundIds.length ? roundIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  const mapped = (results ?? []).map((r) => ({
+    branch_id: r.branch_id,
+    points: Number(r.points),
+    wins: r.wins,
+    losses: r.losses,
+    round_number: (Array.isArray(r.rounds) ? r.rounds[0] : r.rounds).round_number,
+  }));
+
+  const agg = aggregatePublishedResults(mapped);
+  const branchInputs =
+    branchList?.map((b) => ({
+      id: b.id,
+      branch_code: b.branch_code,
+      branch_name: b.branch_name,
+      area: b.area,
+      region: b.region as Region,
+    })) ?? [];
+
+  const autoOnly = computeStandings(seasonSlug, branchInputs, agg, {
+    filterRegion: region,
+    publishedRoundNumbers,
+    manualAdvances: [],
+  });
+
+  const eligibleToPick = new Set(
+    autoOnly
+      .filter((r) => r.eliminated_in_round === round.round_number)
+      .map((r) => r.branch_id)
+  );
+
+  for (const branchId of branchIds) {
+    const branch = branchInputs.find((b) => b.id === branchId);
+    if (!branch || branch.region !== region) {
+      throw new Error("Invalid branch for this region.");
+    }
+    if (!eligibleToPick.has(branchId)) {
+      throw new Error(
+        `${branch.branch_name} was not eliminated at the automatic cut for this round.`
+      );
+    }
+  }
+
+  await service
+    .from("manual_round_advances")
+    .delete()
+    .eq("season_id", round.season_id)
+    .eq("round_number", round.round_number)
+    .eq("region", region);
+
+  if (branchIds.length > 0) {
+    const { error: insertErr } = await service.from("manual_round_advances").insert(
+      branchIds.map((branch_id) => ({
+        season_id: round.season_id,
+        round_number: round.round_number,
+        region,
+        branch_id,
+        created_by_email: email,
+      }))
+    );
+    if (insertErr) throw new Error(insertErr.message);
+  }
+
+  await recomputeAndPublishStandings(service, seasonSlug, round.season_id);
+
+  await logAudit(email, "save_manual_advances", "round", roundId, {
+    region,
+    count: branchIds.length,
+    roundNumber: round.round_number,
+  });
+
+  revalidatePath("/", "layout");
+  revalidatePath("/admin");
+  return { ok: true };
 }

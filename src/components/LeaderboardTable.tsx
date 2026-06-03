@@ -241,6 +241,7 @@ export function LeaderboardTable({
                         status={row.status}
                         eliminatedInRound={row.eliminated_in_round}
                         advancingToRound={row.advancing_to_round}
+                        manuallyAdvancedAfterRound={row.manually_advanced_after_round}
                       />
                     </td>
                   </tr>

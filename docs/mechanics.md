@@ -23,6 +23,15 @@ Each round uses **that round’s score only** (not cumulative). Within each regi
 
 Eliminated branches do **not** compete in later rounds. The public board shows **—** for rounds they did not play.
 
+## Round formats (score entry limits)
+
+| Season | Round | Format | Max points |
+|--------|-------|--------|------------|
+| June | Round 1 | Quiz game | **10** |
+| July | Round 1 | Quiz game (same style, harder/longer) | **15** |
+
+Admins cannot enter above these caps. Rounds 2–3 limits will be added when formats are confirmed.
+
 ## July — per-round regional elimination
 
 Starting pool: **8 per region** (24 total from June).
@@ -43,11 +52,26 @@ Three regional champions compete in a single-day event. Scoring format to be con
 2. Higher **wins in that round**
 3. **Branch name** (A–Z)
 
+Only the top **N** per region advance automatically (see tables above). Ties at the cut line are broken by these rules; there are no shared slots.
+
+## Manual extra advancement (committee picks)
+
+When many branches score the maximum (e.g. several **10/10** on June Round 1) but only **32** advance per region automatically, the central team may **manually add** extra branches after publish:
+
+1. Publish the round as usual (automatic cut applies).
+2. Admin → **Rounds** → that round → **Manage advancement picks** (or **advancement picks** on the rounds list).
+3. Choose **Luzon**, **NCR**, or **VisMin**.
+4. Check branches under **Also advance** (sorted best score first; optional filter for max scores only).
+5. **Save** — public badges update and the next round’s score entry includes those branches.
+
+Picks are stored in `manual_round_advances` and re-applied whenever standings are recomputed (including re-publish). Unchecking removes a pick.
+
 ## Status labels
 
 | Status | Meaning |
 |--------|---------|
 | `active` | Still competing — advancing to next round |
+| `active` (committee pick) | Manually added after the automatic cut; badge shows “Advancing to R*n* (committee pick)” |
 | `advanced` | Survived June R3 (8 per region) |
 | `eliminated` | Out after a specific round (see badge: “Eliminated — R1”) |
 | `regional_finalist` | Won July R3 in their region |

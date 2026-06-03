@@ -88,3 +88,49 @@ export function usesPerRoundElimination(seasonSlug: SeasonSlug): boolean {
   const config = SCORING_CONFIG[seasonSlug];
   return "eliminationMode" in config && config.eliminationMode === "per_round_per_region";
 }
+
+export interface RoundMechanics {
+  label: string;
+  description: string;
+  maxPoints: number;
+}
+
+/** Per-round scoring rules for admin entry and validation. */
+const ROUND_MECHANICS: Partial<
+  Record<SeasonSlug, Partial<Record<number, RoundMechanics>>>
+> = {
+  june_area: {
+    1: {
+      label: "Round 1 — Quiz game",
+      description: "10-point quiz — enter 0–10 per branch",
+      maxPoints: 10,
+    },
+  },
+  july_region: {
+    1: {
+      label: "Round 1 — Quiz game",
+      description: "15-point quiz — enter 0–15 per branch",
+      maxPoints: 15,
+    },
+  },
+};
+
+export function getRoundMechanics(
+  seasonSlug: SeasonSlug,
+  roundNumber: number
+): RoundMechanics | null {
+  return ROUND_MECHANICS[seasonSlug]?.[roundNumber] ?? null;
+}
+
+export function validateRoundPoints(
+  seasonSlug: SeasonSlug,
+  roundNumber: number,
+  points: number
+): string | null {
+  if (points < 0) return "Points cannot be negative.";
+  const mechanics = getRoundMechanics(seasonSlug, roundNumber);
+  if (mechanics && points > mechanics.maxPoints) {
+    return `Points cannot exceed ${mechanics.maxPoints} for this round (${mechanics.label}).`;
+  }
+  return null;
+}

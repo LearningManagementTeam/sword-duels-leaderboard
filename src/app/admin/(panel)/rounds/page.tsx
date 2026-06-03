@@ -6,7 +6,7 @@ type RoundRow = {
   id: string;
   name: string;
   status: string;
-  seasons: { name: string } | { name: string }[] | null;
+  seasons: { name: string; slug?: string } | { name: string; slug?: string }[] | null;
 };
 
 export default async function AdminRoundsPage() {
@@ -37,17 +37,26 @@ export default async function AdminRoundsPage() {
           <h2 className="mb-2 font-semibold text-amber-300">{seasonName}</h2>
           <ul className="space-y-1">
             {seasonRounds.map((r) => (
-                <li key={r.id}>
-                  <Link
-                    href={`/admin/rounds/${r.id}`}
-                    className="text-slate-200 hover:text-amber-300"
-                  >
-                    {r.name}
-                  </Link>{" "}
-                  <span className="text-xs text-slate-500">({r.status})</span>
-                </li>
-              )
-            )}
+              <li key={r.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <Link
+                  href={`/admin/rounds/${r.id}`}
+                  className="text-slate-200 hover:text-amber-300"
+                >
+                  {r.name}
+                </Link>{" "}
+                <span className="text-xs text-slate-500">({r.status})</span>
+                {r.status === "published" &&
+                  (seasonName.includes("June") ||
+                    seasonName.includes("July")) && (
+                    <Link
+                      href={`/admin/rounds/${r.id}/advances`}
+                      className="text-xs text-amber-400/80 hover:text-amber-300"
+                    >
+                      · advancement picks
+                    </Link>
+                  )}
+              </li>
+            ))}
           </ul>
         </section>
       ))}

@@ -34,11 +34,25 @@ Each round is one week. **That round’s score only** decides who advances (not 
 
 1. Open **Admin** → **Rounds** → correct round (e.g. June — Round 2).
 2. Enter **Points** for **survivors only** (eliminated branches are hidden; see read-only list if needed).
-3. **Save draft** while checking → public site unchanged.
+3. **Round 1 quiz caps:** June R1 = **0–10** points · July R1 = **0–15** points (same quiz style).
+4. **Save draft** while checking → public site unchanged.
 4. Optional: **Preview standings (draft)**.
 5. **Save & publish** when correct.
 6. Public site → pick **June or July** → pick **region** (Luzon / NCR / VisMin).
 7. Confirm badges: **Advancing to R2** / **Eliminated — R1**, and **—** for rounds not played.
+
+### Many ties at 10/10 (or max score)?
+
+After you **publish** a round, if more branches deserve to advance than the automatic cut (e.g. 35 branches scored **10/10** in Luzon but only **32** advance):
+
+1. **Admin** → **Rounds** → that round → **Manage advancement picks** (link also on the rounds list after publish).
+2. Open the **region** tab (Luzon / NCR / VisMin).
+3. Review **Auto-advanced** (read-only) and check extra branches under **Also advance to Round 2** (or next round).
+4. Use **Show only max score** to focus on perfect scores.
+5. **Save picks for [region]** — repeat for other regions if needed.
+6. Check the public regional board: extras show **Advancing to R*n* (committee pick)** and appear in the next round’s score form.
+
+You do **not** need to change the global 32/16/8 caps or enter fake point values.
 
 ## Do not
 
@@ -83,4 +97,7 @@ Open e.g. `https://YOUR-SITE/tv?phase=june&region=luzon` (switch region tabs on 
 
 ## Database note (one-time)
 
-If upgrading an existing Supabase project, run `supabase/migrations/004_round_elimination.sql` in SQL Editor.
+If upgrading an existing Supabase project, run in SQL Editor:
+
+- `supabase/migrations/004_round_elimination.sql`
+- `supabase/migrations/005_manual_round_advances.sql` (committee extra advancement picks)

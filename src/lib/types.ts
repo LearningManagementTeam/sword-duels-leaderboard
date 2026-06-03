@@ -63,6 +63,7 @@ export interface StandingRow {
   last_active_round?: number | null;
   advancing_to_round?: number | null;
   latest_published_round?: number;
+  manually_advanced_after_round?: number | null;
 }
 
 export interface AuditEntry {

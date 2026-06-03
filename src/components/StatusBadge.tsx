@@ -13,12 +13,16 @@ export function statusLabel(
   context?: {
     eliminatedInRound?: number | null;
     advancingToRound?: number | null;
+    manuallyAdvancedAfterRound?: number | null;
   }
 ): string {
   if (status === "eliminated" && context?.eliminatedInRound) {
     return `Eliminated — R${context.eliminatedInRound}`;
   }
   if (status === "active" && context?.advancingToRound) {
+    if (context.manuallyAdvancedAfterRound) {
+      return `Advancing to R${context.advancingToRound} (committee pick)`;
+    }
     return `Advancing to R${context.advancingToRound}`;
   }
   const labels: Record<BranchStatus, string> = {
@@ -35,18 +39,24 @@ interface Props {
   status: BranchStatus;
   eliminatedInRound?: number | null;
   advancingToRound?: number | null;
+  manuallyAdvancedAfterRound?: number | null;
 }
 
 export function StatusBadge({
   status,
   eliminatedInRound,
   advancingToRound,
+  manuallyAdvancedAfterRound,
 }: Props) {
   return (
     <span
       className={`inline-flex rounded-full px-2 py-0.5 text-xs ${styles[status]}`}
     >
-      {statusLabel(status, { eliminatedInRound, advancingToRound })}
+      {statusLabel(status, {
+        eliminatedInRound,
+        advancingToRound,
+        manuallyAdvancedAfterRound,
+      })}
     </span>
   );
 }

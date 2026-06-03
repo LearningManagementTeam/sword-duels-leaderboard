@@ -1,6 +1,10 @@
 import type { BranchStatus, StandingRow } from "./types";
 import type { Region, SeasonSlug } from "./scoring-config";
 import { REGIONS, SCORING_CONFIG, usesPerRoundElimination } from "./scoring-config";
+import {
+  manualAdvancesForRound,
+  type ManualAdvance,
+} from "./manual-advances";
 
 export interface BranchInput {
   id: string;
@@ -21,11 +25,14 @@ export interface ComputeStandingsOptions {
   filterRegion?: Region;
   /** Round numbers treated as published (trigger elimination). Defaults to all rounds present in results. */
   publishedRoundNumbers?: number[];
+  /** Admin picks: extra branches that survive after a round's automatic cut. */
+  manualAdvances?: ManualAdvance[];
 }
 
 interface BranchEliminationState {
   branch: BranchInput;
   eliminatedInRound: number | null;
+  manuallyAdvancedAfterRound: number | null;
   roundScores: Map<number, RoundPoints>;
 }
 
@@ -78,11 +85,14 @@ function computePerRoundEliminationStandings(
     options?.publishedRoundNumbers?.slice().sort((a, b) => a - b) ??
     inferPublishedRounds(pool, resultsByBranch);
 
+  const manualAdvances = options?.manualAdvances ?? [];
+
   const state = new Map<string, BranchEliminationState>();
   for (const branch of pool) {
     state.set(branch.id, {
       branch,
       eliminatedInRound: null,
+      manuallyAdvancedAfterRound: null,
       roundScores: new Map(),
     });
   }
@@ -142,6 +152,18 @@ function computePerRoundEliminationStandings(
           alive.delete(entry.branch.id);
         }
       });
+
+      const manual = manualAdvancesForRound(manualAdvances, roundNum, region);
+      for (const branchId of manual) {
+        const branch = pool.find((b) => b.id === branchId && b.region === region);
+        if (!branch) continue;
+        const s = state.get(branchId)!;
+        if (s.eliminatedInRound === roundNum) {
+          s.eliminatedInRound = null;
+          s.manuallyAdvancedAfterRound = roundNum;
+          alive.add(branchId);
+        }
+      }
     }
   }
 
@@ -211,6 +233,7 @@ function computePerRoundEliminationStandings(
       last_active_round: lastActiveRound,
       advancing_to_round,
       latest_published_round: latestPublishedRound,
+      manually_advanced_after_round: s.manuallyAdvancedAfterRound,
     };
   });
 
@@ -319,7 +342,8 @@ export function getEligibleBranchIdsForRound(
   branches: BranchInput[],
   resultsByBranch: Map<string, RoundPoints[]>,
   targetRound: number,
-  publishedRoundNumbers: number[]
+  publishedRoundNumbers: number[],
+  manualAdvances: ManualAdvance[] = []
 ): Set<string> {
   if (targetRound <= 1) return new Set(branches.map((b) => b.id));
 
@@ -330,6 +354,7 @@ export function getEligibleBranchIdsForRound(
   const priorPublished = publishedRoundNumbers.filter((r) => r < targetRound);
   const standings = computeStandings(seasonSlug, branches, resultsByBranch, {
     publishedRoundNumbers: priorPublished,
+    manualAdvances,
   });
 
   return new Set(

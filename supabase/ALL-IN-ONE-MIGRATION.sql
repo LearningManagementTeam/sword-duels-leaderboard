@@ -83,6 +83,16 @@ CREATE TABLE published_standings (
   UNIQUE (season_id, branch_id, region_filter)
 );
 
+CREATE TABLE manual_round_advances (
+  season_id UUID NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+  round_number INT NOT NULL CHECK (round_number >= 1 AND round_number <= 10),
+  region region_type NOT NULL,
+  branch_id UUID NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by_email TEXT,
+  PRIMARY KEY (season_id, round_number, region, branch_id)
+);
+
 CREATE TABLE phase_locks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   season_id UUID NOT NULL REFERENCES seasons(id) ON DELETE CASCADE UNIQUE,
@@ -111,6 +121,8 @@ CREATE INDEX idx_branches_region ON branches(region);
 CREATE INDEX idx_round_results_round ON round_results(round_id);
 CREATE INDEX idx_round_results_branch ON round_results(branch_id);
 CREATE INDEX idx_published_standings_season ON published_standings(season_id);
+CREATE INDEX idx_manual_round_advances_season_round
+  ON manual_round_advances(season_id, round_number);
 CREATE INDEX idx_audit_log_created ON audit_log(created_at DESC);
 
 INSERT INTO seasons (slug, name, advancement_count, sort_order) VALUES
@@ -139,6 +151,7 @@ ALTER TABLE rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE round_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE season_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE published_standings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE manual_round_advances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE phase_locks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
@@ -176,6 +189,10 @@ CREATE POLICY round_results_admin ON round_results FOR ALL
 
 CREATE POLICY published_standings_select ON published_standings FOR SELECT USING (true);
 CREATE POLICY published_standings_admin ON published_standings FOR ALL
+  USING (is_admin()) WITH CHECK (is_admin());
+
+CREATE POLICY manual_round_advances_select ON manual_round_advances FOR SELECT USING (true);
+CREATE POLICY manual_round_advances_admin ON manual_round_advances FOR ALL
   USING (is_admin()) WITH CHECK (is_admin());
 
 CREATE POLICY season_participants_select ON season_participants FOR SELECT USING (true);

@@ -1,32 +1,47 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import { saveRoundResults, publishRound } from "@/lib/actions/admin";
 import { DraftStandingsPreview } from "@/components/admin/DraftStandingsPreview";
+import { getRoundMechanics } from "@/lib/scoring-config";
 import type { Branch } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
 
 interface Props {
   roundId: string;
   roundName: string;
+  roundNumber: number;
   status: string;
   seasonSlug: SeasonSlug;
   branches: Branch[];
   eliminatedBranches?: Branch[];
   priorRoundNumber?: number | null;
+  supportsManualAdvances?: boolean;
   initial: Map<string, { points: number; wins: number; losses: number }>;
 }
 
 export function RoundResultsForm({
   roundId,
   roundName,
+  roundNumber,
   status,
   seasonSlug,
   branches,
   eliminatedBranches = [],
   priorRoundNumber,
+  supportsManualAdvances = false,
   initial,
 }: Props) {
+  const mechanics = getRoundMechanics(seasonSlug, roundNumber);
+  const pointsMax = mechanics?.maxPoints;
+  const pointsStep = pointsMax != null ? 1 : 0.01;
+
+  const clampPoints = (value: number) => {
+    let n = Math.max(0, value);
+    if (pointsMax != null) n = Math.min(pointsMax, n);
+    return n;
+  };
   const [showEliminated, setShowEliminated] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -112,6 +127,31 @@ export function RoundResultsForm({
         </span>
       </div>
 
+      {supportsManualAdvances && (
+        <p className="text-sm">
+          <Link
+            href={`/admin/rounds/${roundId}/advances`}
+            className="text-amber-300 underline hover:text-amber-200"
+          >
+            Manage advancement picks
+          </Link>
+          <span className="text-slate-500">
+            {" "}
+            — add extra branches after the automatic cut (e.g. tied perfect scores)
+          </span>
+        </p>
+      )}
+
+      {mechanics && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <p className="font-medium text-amber-200">{mechanics.label}</p>
+          <p className="mt-1 text-amber-100/90">{mechanics.description}</p>
+          <p className="mt-1 text-xs text-amber-200/70">
+            Ties: higher points → more wins → branch name (A–Z)
+          </p>
+        </div>
+      )}
+
       {eliminatedBranches.length > 0 && priorRoundNumber && (
         <div className="rounded-lg border border-slate-700 bg-slate-900/40">
           <button
@@ -140,7 +180,9 @@ export function RoundResultsForm({
           <thead className="sticky top-0 bg-slate-800">
             <tr>
               <th className="px-2 py-2 text-left">Branch</th>
-              <th className="px-2 py-2 text-right">Points</th>
+              <th className="px-2 py-2 text-right">
+                Points{pointsMax != null ? ` (0–${pointsMax})` : ""}
+              </th>
               <th className="px-2 py-2 text-right">Wins</th>
               <th className="px-2 py-2 text-right">Losses</th>
             </tr>
@@ -153,11 +195,15 @@ export function RoundResultsForm({
                   <input
                     type="number"
                     min={0}
-                    step={0.01}
+                    max={pointsMax}
+                    step={pointsStep}
                     value={row.points}
                     onChange={(e) => {
                       const next = [...values];
-                      next[i] = { ...next[i], points: Number(e.target.value) };
+                      next[i] = {
+                        ...next[i],
+                        points: clampPoints(Number(e.target.value)),
+                      };
                       setValues(next);
                     }}
                     className="w-24 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-right"

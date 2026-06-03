@@ -15,11 +15,13 @@ export default async function AdminRoundPage({
     <RoundResultsForm
       roundId={data.round.id}
       roundName={data.round.name}
+      roundNumber={data.round.round_number}
       status={data.round.status}
       seasonSlug={data.seasonSlug}
       branches={data.branches}
       eliminatedBranches={data.eliminatedBranches}
       priorRoundNumber={data.priorRoundNumber}
+      supportsManualAdvances={data.supportsManualAdvances}
       initial={data.resultMap}
     />
   );
