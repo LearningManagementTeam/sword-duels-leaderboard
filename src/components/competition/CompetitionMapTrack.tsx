@@ -10,20 +10,17 @@ import {
   type CompetitionMilestoneId,
   type CompetitionMilestoneMeta,
 } from "@/lib/competition-map";
+import { PHASE_DISPLAY, type PhaseSlug } from "@/lib/season-labels";
 
 interface Props {
   activeMilestoneId: CompetitionMilestoneId;
 }
 
-const PHASE_ZONES: {
-  id: CompetitionMapPhaseTab;
-  label: string;
-  subtitle: string;
-}[] = [
-  { id: "june", label: "June", subtitle: "Area-wide" },
-  { id: "july", label: "July", subtitle: "Regional" },
-  { id: "august", label: "August", subtitle: "Finals" },
-];
+const PHASE_ZONES = (["june", "july", "august"] as const).map((id) => ({
+  id,
+  label: PHASE_DISPLAY[id].label,
+  subtitle: PHASE_DISPLAY[id].subtitle,
+}));
 
 function nodeState(
   milestoneId: CompetitionMilestoneId,
@@ -39,72 +36,82 @@ function nodeState(
 function MilestoneNode({
   milestone,
   activeMilestoneId,
-  compact = false,
+  showLabel = true,
 }: {
   milestone: CompetitionMilestoneMeta;
   activeMilestoneId: CompetitionMilestoneId;
-  compact?: boolean;
+  showLabel?: boolean;
 }) {
   const state = nodeState(milestone.id, activeMilestoneId);
   const title = milestone.label.split(" — ").pop() ?? milestone.shortLabel;
 
   const shell =
     state === "active"
-      ? "animate-glow-pulse bg-gradient-to-br from-sd-lime via-emerald-400 to-emerald-500 text-sd-deep ring-2 ring-fuchsia-400/50 shadow-[0_0_24px_rgb(163_230_53/0.45)]"
+      ? "animate-glow-pulse bg-gradient-to-br from-sd-lime via-emerald-400 to-emerald-500 text-sd-deep ring-2 ring-fuchsia-400/50 shadow-[0_0_20px_rgb(163_230_53/0.4)]"
       : state === "cleared"
-        ? "bg-emerald-600/70 text-white ring-2 ring-emerald-400/40 shadow-[0_0_12px_rgb(74_222_128/0.25)]"
-        : "sd-glass text-sd-muted/60 ring-1 ring-emerald-900/50";
-
-  const size = compact ? "h-8 w-8 text-[9px]" : "h-10 w-10 text-[10px]";
+        ? "bg-emerald-600/80 text-white ring-2 ring-emerald-400/35"
+        : "sd-glass text-sd-muted/70 ring-1 ring-emerald-900/40";
 
   return (
-    <div
-      className="flex min-w-0 flex-col items-center gap-1.5 text-center"
-      title={milestone.label}
-    >
+    <div className="flex min-w-0 items-start gap-3">
       <div
-        className={`flex shrink-0 items-center justify-center rounded-full font-bold transition ${size} ${shell}`}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${shell}`}
         aria-current={state === "active" ? "step" : undefined}
+        title={milestone.label}
       >
         {state === "cleared" ? "✓" : milestone.shortLabel}
       </div>
-      <span
-        className={`max-w-[4.5rem] text-[9px] leading-tight sm:max-w-[5.5rem] sm:text-[10px] ${
-          state === "active"
-            ? "font-semibold text-sd-glow"
-            : state === "cleared"
-              ? "text-emerald-200/80"
-              : "text-sd-muted/50"
-        }`}
-      >
-        {title}
-      </span>
+      {showLabel && (
+        <div className="min-w-0 flex-1 pt-1.5">
+          <p
+            className={`text-sm leading-snug ${
+              state === "active"
+                ? "font-semibold text-white"
+                : state === "cleared"
+                  ? "font-medium text-emerald-100/90"
+                  : "text-sd-muted/75"
+            }`}
+          >
+            {title}
+          </p>
+          <p className="mt-0.5 text-[11px] text-sd-muted/65">{milestone.shortLabel}</p>
+        </div>
+      )}
     </div>
   );
 }
 
-function Connector({
-  fromId,
+function VerticalMilestoneList({
+  milestones,
   activeMilestoneId,
 }: {
-  fromId: CompetitionMilestoneId;
+  milestones: CompetitionMilestoneMeta[];
   activeMilestoneId: CompetitionMilestoneId;
 }) {
-  const cleared = milestoneIndex(fromId) < milestoneIndex(activeMilestoneId);
-
   return (
-    <div
-      className={`relative h-0.5 w-full shrink-0 rounded-full ${
-        cleared
-          ? "bg-gradient-to-r from-emerald-500/70 to-emerald-400/40"
-          : "bg-emerald-950/80"
-      }`}
-      aria-hidden
-    >
-      {cleared && (
-        <div className="absolute inset-0 rounded-full bg-emerald-400/30 blur-[2px]" />
-      )}
-    </div>
+    <ol className="space-y-0">
+      {milestones.map((m, i) => {
+        const state = nodeState(m.id, activeMilestoneId);
+        const isLast = i === milestones.length - 1;
+        return (
+          <li key={m.id} className="relative flex gap-0">
+            {!isLast && (
+              <div
+                className={`absolute left-5 top-10 bottom-0 w-0.5 -translate-x-1/2 ${
+                  state === "cleared"
+                    ? "bg-gradient-to-b from-emerald-500/70 to-emerald-400/30"
+                    : "bg-emerald-950/70"
+                }`}
+                aria-hidden
+              />
+            )}
+            <div className="relative pb-5">
+              <MilestoneNode milestone={m} activeMilestoneId={activeMilestoneId} />
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -121,39 +128,29 @@ function PhaseQuestZone({
 }) {
   return (
     <div
-      className={`relative flex min-w-0 flex-1 flex-col rounded-xl p-3 sm:p-4 ${
-        isCurrentPhase ? "sd-glass-strong ring-1 ring-sd-glow/25" : "sd-glass"
+      className={`rounded-2xl p-4 sm:p-5 ${
+        isCurrentPhase
+          ? "sd-glass-strong ring-1 ring-sd-glow/20"
+          : "sd-glass opacity-90"
       }`}
     >
-      <div className="mb-3 flex items-baseline justify-between gap-2 border-b border-emerald-500/10 pb-2">
+      <div className="mb-4 flex items-start justify-between gap-2 border-b border-emerald-500/10 pb-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-sd-glow">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-sd-glow">
             {phase.label}
           </p>
-          <p className="text-[10px] text-sd-muted/70">{phase.subtitle}</p>
+          <p className="mt-0.5 text-xs text-sd-muted/75">{phase.subtitle}</p>
         </div>
         {isCurrentPhase && (
-          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-200">
-            Active
+          <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-200">
+            Now
           </span>
         )}
       </div>
-      <div className="flex items-start justify-center gap-0.5 sm:gap-1">
-        {milestones.map((m, i) => (
-          <div key={m.id} className="flex min-w-0 items-start">
-            <MilestoneNode
-              milestone={m}
-              activeMilestoneId={activeMilestoneId}
-              compact
-            />
-            {i < milestones.length - 1 && (
-              <div className="mt-4 w-2 shrink-0 sm:w-3">
-                <Connector fromId={m.id} activeMilestoneId={activeMilestoneId} />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      <VerticalMilestoneList
+        milestones={milestones}
+        activeMilestoneId={activeMilestoneId}
+      />
     </div>
   );
 }
@@ -164,33 +161,30 @@ export function CompetitionMapTrack({ activeMilestoneId }: Props) {
   const activeIdx = milestoneIndex(activeMilestoneId);
   const progressPct =
     COMPETITION_MILESTONES.length > 1
-      ? Math.min(
-          100,
-          (activeIdx / (COMPETITION_MILESTONES.length - 1)) * 100
-        )
+      ? Math.min(100, (activeIdx / (COMPETITION_MILESTONES.length - 1)) * 100)
       : 0;
 
   const currentPhase = milestonePhaseTab(activeMilestoneId);
   const mobileMilestones = milestonesForPhaseTab(phaseTab);
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
+    <div className="space-y-5">
+      <div className="space-y-2.5">
         <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.18em] text-sd-muted/70">
           <span>Season progress</span>
-          <span className="text-sd-glow">
+          <span className="tabular-nums text-sd-glow">
             {activeIdx + 1} / {COMPETITION_MILESTONES.length}
           </span>
         </div>
-        <div className="sd-neon-track">
+        <div className="sd-neon-track h-2">
           <div
-            className="sd-neon-track-fill"
+            className="sd-neon-track-fill h-full rounded-full"
             style={{ width: `${progressPct}%` }}
           />
         </div>
       </div>
 
-      <div className="hidden gap-3 sm:flex">
+      <div className="hidden gap-4 lg:grid lg:grid-cols-3">
         {PHASE_ZONES.map((phase) => (
           <PhaseQuestZone
             key={phase.id}
@@ -202,14 +196,14 @@ export function CompetitionMapTrack({ activeMilestoneId }: Props) {
         ))}
       </div>
 
-      <div className="sm:hidden space-y-3">
-        <div className="flex rounded-xl sd-inset p-1 gap-1">
+      <div className="space-y-4 lg:hidden">
+        <div className="flex rounded-2xl sd-inset p-1 gap-1">
           {PHASE_ZONES.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setPhaseTab(tab.id)}
-              className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+              className={`flex-1 rounded-xl px-1 py-2.5 text-xs font-semibold leading-tight transition sm:text-sm ${
                 phaseTab === tab.id
                   ? "bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep shadow-[0_0_16px_rgb(163_230_53/0.3)]"
                   : "text-sd-muted hover:text-white"
@@ -219,28 +213,14 @@ export function CompetitionMapTrack({ activeMilestoneId }: Props) {
             </button>
           ))}
         </div>
-        <div className="sd-glass-strong rounded-xl p-4">
-          <p className="mb-3 text-center text-[10px] uppercase tracking-[0.2em] text-sd-muted/70">
-            {PHASE_ZONES.find((p) => p.id === phaseTab)?.subtitle}
+        <div className="sd-glass-strong rounded-2xl p-4 sm:p-5">
+          <p className="mb-4 text-center text-xs text-sd-muted/75">
+            {PHASE_DISPLAY[phaseTab as PhaseSlug].subtitle}
           </p>
-          <div className="flex items-start justify-center gap-0.5">
-            {mobileMilestones.map((m, i) => (
-              <div key={m.id} className="flex min-w-0 items-start">
-                <MilestoneNode
-                  milestone={m}
-                  activeMilestoneId={activeMilestoneId}
-                />
-                {i < mobileMilestones.length - 1 && (
-                  <div className="mt-5 w-2 shrink-0">
-                    <Connector
-                      fromId={m.id}
-                      activeMilestoneId={activeMilestoneId}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          <VerticalMilestoneList
+            milestones={mobileMilestones}
+            activeMilestoneId={activeMilestoneId}
+          />
         </div>
       </div>
     </div>

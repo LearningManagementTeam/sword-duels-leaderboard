@@ -38,8 +38,8 @@ const previewLinks = [
   },
   {
     href: "/preview/august",
-    label: "August preview",
-    description: "Finals · 3 regional champions",
+    label: "The Nationals preview",
+    description: "One-day event · 3 rounds · 3 regional champions",
   },
   {
     href: "/preview/tv?phase=june",

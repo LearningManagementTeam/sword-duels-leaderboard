@@ -43,7 +43,7 @@ export const SCORING_CONFIG = {
   },
   august_finals: {
     slug: "august_finals" as const,
-    name: "August — Finals",
+    name: "The Nationals",
     roundCount: 3,
     advancementCount: 1,
     participantSource: "july_regional_champions" as const,

@@ -63,7 +63,7 @@ export function buildBoardContextHeadline(
       regionLabel: null,
       roundLine,
       mechanicsLine,
-      scopeLine: "National finals",
+      scopeLine: "The Nationals · one-day · 3 rounds",
     };
   }
 
@@ -102,7 +102,7 @@ export function buildHomeArenaHeadline(
 
   const scopeLine =
     seasonSlug === "august_finals"
-      ? "National finals"
+      ? "The Nationals · one-day · 3 rounds"
       : "Luzon · NCR · VisMin";
 
   const mechanicsLine =
@@ -133,7 +133,7 @@ export function resolveHomeStandingsCta(
   } else if (href.startsWith("/july")) {
     hint = "Pick Luzon, NCR, or VisMin on the board";
   } else if (href === "/august") {
-    hint = "August championship standings";
+    hint = "The Nationals · one-day championship";
   } else if (junePublishedRound > 0 && junePublishedRound < 3) {
     hint = `${juneRoundDisplayName(junePublishedRound as 1 | 2)} · choose your region on the board`;
   }

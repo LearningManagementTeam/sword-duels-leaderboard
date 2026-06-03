@@ -41,9 +41,9 @@ export default function PreviewHomePage() {
             </p>
           </Link>
           <Link href="/preview/august" className="sd-neon-panel block p-5 transition hover:shadow-lg hover:shadow-fuchsia-500/10">
-            <h3 className="font-semibold text-sd-glow">August preview</h3>
+            <h3 className="font-semibold text-sd-glow">The Nationals preview</h3>
             <p className="mt-1 text-sm text-sd-muted">
-              Finals · 3 regional champions
+              One-day event · 3 rounds · 3 regional champions
             </p>
           </Link>
         </div>

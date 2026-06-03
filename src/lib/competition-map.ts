@@ -111,8 +111,8 @@ export const COMPETITION_MILESTONES: CompetitionMilestoneMeta[] = [
   },
   {
     id: "july_to_august",
-    label: "July → August transition",
-    shortLabel: "→ Aug",
+    label: "July → Nationals transition",
+    shortLabel: "→ Nat.",
     group: "transition",
     seasonSlug: "july_region",
     round: null,
@@ -120,8 +120,8 @@ export const COMPETITION_MILESTONES: CompetitionMilestoneMeta[] = [
   },
   {
     id: "august_r1",
-    label: "August — Round 1",
-    shortLabel: "A·R1",
+    label: "The Nationals — Round 1",
+    shortLabel: "N·R1",
     group: "august",
     seasonSlug: "august_finals",
     round: 1,
@@ -129,8 +129,8 @@ export const COMPETITION_MILESTONES: CompetitionMilestoneMeta[] = [
   },
   {
     id: "august_r2",
-    label: "August — Round 2",
-    shortLabel: "A·R2",
+    label: "The Nationals — Round 2",
+    shortLabel: "N·R2",
     group: "august",
     seasonSlug: "august_finals",
     round: 2,
@@ -138,8 +138,8 @@ export const COMPETITION_MILESTONES: CompetitionMilestoneMeta[] = [
   },
   {
     id: "august_r3",
-    label: "August — Round 3",
-    shortLabel: "A·R3",
+    label: "The Nationals — Round 3",
+    shortLabel: "N·R3",
     group: "august",
     seasonSlug: "august_finals",
     round: 3,
@@ -166,6 +166,23 @@ export const DEFAULT_COMPETITION_MAP_CONFIG: CompetitionMapConfig = {
   publicCaption: "Competition is underway — June Round 1 across all regions.",
   showContestantList: true,
 };
+
+export function milestoneIdForSeasonRound(
+  seasonSlug: SeasonSlug,
+  roundNumber: number
+): CompetitionMilestoneId | null {
+  const r = Math.min(Math.max(roundNumber, 1), 3) as 1 | 2 | 3;
+  if (seasonSlug === "june_area") {
+    return ({ 1: "june_r1", 2: "june_r2", 3: "june_r3" } as const)[r];
+  }
+  if (seasonSlug === "july_region") {
+    return ({ 1: "july_r1", 2: "july_r2", 3: "july_r3" } as const)[r];
+  }
+  if (seasonSlug === "august_finals") {
+    return ({ 1: "august_r1", 2: "august_r2", 3: "august_r3" } as const)[r];
+  }
+  return null;
+}
 
 export function getMilestoneMeta(
   id: CompetitionMilestoneId
@@ -254,17 +271,22 @@ export function getMilestoneDataHint(meta: CompetitionMilestoneMeta): {
     };
   }
   if (meta.id === "complete") {
-    return { message: "Season complete — finals results are on the August board." };
+    return {
+      message: "Season complete — Nationals results are on the championship board.",
+    };
   }
   if (meta.group === "transition") {
     const next =
       meta.id === "june_to_july"
         ? "July regional phase"
-        : "August finals";
+        : "The Nationals";
     return {
       message: `Between phases — no single-round cohort. Publish ${next} standings when the phase begins.`,
       linkHref: meta.id === "june_to_july" ? "/july/luzon" : "/august",
-      linkLabel: meta.id === "june_to_july" ? "Open July standings" : "Open August finals",
+      linkLabel:
+        meta.id === "june_to_july"
+          ? "Open July standings"
+          : "Open Nationals board",
     };
   }
   const phase =
@@ -272,7 +294,7 @@ export function getMilestoneDataHint(meta: CompetitionMilestoneMeta): {
       ? "June"
       : meta.seasonSlug === "july_region"
         ? "July"
-        : "August";
+        : "The Nationals";
   const roundPart =
     meta.round != null ? ` Round ${meta.round}` : "";
   return {

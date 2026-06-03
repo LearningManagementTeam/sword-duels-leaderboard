@@ -27,7 +27,7 @@ const GROUP_LABELS: Record<string, string> = {
   june: "June",
   transition: "Transitions",
   july: "July",
-  august: "August",
+  august: "The Nationals",
   end: "End",
 };
 

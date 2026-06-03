@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { PHASE_DISPLAY, type PhaseSlug } from "@/lib/season-labels";
 import type { Region } from "@/lib/scoring-config";
 
-const phases = [
-  { slug: "june", label: "June", sub: "Area-wide" },
-  { slug: "july", label: "July", sub: "Regional" },
-  { slug: "august", label: "August", sub: "Finals" },
-] as const;
+const phases = (["june", "july", "august"] as const).map((slug) => ({
+  slug,
+  label: PHASE_DISPLAY[slug].label,
+  sub: PHASE_DISPLAY[slug].subtitle,
+}));
 
 export function PhaseNav({
   active,
@@ -13,7 +14,7 @@ export function PhaseNav({
   defaultRegion = "luzon",
   compact = false,
 }: {
-  active: "june" | "july" | "august";
+  active: PhaseSlug;
   basePath?: string;
   defaultRegion?: Region;
   compact?: boolean;

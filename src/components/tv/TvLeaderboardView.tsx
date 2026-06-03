@@ -6,6 +6,7 @@ import { HeroLogo } from "@/components/branding/HeroLogo";
 import { GamifiedLeaderboard } from "@/components/leaderboard/GamifiedLeaderboard";
 import type { BrandingConfig } from "@/lib/branding";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
+import { PHASE_DISPLAY } from "@/lib/season-labels";
 import type { StandingRow } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
 
@@ -56,7 +57,7 @@ export function TvLeaderboardView({
 
   const subtitle =
     phase === "august"
-      ? `August Finals${
+      ? `${PHASE_DISPLAY.august.label}${
           lastPublished
             ? ` · ${new Date(lastPublished).toLocaleString("en-PH", { timeStyle: "short", dateStyle: "short" })}`
             : ""

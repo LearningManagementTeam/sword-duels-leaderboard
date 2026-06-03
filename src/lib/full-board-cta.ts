@@ -2,6 +2,7 @@ import {
   getMilestoneMeta,
   type CompetitionMilestoneId,
 } from "@/lib/competition-map";
+import { PHASE_DISPLAY } from "@/lib/season-labels";
 import {
   juneRoundDisplayName,
   type Region,
@@ -39,8 +40,8 @@ export function resolveFullBoardCta(
   ) {
     return {
       href: "/august",
-      ctaLine: "Go to finals board",
-      subtitle: `${scopeLabel} · August championship`,
+      ctaLine: "Go to Nationals board",
+      subtitle: `${scopeLabel} · ${PHASE_DISPLAY.august.subtitle}`,
     };
   }
 

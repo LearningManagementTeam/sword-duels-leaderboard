@@ -57,14 +57,14 @@ export function ExportStandingsPanel() {
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-sd-muted/60">
-            August · finals
+            The Nationals
           </p>
           <div className="mt-2">
             <a
               href="/api/export/august"
               className="sd-btn-ghost inline-block rounded-lg px-3 py-1.5 text-sm"
             >
-              Download finals CSV
+              Download Nationals CSV
             </a>
           </div>
         </div>

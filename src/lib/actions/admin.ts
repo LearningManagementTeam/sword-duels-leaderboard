@@ -1029,7 +1029,7 @@ export async function suggestCompetitionMilestone(): Promise<{
     return {
       milestoneId: "july_to_august",
       publicCaption:
-        "You are here: July complete — August finals starting. Update caption when August R1 is published.",
+        "You are here: July complete — The Nationals starting. Update caption when Nationals Round 1 is published.",
     };
   }
 
@@ -1085,7 +1085,7 @@ export async function suggestCompetitionMilestone(): Promise<{
   const milestoneId = ids[r] ?? "august_r3";
   return {
     milestoneId,
-    publicCaption: `You are here: after August Round ${round} — finals standings on the August board.`,
+    publicCaption: `You are here: after Nationals Round ${round} — standings on The Nationals board.`,
   };
 }
 

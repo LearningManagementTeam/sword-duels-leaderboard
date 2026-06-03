@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sword Duels Leaderboard",
   description:
-    "Dynamic leaderboard for June Area-wide, July Regional, and August Finals",
+    "Dynamic leaderboard for June Area-wide, July Regional, and The Nationals",
 };
 
 export default function RootLayout({

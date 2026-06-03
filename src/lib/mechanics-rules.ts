@@ -1,3 +1,4 @@
+import { PHASE_DISPLAY } from "@/lib/season-labels";
 import {
   getRoundMechanics,
   getSurvivorCount,
@@ -33,10 +34,10 @@ export function getPhaseOverviewRows(branchCount = 0) {
       anchor: "july",
     },
     {
-      phase: "August",
-      season: "Finals",
+      phase: PHASE_DISPLAY.august.label,
+      season: "Nationals",
       participants: "3 regional champions",
-      rounds: "TBD",
+      rounds: "3 (one day)",
       advancement: "1 overall champion",
       anchor: "august",
     },

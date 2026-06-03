@@ -4,6 +4,7 @@ import {
   seasonSlugToPublicPath,
   type CompetitionMapConfig,
 } from "@/lib/competition-map";
+import { PHASE_DISPLAY } from "@/lib/season-labels";
 import { REGION_LABELS, type Region, type SeasonSlug } from "@/lib/scoring-config";
 
 export const DEFAULT_STANDINGS_REGION: Region = "luzon";
@@ -105,14 +106,14 @@ export function toPreviewPath(liveHref: string): string {
 export function standingsNavLabel(config: CompetitionMapConfig): string {
   const meta = getMilestoneMeta(config.milestoneId);
   if (meta.group === "august" || meta.group === "end") {
-    return "Finals";
+    return PHASE_DISPLAY.august.label;
   }
   const phase =
     meta.seasonSlug === "july_region"
-      ? "July"
+      ? PHASE_DISPLAY.july.label
       : meta.seasonSlug === "august_finals"
-        ? "August"
-        : "June";
+        ? PHASE_DISPLAY.august.label
+        : PHASE_DISPLAY.june.label;
   const regionLabel =
     config.regionHighlight === "all"
       ? ""

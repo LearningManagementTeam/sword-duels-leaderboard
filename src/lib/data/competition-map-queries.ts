@@ -1,10 +1,17 @@
 import {
   getMilestoneMeta,
+  milestoneIdForSeasonRound,
   regionBoardPath,
   type CompetitionMapConfig,
+  type CompetitionMilestoneId,
   type RegionHighlight,
 } from "@/lib/competition-map";
-import { getPublishedStandings, getSeasonBySlug } from "@/lib/data/queries";
+import {
+  getLatestPublishedRoundInfo,
+  getPublishedStandings,
+  getSeasonBySlug,
+} from "@/lib/data/queries";
+import { seasonPhaseLabel } from "@/lib/season-labels";
 import {
   REGIONS,
   REGION_LABELS,
@@ -30,6 +37,13 @@ export interface RemainingContestantsResult {
   totalCount: number;
   seasonSlug: SeasonSlug | null;
   configured: boolean;
+  /** Milestone pinned in Admin → Competition map */
+  mapMilestoneId: CompetitionMilestoneId;
+  /** Milestone used to load roster data (may follow latest publish) */
+  dataMilestoneId: CompetitionMilestoneId;
+  /** True when map chapter and live published standings disagree */
+  dataMismatch: boolean;
+  mismatchMessage: string | null;
 }
 
 function isRemaining(row: StandingRow): boolean {
@@ -78,15 +92,96 @@ async function fetchForRegion(
   );
 }
 
+async function seasonHasPublishedRows(
+  seasonId: string,
+  seasonSlug: SeasonSlug
+): Promise<boolean> {
+  if (seasonSlug === "august_finals") {
+    const rows = await getPublishedStandings(seasonId);
+    return rows.length > 0;
+  }
+  for (const region of REGIONS) {
+    const rows = await getPublishedStandings(seasonId, region);
+    if (rows.length > 0) return true;
+  }
+  return false;
+}
+
+async function resolveDataMilestone(
+  config: CompetitionMapConfig
+): Promise<{
+  dataMilestoneId: CompetitionMilestoneId;
+  dataMismatch: boolean;
+  mismatchMessage: string | null;
+}> {
+  const mapMeta = getMilestoneMeta(config.milestoneId);
+
+  if (!mapMeta.seasonSlug || !isSupabaseConfigured()) {
+    return {
+      dataMilestoneId: config.milestoneId,
+      dataMismatch: false,
+      mismatchMessage: null,
+    };
+  }
+
+  const mapSeason = await getSeasonBySlug(mapMeta.seasonSlug);
+  if (mapSeason && (await seasonHasPublishedRows(mapSeason.id, mapMeta.seasonSlug))) {
+    return {
+      dataMilestoneId: config.milestoneId,
+      dataMismatch: false,
+      mismatchMessage: null,
+    };
+  }
+
+  const latest = await getLatestPublishedRoundInfo();
+  if (!latest) {
+    return {
+      dataMilestoneId: config.milestoneId,
+      dataMismatch: false,
+      mismatchMessage: null,
+    };
+  }
+
+  const effectiveId = milestoneIdForSeasonRound(
+    latest.seasonSlug,
+    latest.roundNumber
+  );
+  if (!effectiveId || effectiveId === config.milestoneId) {
+    return {
+      dataMilestoneId: config.milestoneId,
+      dataMismatch: false,
+      mismatchMessage: null,
+    };
+  }
+
+  const livePhase = seasonPhaseLabel(latest.seasonSlug);
+  const mapPhase = mapMeta.seasonSlug
+    ? seasonPhaseLabel(mapMeta.seasonSlug)
+    : mapMeta.label;
+
+  return {
+    dataMilestoneId: effectiveId,
+    dataMismatch: true,
+    mismatchMessage: `Map chapter is set to ${mapPhase}, but the latest published standings are ${livePhase} Round ${latest.roundNumber}. Showing the live roster below — sync Admin → Competition map when ready.`,
+  };
+}
+
 export async function getRemainingContestantsForMap(
   config: CompetitionMapConfig
 ): Promise<RemainingContestantsResult> {
-  const meta = getMilestoneMeta(config.milestoneId);
+  const { dataMilestoneId, dataMismatch, mismatchMessage } =
+    await resolveDataMilestone(config);
+  const meta = getMilestoneMeta(dataMilestoneId);
+
   const empty: RemainingContestantsResult = {
     groups: [],
     totalCount: 0,
     seasonSlug: meta.seasonSlug,
     configured: isSupabaseConfigured(),
+    mapMilestoneId: config.milestoneId,
+    dataMilestoneId,
+    dataMismatch,
+    mismatchMessage,
   };
 
   if (!meta.seasonSlug || !isSupabaseConfigured()) {
@@ -117,29 +212,37 @@ export async function getRemainingContestantsForMap(
     const rows = filterRemaining(
       await fetchForRegion(season.id, meta.seasonSlug, highlight)
     );
-    const capped = capGroup(rows, meta.seasonSlug, highlight);
-    groups.push({
-      region: highlight,
-      regionLabel: REGION_LABELS[highlight],
-      ...capped,
-    });
+    if (rows.length > 0) {
+      const capped = capGroup(rows, meta.seasonSlug, highlight);
+      groups.push({
+        region: highlight,
+        regionLabel: REGION_LABELS[highlight],
+        ...capped,
+      });
+    }
   } else {
     const rows = filterRemaining(
       await fetchForRegion(season.id, meta.seasonSlug, undefined)
     );
-    const capped = capGroup(rows, meta.seasonSlug, null);
-    groups.push({
-      region: null,
-      regionLabel: "Finalists",
-      ...capped,
-    });
+    if (rows.length > 0) {
+      const capped = capGroup(rows, meta.seasonSlug, null);
+      groups.push({
+        region: null,
+        regionLabel: "Nationals field",
+        ...capped,
+      });
+    }
   }
 
-  const totalCount = groups.reduce((n, g) => n + g.rows.length, 0);
+  const totalCount = groups.reduce((n, g) => n + g.totalInRegion, 0);
   return {
     groups,
     totalCount,
     seasonSlug: meta.seasonSlug,
     configured: true,
+    mapMilestoneId: config.milestoneId,
+    dataMilestoneId,
+    dataMismatch,
+    mismatchMessage,
   };
 }
