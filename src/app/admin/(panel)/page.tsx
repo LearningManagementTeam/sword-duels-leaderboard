@@ -11,12 +11,14 @@ export default async function AdminDashboardPage() {
     phaseStatuses,
     recentRounds,
     latestPublishedRoundForAdvances,
+    nextDraftRound,
   } = configured
     ? await getAdminDashboard()
     : {
         phaseStatuses: [],
         recentRounds: [],
         latestPublishedRoundForAdvances: null,
+        nextDraftRound: null,
       };
 
   return (
@@ -29,7 +31,10 @@ export default async function AdminDashboardPage() {
 
       <AdminPhaseStatusStrip phases={phaseStatuses} />
 
-      <AdminWorkflowCards advanceRound={latestPublishedRoundForAdvances} />
+      <AdminWorkflowCards
+        advanceRound={latestPublishedRoundForAdvances}
+        nextDraftRound={nextDraftRound}
+      />
 
       <AdminRecentRounds rounds={recentRounds} />
     </div>

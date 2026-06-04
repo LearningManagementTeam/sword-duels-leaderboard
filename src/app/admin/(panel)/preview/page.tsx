@@ -1,50 +1,52 @@
 import Link from "next/link";
+import { seasonPhaseLabel } from "@/lib/season-labels";
+import { REGION_LABELS } from "@/lib/scoring-config";
 
 const previewLinks = [
   {
     href: "/preview",
     label: "Preview hub",
-    description: "Overview of all sample leaderboards",
+    description: "Overview of all sample leaderboards (demo data only)",
   },
   {
     href: "/preview/june/luzon",
-    label: "June — Luzon",
-    description: "Per-round elimination · 32→16→8 survivors",
+    label: `${seasonPhaseLabel("june_area")} — ${REGION_LABELS.luzon}`,
+    description: "Area-wide · 32→16→8 survivors per round",
   },
   {
     href: "/preview/june/ncr",
-    label: "June — NCR",
-    description: "Per-round elimination sample",
+    label: `${seasonPhaseLabel("june_area")} — ${REGION_LABELS.ncr}`,
+    description: "Area-wide elimination sample",
   },
   {
     href: "/preview/june/vismin",
-    label: "June — VisMin",
-    description: "Per-round elimination sample",
+    label: `${seasonPhaseLabel("june_area")} — ${REGION_LABELS.vismin}`,
+    description: "Area-wide elimination sample",
   },
   {
     href: "/preview/july/luzon",
-    label: "July — Luzon",
-    description: "Regional sample board",
+    label: `${seasonPhaseLabel("july_region")} — ${REGION_LABELS.luzon}`,
+    description: "Regional playoff · 8→4→2→1 funnel",
   },
   {
     href: "/preview/july/ncr",
-    label: "July — NCR",
-    description: "Regional sample board",
+    label: `${seasonPhaseLabel("july_region")} — ${REGION_LABELS.ncr}`,
+    description: "Regional playoff sample",
   },
   {
     href: "/preview/july/vismin",
-    label: "July — VisMin",
-    description: "Regional sample board",
+    label: `${seasonPhaseLabel("july_region")} — ${REGION_LABELS.vismin}`,
+    description: "Regional playoff sample",
   },
   {
     href: "/preview/august",
-    label: "The Nationals preview",
-    description: "One-day event · 3 rounds · 3 regional champions",
+    label: `${seasonPhaseLabel("august_finals")} preview`,
+    description: "One-day championship · 3 rounds · 3 regional champions",
   },
   {
     href: "/preview/tv?phase=june",
-    label: "TV preview",
-    description: "Fullscreen mode for events (sample data)",
+    label: "TV / venue preview",
+    description: "Fullscreen board for events (sample data)",
   },
 ];
 

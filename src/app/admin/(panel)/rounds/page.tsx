@@ -13,6 +13,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 type RoundRow = {
   id: string;
   name: string;
+  round_number: number;
   status: string;
   seasons: { name: string; slug?: string } | { name: string; slug?: string }[] | null;
 };
@@ -86,7 +87,12 @@ export default async function AdminRoundsPage() {
                 >
                   <Link href={`/admin/rounds/${r.id}`} className="sd-link">
                     {r.name}
-                  </Link>{" "}
+                  </Link>
+                  {r.round_number === 3 && r.status !== "published" && (
+                    <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-100">
+                      score before lock
+                    </span>
+                  )}{" "}
                   <span className="text-xs text-sd-muted/60">({r.status})</span>
                   {r.status === "published" &&
                     seasonSlug &&

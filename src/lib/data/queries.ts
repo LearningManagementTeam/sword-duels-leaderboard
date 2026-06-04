@@ -241,9 +241,15 @@ export async function getLatestPublishedRoundInfo(): Promise<LatestPublishedRoun
   return best;
 }
 
+export type AuditLogFilters = {
+  actionPrefix?: string;
+  entityType?: string;
+  emailContains?: string;
+};
+
 export async function getAuditLog(
   limit = 50,
-  actionPrefix?: string
+  filters?: AuditLogFilters
 ): Promise<AuditEntry[]> {
   if (!isSupabaseConfigured()) return [];
   const capped = Math.min(Math.max(limit, 1), 200);
@@ -253,8 +259,17 @@ export async function getAuditLog(
     .select("*")
     .order("created_at", { ascending: false })
     .limit(capped);
-  if (actionPrefix?.trim()) {
-    query = query.ilike("action", `${actionPrefix.trim()}%`);
+  const actionPrefix = filters?.actionPrefix?.trim();
+  if (actionPrefix) {
+    query = query.ilike("action", `${actionPrefix}%`);
+  }
+  const entityType = filters?.entityType?.trim();
+  if (entityType) {
+    query = query.eq("entity_type", entityType);
+  }
+  const emailContains = filters?.emailContains?.trim();
+  if (emailContains) {
+    query = query.ilike("admin_email", `%${emailContains}%`);
   }
   const { data, error } = await query;
   if (error) throw error;

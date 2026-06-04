@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveRoundResults, publishRound } from "@/lib/actions/admin";
 import { DraftStandingsPreview } from "@/components/admin/DraftStandingsPreview";
+import { RoundScoringToolbar } from "@/components/admin/RoundScoringToolbar";
+import { ScorePastePanel } from "@/components/admin/ScorePastePanel";
 import {
   AdminOperationPanel,
   patchOperationStep,
@@ -34,6 +36,7 @@ import { REGIONS, REGION_LABELS } from "@/lib/scoring-config";
 
 interface RowValue {
   branch_id: string;
+  branch_code: string;
   branch_name: string;
   region: Region;
   points: number;
@@ -101,6 +104,15 @@ export function RoundResultsForm({
   const usesSurvivorCount =
     kind === "last_man_standing" || kind === "hearts_survival";
 
+  const supportsScorePaste = kind === "quiz" || kind === "lifelines_quiz";
+
+  const isPublished = status === "published";
+  const showRegionalTabs = seasonSlug !== "august_finals" || branches.length > 6;
+
+  const [activeRegion, setActiveRegion] = useState<Region | "all">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [republishAcknowledged, setRepublishAcknowledged] = useState(false);
+
   const [showOut, setShowOut] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -117,6 +129,7 @@ export function RoundResultsForm({
       const points = init?.points ?? 0;
       return {
         branch_id: b.id,
+        branch_code: b.branch_code,
         branch_name: b.branch_name,
         region: b.region,
         points,
@@ -124,6 +137,11 @@ export function RoundResultsForm({
         finish_order: init?.finish_order ?? null,
       };
     })
+  );
+
+  const knownBranchCodes = useMemo(
+    () => new Set(values.map((v) => v.branch_code.toUpperCase())),
+    [values]
   );
 
   const survivorCounts = useMemo(() => {
@@ -136,6 +154,65 @@ export function RoundResultsForm({
     }
     return counts;
   }, [values, kind, usesSurvivorCount]);
+
+  const filteredRows = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return values
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => {
+        if (activeRegion !== "all" && row.region !== activeRegion) return false;
+        if (query && !row.branch_name.toLowerCase().includes(query)) return false;
+        return true;
+      });
+  }, [values, activeRegion, searchQuery]);
+
+  const activeRegionSurvivorTarget =
+    activeRegion !== "all"
+      ? requiredSurvivorsPerRegion(seasonSlug, roundNumber, activeRegion)
+      : null;
+
+  function markTopNSurvivors(region: Region) {
+    const required =
+      requiredSurvivorsPerRegion(seasonSlug, roundNumber, region) ?? 0;
+    setValues((prev) => {
+      const inRegion = prev.filter((r) => r.region === region);
+      const sorted =
+        kind === "hearts_survival"
+          ? [...inRegion].sort(
+              (a, b) =>
+                b.points - a.points ||
+                a.branch_name.localeCompare(b.branch_name)
+            )
+          : [...inRegion].sort((a, b) =>
+              a.branch_name.localeCompare(b.branch_name)
+            );
+      const topIds = new Set(
+        sorted.slice(0, required).map((r) => r.branch_id)
+      );
+      return prev.map((r) => {
+        if (r.region !== region) return r;
+        if (kind === "hearts_survival") {
+          if (topIds.has(r.branch_id)) {
+            return { ...r, survived: r.points > 0 };
+          }
+          return { ...r, points: 0, survived: false };
+        }
+        return { ...r, survived: topIds.has(r.branch_id) };
+      });
+    });
+  }
+
+  function clearRegionSurvivors(region: Region) {
+    setValues((prev) =>
+      prev.map((r) => {
+        if (r.region !== region) return r;
+        if (kind === "hearts_survival") {
+          return { ...r, points: 0, survived: false };
+        }
+        return { ...r, survived: false };
+      })
+    );
+  }
 
   const getDraftResults = useCallback(() => {
     return values.map((v) => {
@@ -224,6 +301,7 @@ export function RoundResultsForm({
       setMessage(`Cannot publish: ${publishReadiness.blockers.join(" ")}`);
       return;
     }
+    setRepublishAcknowledged(false);
     setPublishConfirmOpen(true);
   }
 
@@ -308,6 +386,27 @@ export function RoundResultsForm({
     });
   }
 
+  function applyPasteScores(
+    updates: Array<{ branch_code: string; points: number }>
+  ) {
+    const byCode = new Map(
+      updates.map((u) => [u.branch_code.toUpperCase(), u.points])
+    );
+    let applied = 0;
+    setValues((prev) =>
+      prev.map((row) => {
+        const points = byCode.get(row.branch_code.toUpperCase());
+        if (points == null) return row;
+        applied++;
+        return { ...row, points };
+      })
+    );
+    const skipped = updates
+      .filter((u) => !knownBranchCodes.has(u.branch_code.toUpperCase()))
+      .map((u) => u.branch_code);
+    return { applied, skipped };
+  }
+
   const liveBoardHref = seasonSlugToPublicPath(seasonSlug, "luzon");
   const showOperationPanel =
     operationTitle != null && operationSteps != null && operationSteps.length > 0;
@@ -367,6 +466,20 @@ export function RoundResultsForm({
         <div className="sd-alert-info text-sm">
           <p className="font-medium text-sd-glow">{mechanics.label}</p>
           <p className="mt-1">{mechanics.description}</p>
+        </div>
+      )}
+
+      {isPublished && (
+        <div className="sd-alert-warning text-sm">
+          <p className="font-medium">This round is live on the public site</p>
+          <p className="mt-1">
+            Saving or publishing again updates fan-facing standings immediately.
+            Double-check every score before confirming.
+          </p>
+          <AdminActionHint
+            hint={ADMIN_ROUND_HINTS.republish}
+            className="mt-2 text-sd-muted/90"
+          />
         </div>
       )}
 
@@ -465,6 +578,39 @@ export function RoundResultsForm({
           />
         ) : (
           <>
+        <RoundScoringToolbar
+          region={activeRegion}
+          onRegionChange={setActiveRegion}
+          search={searchQuery}
+          onSearchChange={setSearchQuery}
+          showRegionalTabs={showRegionalTabs}
+          usesSurvivorCount={usesSurvivorCount}
+          survivorTarget={activeRegionSurvivorTarget}
+          onMarkTopN={
+            usesSurvivorCount && activeRegion !== "all"
+              ? () => markTopNSurvivors(activeRegion)
+              : undefined
+          }
+          onClearRegion={
+            usesSurvivorCount && activeRegion !== "all"
+              ? () => clearRegionSurvivors(activeRegion)
+              : undefined
+          }
+          visibleCount={filteredRows.length}
+          totalCount={values.length}
+        />
+        {usesSurvivorCount && activeRegion !== "all" && (
+          <AdminActionHint hint={ADMIN_ROUND_HINTS.markTopSurvivors} />
+        )}
+
+        {supportsScorePaste && values.length > 0 && (
+          <ScorePastePanel
+            maxPoints={maxPoints}
+            knownCodes={knownBranchCodes}
+            onApply={applyPasteScores}
+          />
+        )}
+
         <div className="max-h-[min(60vh,calc(100vh-14rem))] overflow-auto rounded-xl border border-sd-glow/20 sd-glass">
           <table className="sd-table min-w-[320px]">
             <thead className="sticky top-0 z-10 bg-sd-deep/95 shadow-[0_1px_0_rgb(74_222_128/0.25)] backdrop-blur-md">
@@ -495,12 +641,19 @@ export function RoundResultsForm({
               </tr>
             </thead>
             <tbody>
-              {values.map((row, i) => (
+              {filteredRows.map(({ row, index: i }) => (
                 <tr
                   key={row.branch_id}
                   className="border-t border-sd-glow/10 transition hover:bg-emerald-500/5"
                 >
-                  <td className="px-3 py-2 text-white">{row.branch_name}</td>
+                  <td className="px-3 py-2 text-white">
+                    {row.branch_name}
+                    {showRegionalTabs && activeRegion === "all" && (
+                      <span className="ml-2 text-xs text-sd-muted/60">
+                        {REGION_LABELS[row.region]}
+                      </span>
+                    )}
+                  </td>
                   {kind === "last_man_standing" && (
                     <td className="px-3 py-2 text-center">
                       <input
@@ -515,21 +668,31 @@ export function RoundResultsForm({
                   )}
                   {kind === "hearts_survival" && (
                     <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        min={0}
-                        max={maxPoints}
-                        step={1}
-                        value={row.points}
-                        onChange={(e) => {
-                          const points = Math.min(
-                            maxPoints,
-                            Math.max(0, Number(e.target.value))
-                          );
-                          updateRow(i, { points, survived: points > 0 });
-                        }}
-                        className="sd-input w-28 rounded-lg px-2 py-1.5 text-right tabular-nums"
-                      />
+                      <div
+                        className="flex justify-end gap-1"
+                        role="group"
+                        aria-label={`Hearts left for ${row.branch_name}`}
+                      >
+                        {Array.from({ length: maxPoints + 1 }, (_, hearts) => (
+                          <button
+                            key={hearts}
+                            type="button"
+                            onClick={() =>
+                              updateRow(i, {
+                                points: hearts,
+                                survived: hearts > 0,
+                              })
+                            }
+                            className={`min-w-[2rem] rounded-lg px-2 py-1 text-sm tabular-nums transition ${
+                              row.points === hearts
+                                ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep"
+                                : "sd-glass text-sd-muted hover:text-white"
+                            }`}
+                          >
+                            {hearts}
+                          </button>
+                        ))}
+                      </div>
                     </td>
                   )}
                   {kind !== "last_man_standing" && kind !== "hearts_survival" && (
@@ -633,17 +796,45 @@ export function RoundResultsForm({
 
       {publishConfirmOpen && (
         <AdminConfirmPanel
-          title={`Publish ${roundName}?`}
-          confirmLabel="Publish now"
+          title={
+            isPublished
+              ? `Update live scores for ${roundName}?`
+              : `Publish ${roundName}?`
+          }
+          confirmLabel={isPublished ? "Update live board" : "Publish now"}
+          tone={isPublished ? "danger" : "warning"}
+          confirmDisabled={isPublished && !republishAcknowledged}
           onConfirm={executePublish}
           onCancel={() => setPublishConfirmOpen(false)}
           busy={busy}
         >
-          <p>This updates the public leaderboard immediately.</p>
+          <p>
+            {isPublished
+              ? "Fans already see this round. These scores will replace what is live."
+              : "This updates the public leaderboard immediately."}
+          </p>
           <AdminActionHint
-            hint={ADMIN_CONFIRM_HINTS.publish}
+            hint={
+              isPublished
+                ? ADMIN_CONFIRM_HINTS.republish
+                : ADMIN_CONFIRM_HINTS.publish
+            }
             className="mt-2 text-sd-muted/90"
           />
+          {isPublished && (
+            <label className="mt-3 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={republishAcknowledged}
+                onChange={(e) => setRepublishAcknowledged(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-fuchsia-400/50"
+              />
+              <span>
+                I reviewed every score and understand this overwrites the live
+                board.
+              </span>
+            </label>
+          )}
           {publishReadiness.warnings.length > 0 && (
             <ul className="mt-2 list-inside list-disc opacity-90">
               {publishReadiness.warnings.map((w) => (
@@ -682,7 +873,9 @@ export function RoundResultsForm({
             >
               {busy && operationTitle === "Publishing round"
                 ? "Publishing…"
-                : "Save & publish"}
+                : isPublished
+                  ? "Update live board"
+                  : "Save & publish"}
             </button>
           </AdminActionRow>
         </div>

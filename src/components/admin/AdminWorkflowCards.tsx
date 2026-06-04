@@ -1,15 +1,20 @@
-import type { PublishedRoundRef } from "@/lib/data/admin-queries";
+import type { NextDraftRoundRef, PublishedRoundRef } from "@/lib/data/admin-queries";
 import { AdminActionHint } from "@/components/admin/AdminActionHint";
 import { SdButtonLink } from "@/components/ui/SdButtonLink";
 import { ADMIN_WORKFLOW_HINTS } from "@/lib/admin-action-hints";
 
 interface Props {
   advanceRound?: PublishedRoundRef | null;
+  nextDraftRound?: NextDraftRoundRef | null;
 }
 
-export function AdminWorkflowCards({ advanceRound }: Props) {
+export function AdminWorkflowCards({
+  advanceRound,
+  nextDraftRound,
+}: Props) {
   const latestPublished = advanceRound ?? null;
   const showAdvances = latestPublished != null;
+  const showContinueScoring = nextDraftRound != null;
   const ctaSize = "px-3 py-1.5 text-sm";
 
   return (
@@ -20,10 +25,24 @@ export function AdminWorkflowCards({ advanceRound }: Props) {
           Enter points, preview the board, then publish — fans see ranks instantly.
         </p>
         <div className="mt-3 space-y-1.5">
-          <SdButtonLink href="/admin/rounds" className={ctaSize}>
-            Open rounds
-          </SdButtonLink>
-          <AdminActionHint hint={ADMIN_WORKFLOW_HINTS.openRounds} />
+          {showContinueScoring && nextDraftRound ? (
+            <>
+              <SdButtonLink
+                href={`/admin/rounds/${nextDraftRound.id}`}
+                className={ctaSize}
+              >
+                Continue scoring → {nextDraftRound.name}
+              </SdButtonLink>
+              <AdminActionHint hint={ADMIN_WORKFLOW_HINTS.continueScoring} />
+            </>
+          ) : (
+            <>
+              <SdButtonLink href="/admin/rounds" className={ctaSize}>
+                Open rounds
+              </SdButtonLink>
+              <AdminActionHint hint={ADMIN_WORKFLOW_HINTS.openRounds} />
+            </>
+          )}
         </div>
       </div>
 

@@ -58,6 +58,7 @@ export type DashboardPhaseStatus = {
   rosterLabel: string;
   lockedAt: string | null;
   round3Published: boolean;
+  round3Round: { id: string; name: string; status: string } | null;
   latestPublishedRound: {
     id: string;
     name: string;
@@ -139,6 +140,7 @@ async function buildDashboardPhaseStatuses(
     let rosterCount = 0;
     let lockedAt: string | null = null;
     let round3Published = false;
+    let round3Round: DashboardPhaseStatus["round3Round"] = null;
 
     if (seasonId) {
       if (seasonSlug === "june_area") {
@@ -162,11 +164,14 @@ async function buildDashboardPhaseStatuses(
 
       const { data: r3 } = await service
         .from("rounds")
-        .select("status")
+        .select("id, name, status")
         .eq("season_id", seasonId)
         .eq("round_number", 3)
         .maybeSingle();
       round3Published = r3?.status === "published";
+      if (r3) {
+        round3Round = { id: r3.id, name: r3.name, status: r3.status };
+      }
     }
 
     const rosterTarget = rosterTargets[seasonSlug];
@@ -180,6 +185,10 @@ async function buildDashboardPhaseStatuses(
         needsAttention = true;
         attentionMessage = `${branchCount} of ${TARGET_BRANCH_COUNT} branches loaded`;
         attentionHref = "/admin/branches";
+      } else if (!round3Published && round3Round) {
+        needsAttention = true;
+        attentionMessage = "Publish June Round 3 before locking the phase";
+        attentionHref = `/admin/rounds/${round3Round.id}`;
       } else if (round3Published && !lockedAt) {
         needsAttention = true;
         attentionMessage = "June Round 3 is live — lock & advance to July";
@@ -191,6 +200,10 @@ async function buildDashboardPhaseStatuses(
         needsAttention = true;
         attentionMessage = "No July roster yet — lock June first";
         attentionHref = "/admin/advancement";
+      } else if (!round3Published && round3Round) {
+        needsAttention = true;
+        attentionMessage = "Publish July Round 3 before locking the phase";
+        attentionHref = `/admin/rounds/${round3Round.id}`;
       } else if (round3Published && !lockedAt) {
         needsAttention = true;
         attentionMessage = "July Round 3 is live — lock & advance to The Nationals";
@@ -222,6 +235,7 @@ async function buildDashboardPhaseStatuses(
       rosterLabel: seasonSlug === "june_area" ? "Branches" : "Participants",
       lockedAt,
       round3Published,
+      round3Round,
       latestPublishedRound,
       needsAttention,
       attentionMessage,
@@ -241,6 +255,7 @@ export async function getAdminDashboard() {
       recentRounds: [] as DashboardRoundRow[],
       phaseStatuses: [] as DashboardPhaseStatus[],
       latestPublishedRoundForAdvances: null,
+      nextDraftRound: null,
     };
   }
   const service = await createServiceClient();
@@ -264,15 +279,19 @@ export async function getAdminDashboard() {
     roundRows
   );
 
+  const [nextDraftRound, latestPublishedRoundForAdvances] = await Promise.all([
+    Promise.resolve(pickNextDraftRound(roundRows)),
+    findRoundNeedingAdvances(roundRows),
+  ]);
+
   return {
     seasons: seasons ?? [],
     branchCount,
     rounds: roundRows,
     recentRounds: sortRoundsForRecency(roundRows).slice(0, 8),
     phaseStatuses,
-    latestPublishedRoundForAdvances: pickLatestPublishedRoundForAdvances(
-      roundRows
-    ),
+    nextDraftRound,
+    latestPublishedRoundForAdvances,
   };
 }
 
@@ -282,33 +301,90 @@ export type PublishedRoundRef = {
   seasons: { name: string; slug?: string } | { name: string; slug?: string }[] | null;
 };
 
-function pickLatestPublishedRoundForAdvances(
-  rounds: Array<{
-    id: string;
-    name: string;
-    status: string;
-    published_at: string | null;
-    seasons: { slug: string; name: string } | { slug: string; name: string }[] | null;
-  }>
-): PublishedRoundRef | null {
-  const eligible = rounds
+export type NextDraftRoundRef = {
+  id: string;
+  name: string;
+  seasonSlug: SeasonSlug;
+  roundNumber: number;
+};
+
+const SEASON_SORT_ORDER: Record<SeasonSlug, number> = {
+  june_area: 0,
+  july_region: 1,
+  august_finals: 2,
+};
+
+function pickNextDraftRound(rounds: DashboardRoundRow[]): NextDraftRoundRef | null {
+  const drafts = rounds
+    .filter((r) => r.status !== "published")
+    .map((r) => ({ round: r, meta: seasonMeta(r.seasons) }))
+    .filter((entry): entry is { round: DashboardRoundRow; meta: { slug: SeasonSlug; name: string } } =>
+      entry.meta != null
+    )
+    .sort((a, b) => {
+      const seasonDiff =
+        SEASON_SORT_ORDER[a.meta.slug] - SEASON_SORT_ORDER[b.meta.slug];
+      if (seasonDiff !== 0) return seasonDiff;
+      return a.round.round_number - b.round.round_number;
+    });
+
+  const first = drafts[0];
+  if (!first) return null;
+  return {
+    id: first.round.id,
+    name: first.round.name,
+    seasonSlug: first.meta.slug,
+    roundNumber: first.round.round_number,
+  };
+}
+
+function roundNeedsAdvancementPicks(
+  regions: Record<
+    Region,
+    {
+      eligibleExtra: Array<{ isTieBreaker?: boolean }>;
+      maxScoreCount: number;
+    }
+  >
+): boolean {
+  for (const region of ["luzon", "ncr", "vismin"] as Region[]) {
+    const data = regions[region];
+    if (data.maxScoreCount > 0) return true;
+    if (data.eligibleExtra.some((b) => b.isTieBreaker)) return true;
+  }
+  return false;
+}
+
+async function findRoundNeedingAdvances(
+  rounds: DashboardRoundRow[]
+): Promise<PublishedRoundRef | null> {
+  const candidates = rounds
     .filter((r) => r.status === "published" && r.published_at)
     .filter((r) => {
-      const meta = Array.isArray(r.seasons) ? r.seasons[0] : r.seasons;
+      const meta = seasonMeta(r.seasons);
       return meta?.slug === "june_area" || meta?.slug === "july_region";
     })
-    .sort(
-      (a, b) =>
-        new Date(b.published_at!).getTime() -
-        new Date(a.published_at!).getTime()
-    );
-  const latest = eligible[0];
-  if (!latest) return null;
-  return {
-    id: latest.id,
-    name: latest.name,
-    seasons: latest.seasons,
-  };
+    .sort((a, b) => {
+      const metaA = seasonMeta(a.seasons)!;
+      const metaB = seasonMeta(b.seasons)!;
+      const seasonDiff =
+        SEASON_SORT_ORDER[metaA.slug] - SEASON_SORT_ORDER[metaB.slug];
+      if (seasonDiff !== 0) return seasonDiff;
+      return a.round_number - b.round_number;
+    });
+
+  for (const round of candidates) {
+    const ctx = await getAdvancementPickContext(round.id);
+    if (ctx && roundNeedsAdvancementPicks(ctx.regions)) {
+      return {
+        id: round.id,
+        name: round.name,
+        seasons: round.seasons,
+      };
+    }
+  }
+
+  return null;
 }
 
 export async function getRoundWithResults(roundId: string) {
@@ -722,6 +798,12 @@ export async function getBranchesForRepresentatives() {
   };
 }
 
+export type PhaseLockSeedBranch = {
+  branch_name: string;
+  branch_code: string;
+  region: Region | null;
+};
+
 export interface PhaseLockOverview {
   seasonSlug: "june_area" | "july_region";
   name: string;
@@ -729,7 +811,9 @@ export interface PhaseLockOverview {
   lockedAt: string | null;
   lockedByEmail: string | null;
   round3Published: boolean;
+  round3Round: { id: string; name: string; status: string } | null;
   seedCount: number | null;
+  seedPreview: PhaseLockSeedBranch[];
 }
 
 export async function getPhaseLockOverview(): Promise<PhaseLockOverview[]> {
@@ -770,28 +854,53 @@ export async function getPhaseLockOverview(): Promise<PhaseLockOverview[]> {
         .maybeSingle(),
       service
         .from("rounds")
-        .select("status")
+        .select("id, name, status")
         .eq("season_id", season.id)
         .eq("round_number", 3)
         .maybeSingle(),
     ]);
 
     let seedCount: number | null = null;
+    let seedPreview: PhaseLockSeedBranch[] = [];
+
     if (phase.slug === "june_area") {
-      const { count } = await service
+      const { data: advanced } = await service
         .from("published_standings")
-        .select("*", { count: "exact", head: true })
+        .select("branch_id, region_filter, rank, branches(branch_code, branch_name, region)")
         .eq("season_id", season.id)
-        .eq("status", "advanced");
-      seedCount = count;
+        .eq("status", "advanced")
+        .order("region_filter")
+        .order("rank");
+
+      seedCount = advanced?.length ?? 0;
+      seedPreview = (advanced ?? []).map((row) => {
+        const branch = Array.isArray(row.branches) ? row.branches[0] : row.branches;
+        return {
+          branch_name: branch?.branch_name ?? "Unknown",
+          branch_code: branch?.branch_code ?? "",
+          region: (row.region_filter as Region | null) ?? branch?.region ?? null,
+        };
+      });
     } else {
       const { data: winners } = await service
         .from("published_standings")
-        .select("branch_id")
+        .select(
+          "branch_id, region_filter, branches(branch_code, branch_name, region)"
+        )
         .eq("season_id", season.id)
         .eq("rank", 1)
-        .not("region_filter", "is", null);
+        .not("region_filter", "is", null)
+        .order("region_filter");
+
       seedCount = winners?.length ?? 0;
+      seedPreview = (winners ?? []).map((row) => {
+        const branch = Array.isArray(row.branches) ? row.branches[0] : row.branches;
+        return {
+          branch_name: branch?.branch_name ?? "Unknown",
+          branch_code: branch?.branch_code ?? "",
+          region: (row.region_filter as Region | null) ?? branch?.region ?? null,
+        };
+      });
     }
 
     result.push({
@@ -801,7 +910,11 @@ export async function getPhaseLockOverview(): Promise<PhaseLockOverview[]> {
       lockedAt: lock?.locked_at ?? null,
       lockedByEmail: lock?.locked_by_email ?? null,
       round3Published: r3?.status === "published",
+      round3Round: r3
+        ? { id: r3.id, name: r3.name, status: r3.status }
+        : null,
       seedCount,
+      seedPreview,
     });
   }
 

@@ -28,6 +28,8 @@ export const ADMIN_NAV_HINTS: Record<string, string> = {
 export const ADMIN_WORKFLOW_HINTS = {
   openRounds:
     "Weekly core task: pick the round, enter points for every eligible branch, then publish when ready.",
+  continueScoring:
+    "Jump straight to the earliest round that is still draft — usually the one you should score next.",
   tieBreakerPicks:
     "After publish only: if many branches tied at the cut (e.g. 35 scored 10/10 but only 32 advance), add committee picks here.",
   competitionMap:
@@ -41,6 +43,12 @@ export const ADMIN_ROUND_HINTS = {
     "Keeps scores in admin only — public site stays unchanged. Use while double-checking or between sessions.",
   publish:
     "Writes live standings, applies regional cut lines, and refreshes the public site. Fans see results immediately.",
+  republish:
+    "This round is already live. Saving or publishing again immediately updates what fans see — double-check every score first.",
+  markTopSurvivors:
+    "Sets exactly the required survivor count for this region. Hearts rounds keep the highest heart counts; survival rounds pick alphabetically.",
+  pasteScores:
+    "Paste branch_code and score columns from Excel (comma or tab). Only codes in this round's roster are applied.",
   advancementPicks:
     "Only if ties at the cut need extra survivors beyond the automatic top N per region.",
   previewDraft:
@@ -56,8 +64,14 @@ export const ADMIN_ROSTER_HINTS = {
     "After import succeeds, open June Round 1 to enter first-week scores.",
   importJune:
     "Loads all branches into the database and seeds June Round 1 entry rows. Run once before competition starts (or to refresh the full list).",
+  importJuneBlocked:
+    "June scores are already live. Re-importing can overwrite branch data and Round 1 seed rows — only proceed if you intend to reset the roster.",
+  importJunePreview:
+    "Review row counts and regions before importing. Fix CSV errors here instead of discovering them after upload.",
   saveRepresentatives:
-    "Writes all name edits to the database. Public boards show updated representatives after save.",
+    "Writes changed rows only. Public boards show updated representatives after save.",
+  unsavedRepresentatives:
+    "You have unsaved name edits — save before leaving or your changes will be lost.",
   devImport:
     "Development only: reload bundled sample branches from the server — not your uploaded CSV.",
 };
@@ -65,6 +79,10 @@ export const ADMIN_ROSTER_HINTS = {
 export const ADMIN_ADVANCEMENT_HINTS = {
   saveRegionPicks:
     "Saves extra survivors for this region only. Repeat for Luzon, NCR, and VisMin if needed. Public board updates after each save.",
+  saveAllPicks:
+    "Writes Luzon, NCR, and VisMin picks in one step — faster when several regions need tie-breaker survivors.",
+  scoreRound3:
+    "Final round for the phase — publish before locking and seeding the next stage.",
   lockPhase:
     "Records phase lock and copies advancing branches into the next season’s participant list. Required before scoring July or Nationals.",
   relockPhase:
@@ -98,11 +116,15 @@ export const ADMIN_TOOLS_HINTS = {
   exportNationals:
     "CSV of The Nationals championship board after rounds are published.",
   auditFilter: "Filter by action type to find imports, publishes, or locks quickly.",
+  auditEmail: "Narrow to one admin email (partial match).",
+  auditEntity: "Filter by what was changed — round, season, branches, branding, etc.",
 };
 
 export const ADMIN_CONFIRM_HINTS = {
   publish:
     "Confirm only when every eligible branch has scores and survivor counts match the round rules.",
+  republish:
+    "Check the box to confirm you mean to overwrite the live board with these scores.",
   lockPhase:
     "Confirm only after public boards show the correct survivors (8 per region after June R3, 1 champion per region after July R3).",
   removeAsset: "This removes the file from the public site immediately.",

@@ -67,7 +67,18 @@ export function AdminPhaseStatusStrip({ phases }: Props) {
               <div className="flex justify-between gap-2">
                 <dt className="text-sd-muted/70">Round 3</dt>
                 <dd className={phase.round3Published ? "text-emerald-200" : "text-sd-muted/60"}>
-                  {phase.round3Published ? "Published" : "Not yet"}
+                  {phase.round3Published ? (
+                    "Published"
+                  ) : phase.round3Round ? (
+                    <Link
+                      href={`/admin/rounds/${phase.round3Round.id}`}
+                      className="sd-link text-amber-200"
+                    >
+                      Score →
+                    </Link>
+                  ) : (
+                    "Not yet"
+                  )}
                 </dd>
               </div>
               <div className="flex justify-between gap-2">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
@@ -7,6 +8,7 @@ import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { ADMIN_ADVANCEMENT_HINTS, ADMIN_CONFIRM_HINTS } from "@/lib/admin-action-hints";
 import { lockPhaseAndAdvance } from "@/lib/actions/admin";
 import type { PhaseLockOverview } from "@/lib/data/admin-queries";
+import { REGION_LABELS } from "@/lib/scoring-config";
 
 interface Props {
   phases: PhaseLockOverview[];
@@ -24,6 +26,7 @@ export function PhaseLockPanel({ phases }: Props) {
   const [pendingLock, setPendingLock] = useState<PhaseLockOverview | null>(
     null
   );
+  const [expandedPreview, setExpandedPreview] = useState<string | null>(null);
 
   function requestLock(phase: PhaseLockOverview) {
     if (!phase.round3Published) {
@@ -31,6 +34,7 @@ export function PhaseLockPanel({ phases }: Props) {
       setMessage(`Publish Round 3 for ${phase.name} before locking.`);
       return;
     }
+    setExpandedPreview(null);
     setPendingLock(phase);
     setMessage("");
   }
@@ -87,6 +91,18 @@ export function PhaseLockPanel({ phases }: Props) {
                 >
                   {phase.round3Published ? "Yes" : "No — publish first"}
                 </strong>
+                {!phase.round3Published && phase.round3Round && (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <Link
+                      href={`/admin/rounds/${phase.round3Round.id}`}
+                      className="sd-link font-medium"
+                    >
+                      Score {phase.round3Round.name}
+                    </Link>
+                  </>
+                )}
               </li>
               <li>
                 Branches to seed:{" "}
@@ -102,6 +118,39 @@ export function PhaseLockPanel({ phases }: Props) {
                 </li>
               )}
             </ul>
+
+            {phase.seedPreview.length > 0 && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedPreview((prev) =>
+                      prev === phase.seasonSlug ? null : phase.seasonSlug
+                    )
+                  }
+                  className="text-xs font-medium text-sd-glow hover:text-white"
+                >
+                  {expandedPreview === phase.seasonSlug ? "Hide" : "Preview"} seed
+                  roster ({phase.seedPreview.length} branches)
+                </button>
+                {expandedPreview === phase.seasonSlug && (
+                  <ul className="sd-inset mt-2 max-h-48 overflow-auto rounded-xl text-xs">
+                    {phase.seedPreview.map((b, i) => (
+                      <li
+                        key={`${b.branch_code}-${i}`}
+                        className="flex justify-between gap-2 border-b border-emerald-900/20 px-3 py-1.5 last:border-0"
+                      >
+                        <span className="text-white">{b.branch_name}</span>
+                        <span className="text-sd-muted/70">
+                          {b.branch_code}
+                          {b.region ? ` · ${REGION_LABELS[b.region]}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {isPending ? (
               <div className="mt-4">
@@ -131,8 +180,26 @@ export function PhaseLockPanel({ phases }: Props) {
                   <p>
                     <strong>{phase.seedCount ?? 0}</strong> branches will seed into{" "}
                     {nextPhase}
-                    {phase.seasonSlug === "june_area" ? " (expect 24)" : " (expect 3 champions)"}.
+                    {phase.seasonSlug === "june_area"
+                      ? " (expect 24)"
+                      : " (expect 3 champions)"}
+                    .
                   </p>
+                  {phase.seedPreview.length > 0 && (
+                    <ul className="mt-2 max-h-32 overflow-auto rounded-lg bg-sd-deep/40 text-xs opacity-95">
+                      {phase.seedPreview.slice(0, 12).map((b) => (
+                        <li key={`confirm-${b.branch_code}`} className="px-2 py-0.5">
+                          {b.branch_name}
+                          {b.region ? ` (${REGION_LABELS[b.region]})` : ""}
+                        </li>
+                      ))}
+                      {phase.seedPreview.length > 12 && (
+                        <li className="px-2 py-0.5 text-sd-muted/70">
+                          +{phase.seedPreview.length - 12} more…
+                        </li>
+                      )}
+                    </ul>
+                  )}
                   <p className="mt-2 opacity-90">
                     This cannot be undone from this screen.
                   </p>

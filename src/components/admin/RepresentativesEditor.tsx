@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AdminActionRow } from "@/components/admin/AdminActionHint";
+import { useEffect, useMemo, useState } from "react";
+import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
 import { saveBranchRepresentatives } from "@/lib/actions/admin";
 import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
 import type { Branch } from "@/lib/types";
@@ -62,18 +62,33 @@ function RepRowFields({
   );
 }
 
+function rowSnapshot(row: RowState) {
+  return `${row.representative_1}\0${row.representative_2}`;
+}
+
 export function RepresentativesEditor({ branches, initialWithReps }: Props) {
-  const [rows, setRows] = useState<RowState[]>(() =>
-    branches.map((b) => ({
-      branch_id: b.id,
-      branch_code: b.branch_code,
-      branch_name: b.branch_name,
-      area: b.area,
-      region: b.region,
-      representative_1: b.representative_1 ?? "",
-      representative_2: b.representative_2 ?? "",
-    }))
+  const initialRows = useMemo(
+    () =>
+      branches.map((b) => ({
+        branch_id: b.id,
+        branch_code: b.branch_code,
+        branch_name: b.branch_name,
+        area: b.area,
+        region: b.region,
+        representative_1: b.representative_1 ?? "",
+        representative_2: b.representative_2 ?? "",
+      })),
+    [branches]
   );
+
+  const [rows, setRows] = useState<RowState[]>(initialRows);
+  const [baseline, setBaseline] = useState<RowState[]>(initialRows);
+
+  useEffect(() => {
+    setRows(initialRows);
+    setBaseline(initialRows);
+  }, [initialRows]);
+
   const [search, setSearch] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
   const [message, setMessage] = useState("");
@@ -102,6 +117,31 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
 
   const filledCount = rows.filter((r) => r.representative_1.trim()).length;
 
+  const baselineById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of baseline) {
+      map.set(row.branch_id, rowSnapshot(row));
+    }
+    return map;
+  }, [baseline]);
+
+  const dirtyRows = useMemo(
+    () =>
+      rows.filter((r) => rowSnapshot(r) !== baselineById.get(r.branch_id)),
+    [rows, baselineById]
+  );
+
+  const hasUnsavedChanges = dirtyRows.length > 0;
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   function updateRow(
     branch_id: string,
     field: "representative_1" | "representative_2",
@@ -115,19 +155,26 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
   }
 
   async function handleSaveAll() {
+    if (dirtyRows.length === 0) {
+      setMessage("No changes to save.");
+      setError(false);
+      return;
+    }
+
     setLoading(true);
     setMessage("");
     setError(false);
     try {
       const result = await saveBranchRepresentatives(
-        rows.map((r) => ({
+        dirtyRows.map((r) => ({
           branch_id: r.branch_id,
           representative_1: r.representative_1,
           representative_2: r.representative_2,
         }))
       );
       if (result.ok) {
-        setMessage(`Saved representatives for ${result.count} branches.`);
+        setBaseline([...rows]);
+        setMessage(`Saved ${result.count} changed branch${result.count === 1 ? "" : "es"}.`);
       } else {
         setError(true);
         setMessage(result.errors.join(" "));
@@ -164,8 +211,12 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
           {" "}
           of {rows.length} branches have a primary representative
         </span>
-        {initialWithReps !== filledCount && (
-          <span className="opacity-70"> (unsaved edits)</span>
+        {hasUnsavedChanges && (
+          <span className="text-amber-200/90">
+            {" "}
+            · {dirtyRows.length} unsaved change
+            {dirtyRows.length === 1 ? "" : "s"}
+          </span>
         )}
       </div>
 
@@ -257,14 +308,22 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
         Showing {filtered.length} of {rows.length} branches
       </p>
 
+      {hasUnsavedChanges && (
+        <AdminActionHint hint={ADMIN_ROSTER_HINTS.unsavedRepresentatives} />
+      )}
+
       <AdminActionRow hint={ADMIN_ROSTER_HINTS.saveRepresentatives}>
         <button
           type="button"
-          disabled={loading}
+          disabled={loading || !hasUnsavedChanges}
           onClick={handleSaveAll}
           className="sd-btn-primary rounded-lg px-5 py-2.5 text-sm disabled:opacity-50"
         >
-          {loading ? "Saving…" : "Save all representatives"}
+          {loading
+            ? "Saving…"
+            : hasUnsavedChanges
+              ? `Save ${dirtyRows.length} change${dirtyRows.length === 1 ? "" : "s"}`
+              : "No changes to save"}
         </button>
       </AdminActionRow>
 

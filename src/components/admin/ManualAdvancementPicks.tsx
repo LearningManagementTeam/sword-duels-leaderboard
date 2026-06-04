@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { AdminActionRow } from "@/components/admin/AdminActionHint";
 import { InfoTip } from "@/components/admin/InfoTip";
-import { saveManualAdvances } from "@/lib/actions/admin";
+import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
+import { saveManualAdvances, saveManualAdvancesAll } from "@/lib/actions/admin";
 import { ADMIN_ADVANCEMENT_HINTS, ADMIN_ROUND_HINTS } from "@/lib/admin-action-hints";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
 import type { AdvancementPickBranch } from "@/lib/data/admin-queries";
@@ -45,6 +46,7 @@ export function ManualAdvancementPicks({
   }));
   const [onlyMax, setOnlyMax] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [saveAllConfirmOpen, setSaveAllConfirmOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [savedRegions, setSavedRegions] = useState<Set<Region>>(() => {
     const initial = new Set<Region>();
@@ -60,6 +62,24 @@ export function ManualAdvancementPicks({
     if (!onlyMax || maxPoints == null) return data.eligibleExtra;
     return data.eligibleExtra.filter((b) => b.points >= maxPoints);
   }, [data.eligibleExtra, onlyMax, maxPoints]);
+
+  const dirtyRegions = useMemo(() => {
+    const dirty = new Set<Region>();
+    for (const r of ALL_REGIONS) {
+      const saved = new Set(regions[r].selectedIds);
+      const current = selected[r];
+      if (saved.size !== current.size) {
+        dirty.add(r);
+        continue;
+      }
+      for (const id of current) {
+        if (!saved.has(id)) dirty.add(r);
+      }
+    }
+    return dirty;
+  }, [regions, selected]);
+
+  const hasUnsavedChanges = dirtyRegions.size > 0;
 
   function toggle(branchId: string) {
     setSelected((prev) => {
@@ -78,7 +98,26 @@ export function ManualAdvancementPicks({
     try {
       await saveManualAdvances(roundId, region, [...selected[region]]);
       setSavedRegions((prev) => new Set(prev).add(region));
-      setMessage("Advancement picks saved. Public board updated.");
+      setMessage(`Saved ${REGION_LABELS[region]} picks. Public board updated.`);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSaveAll() {
+    setSaveAllConfirmOpen(false);
+    setLoading(true);
+    setMessage("");
+    try {
+      await saveManualAdvancesAll(roundId, {
+        luzon: [...selected.luzon],
+        ncr: [...selected.ncr],
+        vismin: [...selected.vismin],
+      });
+      setSavedRegions(new Set(ALL_REGIONS));
+      setMessage("All regional picks saved. Public board updated.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -107,10 +146,11 @@ export function ManualAdvancementPicks({
       <p className="text-sm text-sd-muted">
         <span className="font-medium text-sd-glow">{savedRegions.size}</span> of{" "}
         {ALL_REGIONS.length} regions saved
-        {savedRegions.size < ALL_REGIONS.length && (
-          <span className="text-sd-muted/70">
+        {hasUnsavedChanges && (
+          <span className="text-amber-200/90">
             {" "}
-            — save each region tab after reviewing picks
+            · {dirtyRegions.size} region
+            {dirtyRegions.size === 1 ? "" : "s"} with unsaved changes
           </span>
         )}
       </p>
@@ -232,16 +272,44 @@ export function ManualAdvancementPicks({
         </p>
       </section>
 
-      <AdminActionRow hint={ADMIN_ADVANCEMENT_HINTS.saveRegionPicks}>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handleSave}
-          className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+      {saveAllConfirmOpen && (
+        <AdminConfirmPanel
+          title={`Save all regions for ${roundName}?`}
+          confirmLabel="Save all regions"
+          tone="warning"
+          busy={loading}
+          onConfirm={handleSaveAll}
+          onCancel={() => setSaveAllConfirmOpen(false)}
         >
-          {loading ? "Saving…" : `Save picks for ${REGION_LABELS[region]}`}
-        </button>
-      </AdminActionRow>
+          <p>
+            This writes Luzon, NCR, and VisMin advancement picks in one step and
+            refreshes the public board.
+          </p>
+        </AdminConfirmPanel>
+      )}
+
+      <div className="flex flex-wrap items-start gap-4">
+        <AdminActionRow hint={ADMIN_ADVANCEMENT_HINTS.saveRegionPicks}>
+          <button
+            type="button"
+            disabled={loading || saveAllConfirmOpen}
+            onClick={handleSave}
+            className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {loading ? "Saving…" : `Save ${REGION_LABELS[region]} only`}
+          </button>
+        </AdminActionRow>
+        <AdminActionRow hint={ADMIN_ADVANCEMENT_HINTS.saveAllPicks}>
+          <button
+            type="button"
+            disabled={loading || saveAllConfirmOpen}
+            onClick={() => setSaveAllConfirmOpen(true)}
+            className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          >
+            Save all regions
+          </button>
+        </AdminActionRow>
+      </div>
       {message && <p className="text-sm text-sd-glow">{message}</p>}
     </div>
   );

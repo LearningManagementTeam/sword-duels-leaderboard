@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "generate:branches": "node scripts/generate-branches-csv.mjs",
-    "test": "npx tsx --test src/lib/playoff-map.test.ts"
+    "test": "npx tsx --test src/lib/playoff-map.test.ts src/lib/parse-score-paste.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

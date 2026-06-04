@@ -10,6 +10,7 @@ interface Props {
   onConfirm: () => void;
   onCancel: () => void;
   busy?: boolean;
+  confirmDisabled?: boolean;
   tone?: "warning" | "danger";
 }
 
@@ -21,6 +22,7 @@ export function AdminConfirmPanel({
   onConfirm,
   onCancel,
   busy = false,
+  confirmDisabled = false,
   tone = "warning",
 }: Props) {
   const panelClass =
@@ -44,7 +46,7 @@ export function AdminConfirmPanel({
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || confirmDisabled}
           onClick={onConfirm}
           className={`rounded-lg px-4 py-2 text-sm disabled:opacity-50 ${confirmClass}`}
         >

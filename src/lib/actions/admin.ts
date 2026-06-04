@@ -127,7 +127,141 @@ export async function importBranchesFromCsv(csvText?: string) {
 }
 
 /** June Area-wide: import participating branches + seed Round 1 entry rows. */
-export async function importParticipatingBranchesForJuneArea(csvText: string) {
+export async function previewParticipatingBranchesImport(csvText: string) {
+  await requireAdmin();
+
+  if (!csvText?.trim()) {
+    return {
+      ok: false as const,
+      rowCount: 0,
+      regionCounts: { luzon: 0, ncr: 0, vismin: 0 } as Record<Region, number>,
+      representativesCount: 0,
+      sampleBranches: [] as string[],
+      errors: ["CSV file is empty."],
+    };
+  }
+
+  const { rows, errors } = parseBranchesCsv(csvText);
+  const regionCounts: Record<Region, number> = { luzon: 0, ncr: 0, vismin: 0 };
+  for (const row of rows) {
+    regionCounts[row.region]++;
+  }
+
+  return {
+    ok: errors.length === 0,
+    rowCount: rows.length,
+    regionCounts,
+    representativesCount: countRowsWithRepresentatives(rows),
+    sampleBranches: rows.slice(0, 5).map((r) => r.branch_name),
+    errors,
+  };
+}
+
+export async function getJuneImportGuard() {
+  await requireAdmin();
+
+  if (!isSupabaseServiceConfigured()) {
+    return {
+      blocked: false,
+      warning: false,
+      publishedRoundNumbers: [] as number[],
+      message: null as string | null,
+    };
+  }
+
+  const service = await createServiceClient();
+  const { data: season } = await service
+    .from("seasons")
+    .select("id")
+    .eq("slug", "june_area")
+    .single();
+
+  if (!season) {
+    return {
+      blocked: false,
+      warning: false,
+      publishedRoundNumbers: [] as number[],
+      message: null as string | null,
+    };
+  }
+
+  const { data: rounds } = await service
+    .from("rounds")
+    .select("round_number, status")
+    .eq("season_id", season.id)
+    .eq("status", "published");
+
+  const publishedRoundNumbers = (rounds ?? [])
+    .map((r) => r.round_number)
+    .sort((a, b) => a - b);
+
+  if (publishedRoundNumbers.some((n) => n >= 2)) {
+    return {
+      blocked: true,
+      warning: true,
+      publishedRoundNumbers,
+      message: `June Round ${Math.max(...publishedRoundNumbers)} or earlier is already live. Re-import is blocked to protect published standings.`,
+    };
+  }
+
+  if (publishedRoundNumbers.includes(1)) {
+    return {
+      blocked: false,
+      warning: true,
+      publishedRoundNumbers,
+      message:
+        "June Round 1 is already published. Re-importing replaces branch records and re-seeds Round 1 draft rows.",
+    };
+  }
+
+  return {
+    blocked: false,
+    warning: false,
+    publishedRoundNumbers,
+    message: null as string | null,
+  };
+}
+
+async function assertJuneImportAllowed(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  seasonId: string,
+  force?: boolean
+): Promise<{ ok: true } | { ok: false; errors: string[] }> {
+  const { data: rounds } = await service
+    .from("rounds")
+    .select("round_number, status")
+    .eq("season_id", seasonId)
+    .eq("status", "published");
+
+  const publishedRoundNumbers = (rounds ?? [])
+    .map((r) => r.round_number)
+    .sort((a, b) => a - b);
+
+  if (publishedRoundNumbers.some((n) => n >= 2)) {
+    return {
+      ok: false,
+      errors: [
+        `June Round ${Math.max(...publishedRoundNumbers)} is already live. Re-import is blocked once Round 2+ has been published.`,
+      ],
+    };
+  }
+
+  if (publishedRoundNumbers.includes(1) && !force) {
+    return {
+      ok: false,
+      errors: [
+        "June Round 1 is already published. Confirm the re-import warning in the admin UI before proceeding.",
+      ],
+    };
+  }
+
+  return { ok: true };
+}
+
+export async function importParticipatingBranchesForJuneArea(
+  csvText: string,
+  options?: { force?: boolean }
+) {
   const { email } = await requireAdmin();
 
   if (!csvText?.trim()) {
@@ -164,6 +298,11 @@ export async function importParticipatingBranchesForJuneArea(csvText: string) {
     .single();
   if (!season) {
     return { ok: false as const, errors: ["June season not found in database."] };
+  }
+
+  const importGuard = await assertJuneImportAllowed(service, season.id, options?.force);
+  if (!importGuard.ok) {
+    return { ok: false as const, errors: importGuard.errors };
   }
 
   const { data: round } = await service
@@ -787,11 +926,30 @@ export async function previewDraftStandings(
   return { seasonSlug, rows };
 }
 
-export async function saveManualAdvances(
-  roundId: string,
-  region: Region,
-  branchIds: string[]
-) {
+type ManualAdvanceContext = {
+  service: Awaited<ReturnType<typeof createServiceClient>>;
+  email: string;
+  round: {
+    id: string;
+    season_id: string;
+    round_number: number;
+    status: string;
+  };
+  seasonSlug: SeasonSlug;
+  branchInputs: Array<{
+    id: string;
+    branch_code: string;
+    branch_name: string;
+    area: string;
+    region: Region;
+  }>;
+  publishedRoundNumbers: number[];
+  agg: ReturnType<typeof aggregatePublishedResults>;
+};
+
+async function loadManualAdvanceContext(
+  roundId: string
+): Promise<ManualAdvanceContext> {
   const { email } = await requireAdmin();
   const service = await createServiceClient();
 
@@ -862,9 +1020,25 @@ export async function saveManualAdvances(
       region: b.region as Region,
     })) ?? [];
 
-  const autoOnly = computeStandings(seasonSlug, branchInputs, agg, {
-    filterRegion: region,
+  return {
+    service,
+    email,
+    round,
+    seasonSlug,
+    branchInputs,
     publishedRoundNumbers,
+    agg,
+  };
+}
+
+async function persistRegionManualAdvances(
+  ctx: ManualAdvanceContext,
+  region: Region,
+  branchIds: string[]
+) {
+  const autoOnly = computeStandings(ctx.seasonSlug, ctx.branchInputs, ctx.agg, {
+    filterRegion: region,
+    publishedRoundNumbers: ctx.publishedRoundNumbers,
     manualAdvances: [],
   });
 
@@ -872,14 +1046,14 @@ export async function saveManualAdvances(
     autoOnly
       .filter(
         (r) =>
-          r.eliminated_in_round === round.round_number ||
-          r.tie_breaker_in_round === round.round_number
+          r.eliminated_in_round === ctx.round.round_number ||
+          r.tie_breaker_in_round === ctx.round.round_number
       )
       .map((r) => r.branch_id)
   );
 
   for (const branchId of branchIds) {
-    const branch = branchInputs.find((b) => b.id === branchId);
+    const branch = ctx.branchInputs.find((b) => b.id === branchId);
     if (!branch || branch.region !== region) {
       throw new Error("Invalid branch for this region.");
     }
@@ -890,36 +1064,79 @@ export async function saveManualAdvances(
     }
   }
 
-  await service
+  await ctx.service
     .from("manual_round_advances")
     .delete()
-    .eq("season_id", round.season_id)
-    .eq("round_number", round.round_number)
+    .eq("season_id", ctx.round.season_id)
+    .eq("round_number", ctx.round.round_number)
     .eq("region", region);
 
   if (branchIds.length > 0) {
-    const { error: insertErr } = await service.from("manual_round_advances").insert(
-      branchIds.map((branch_id) => ({
-        season_id: round.season_id,
-        round_number: round.round_number,
-        region,
-        branch_id,
-        created_by_email: email,
-      }))
-    );
+    const { error: insertErr } = await ctx.service
+      .from("manual_round_advances")
+      .insert(
+        branchIds.map((branch_id) => ({
+          season_id: ctx.round.season_id,
+          round_number: ctx.round.round_number,
+          region,
+          branch_id,
+          created_by_email: ctx.email,
+        }))
+      );
     if (insertErr) throw new Error(insertErr.message);
   }
+}
 
-  await recomputeAndPublishStandings(service, seasonSlug, round.season_id);
+async function finalizeManualAdvances(
+  ctx: ManualAdvanceContext,
+  roundId: string,
+  auditDetail: Record<string, unknown>
+) {
+  await recomputeAndPublishStandings(
+    ctx.service,
+    ctx.seasonSlug,
+    ctx.round.season_id
+  );
 
-  await logAudit(email, "save_manual_advances", "round", roundId, {
-    region,
-    count: branchIds.length,
-    roundNumber: round.round_number,
-  });
+  await logAudit(ctx.email, "save_manual_advances", "round", roundId, auditDetail);
 
   revalidatePath("/", "layout");
   revalidatePath("/admin");
+}
+
+export async function saveManualAdvances(
+  roundId: string,
+  region: Region,
+  branchIds: string[]
+) {
+  const ctx = await loadManualAdvanceContext(roundId);
+  await persistRegionManualAdvances(ctx, region, branchIds);
+  await finalizeManualAdvances(ctx, roundId, {
+    region,
+    count: branchIds.length,
+    roundNumber: ctx.round.round_number,
+  });
+  return { ok: true };
+}
+
+export async function saveManualAdvancesAll(
+  roundId: string,
+  picksByRegion: Record<Region, string[]>
+) {
+  const ctx = await loadManualAdvanceContext(roundId);
+  const counts: Record<Region, number> = { luzon: 0, ncr: 0, vismin: 0 };
+
+  for (const region of REGIONS) {
+    const branchIds = picksByRegion[region] ?? [];
+    await persistRegionManualAdvances(ctx, region, branchIds);
+    counts[region] = branchIds.length;
+  }
+
+  await finalizeManualAdvances(ctx, roundId, {
+    allRegions: true,
+    counts,
+    roundNumber: ctx.round.round_number,
+  });
   return { ok: true };
 }
 

@@ -9,16 +9,24 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 export default async function AuditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ action?: string; limit?: string }>;
+  searchParams: Promise<{
+    action?: string;
+    limit?: string;
+    entity?: string;
+    email?: string;
+  }>;
 }) {
-  const { action, limit: limitParam } = await searchParams;
+  const { action, limit: limitParam, entity, email } = await searchParams;
   const limit = Math.min(
     Math.max(parseInt(limitParam ?? "100", 10) || 100, 1),
     200
   );
-  const actionPrefix = action?.trim() || undefined;
   const entries = isSupabaseConfigured()
-    ? await getAuditLog(limit, actionPrefix)
+    ? await getAuditLog(limit, {
+        actionPrefix: action?.trim() || undefined,
+        entityType: entity?.trim() || undefined,
+        emailContains: email?.trim() || undefined,
+      })
     : [];
 
   return (
