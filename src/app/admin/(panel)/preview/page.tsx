@@ -88,7 +88,7 @@ export default function AdminPreviewPage() {
         </Link>
         ,{" "}
         <Link href="/august" className="sd-link">
-          /august
+          The Nationals (/august)
         </Link>
       </p>
     </div>

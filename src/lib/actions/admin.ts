@@ -7,6 +7,7 @@ import { join } from "path";
 import { parseBranchesCsv } from "@/lib/branches-csv";
 import { branchUpsertPayload, countRowsWithRepresentatives } from "@/lib/branch-upsert";
 import { parseRepresentativesCsv } from "@/lib/representatives-csv";
+import { resolveParticipantBranchIds, assertSeasonParticipantsReady } from "@/lib/season-participants";
 import {
   aggregatePublishedResults,
   computeStandings,
@@ -175,8 +176,12 @@ export async function importParticipatingBranchesForJuneArea(csvText: string) {
     return { ok: false as const, errors: ["June Round 1 not found in database."] };
   }
 
-  const { data: branches } = await service.from("branches").select("id");
-  const branchIds = (branches ?? []).map((b) => b.id);
+  const codes = rows.map((r) => r.branch_code);
+  const { data: importedBranches } = await service
+    .from("branches")
+    .select("id")
+    .in("branch_code", codes);
+  const branchIds = (importedBranches ?? []).map((b) => b.id);
 
   if (branchIds.length > 0) {
     const { error: seedError } = await service.from("round_results").upsert(
@@ -385,6 +390,8 @@ export async function publishRound(roundId: string) {
   const seasonRaw = round.seasons as { slug: SeasonSlug } | { slug: SeasonSlug }[];
   const seasonSlug = (Array.isArray(seasonRaw) ? seasonRaw[0] : seasonRaw).slug;
 
+  await assertSeasonParticipantsReady(service, round.season_id, seasonSlug);
+
   const { error: statusErr } = await service
     .from("rounds")
     .update({
@@ -528,17 +535,7 @@ async function getParticipantBranchIds(
   seasonId: string,
   seasonSlug: SeasonSlug
 ) {
-  const { data } = await service
-    .from("season_participants")
-    .select("branch_id")
-    .eq("season_id", seasonId);
-  const ids = (data ?? []).map((r) => r.branch_id);
-  if (ids.length > 0) return ids;
-  if (seasonSlug === "june_area") {
-    const { data: all } = await service.from("branches").select("id");
-    return (all ?? []).map((b) => b.id);
-  }
-  return [];
+  return resolveParticipantBranchIds(service, seasonId, seasonSlug);
 }
 
 export async function lockPhaseAndAdvance(seasonSlug: SeasonSlug) {

@@ -101,7 +101,7 @@ Respect `prefers-reduced-motion`: animations disabled in globals.
 
 **Don't:** White opaque pills on dark leaderboard; stack multiple blurs per row; change scoring/tie-breaker logic in UI-only tasks; add Swiper/Embla unless requested; add new `bg-slate-*` / `text-amber-*` for chrome (amber only inside `.sd-alert-warning`).
 
-**Wrappers:** [`SdButton.tsx`](src/components/ui/SdButton.tsx), [`SdCard.tsx`](src/components/ui/SdCard.tsx), [`SdDataTable.tsx`](src/components/ui/SdDataTable.tsx), [`AdminNav.tsx`](src/components/admin/AdminNav.tsx) for active admin tabs.
+**Wrappers:** [`SdButton.tsx`](src/components/ui/SdButton.tsx), [`SdButtonLink.tsx`](src/components/ui/SdButtonLink.tsx), [`SdCard.tsx`](src/components/ui/SdCard.tsx), [`SdDataTable.tsx`](src/components/ui/SdDataTable.tsx), [`AdminNav.tsx`](src/components/admin/AdminNav.tsx) for active admin tabs.
 
 ## Tie breaker styling
 

@@ -19,6 +19,8 @@ description: >-
 
 For database changes → use skill **sword-duels-supabase** (MCP `apply_migration`).
 
+For admin panel work (rounds, publish, advancement, audit) → read skill **sword-duels-admin**.
+
 ## Quick reference
 
 | Surface | URL |

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AuditLogFilters } from "@/components/admin/AuditLogFilters";
 import { SdDataTable } from "@/components/ui/SdDataTable";
 import { getAuditLog } from "@/lib/data/queries";
@@ -44,8 +45,11 @@ export default async function AuditPage({
         <tbody>
           {entries.length === 0 ? (
             <tr>
-              <td colSpan={5} className="py-6 text-center text-sd-muted/60">
-                No entries yet.
+              <td colSpan={5} className="py-8">
+                <AdminEmptyState
+                  title="No actions logged yet"
+                  detail="Import branches, publish a round, or update branding — your team's changes will appear here."
+                />
               </td>
             </tr>
           ) : (

@@ -21,6 +21,45 @@ interface Props {
   initialWithReps: number;
 }
 
+function RepRowFields({
+  row,
+  onUpdate,
+}: {
+  row: RowState;
+  onUpdate: (
+    branch_id: string,
+    field: "representative_1" | "representative_2",
+    value: string
+  ) => void;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      <label className="block text-xs">
+        <span className="text-sd-muted/70">Representative 1</span>
+        <input
+          value={row.representative_1}
+          onChange={(e) =>
+            onUpdate(row.branch_id, "representative_1", e.target.value)
+          }
+          placeholder="Primary name"
+          className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
+        />
+      </label>
+      <label className="block text-xs">
+        <span className="text-sd-muted/70">Representative 2</span>
+        <input
+          value={row.representative_2}
+          onChange={(e) =>
+            onUpdate(row.branch_id, "representative_2", e.target.value)
+          }
+          placeholder="Optional"
+          className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
+        />
+      </label>
+    </div>
+  );
+}
+
 export function RepresentativesEditor({ branches, initialWithReps }: Props) {
   const [rows, setRows] = useState<RowState[]>(() =>
     branches.map((b) => ({
@@ -110,21 +149,21 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-white">Edit in table</h2>
+        <h2 className="text-lg font-semibold text-white">Edit representatives</h2>
         <p className="mt-1 text-sm text-sd-muted">
-          Update names anytime. Leave blank to clear a representative. Click
-          save when finished.
+          Update names anytime. Leave blank to clear a representative. Cards on
+          mobile, full table on larger screens.
         </p>
       </div>
 
-      <div className="sd-neon-panel/50 px-4 py-3 text-sm">
+      <div className="sd-alert-info text-sm">
         <span className="font-medium text-emerald-300">{filledCount}</span>
-        <span className="text-sd-muted">
+        <span>
           {" "}
           of {rows.length} branches have a primary representative
         </span>
         {initialWithReps !== filledCount && (
-          <span className="text-sd-muted/60"> (unsaved edits in table)</span>
+          <span className="opacity-70"> (unsaved edits)</span>
         )}
       </div>
 
@@ -150,9 +189,23 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
         </select>
       </div>
 
-      <div className="sd-table-wrap sd-inset max-h-[50vh]">
+      <ul className="space-y-3 md:hidden">
+        {filtered.map((row) => (
+          <li key={row.branch_id} className="sd-neon-panel space-y-3 p-4">
+            <div>
+              <p className="font-medium text-white">{row.branch_name}</p>
+              <p className="text-xs text-sd-muted/70">
+                {row.branch_code} · {row.area} · {REGION_LABELS[row.region]}
+              </p>
+            </div>
+            <RepRowFields row={row} onUpdate={updateRow} />
+          </li>
+        ))}
+      </ul>
+
+      <div className="sd-table-wrap sd-inset hidden max-h-[50vh] md:block">
         <table className="sd-table min-w-[720px]">
-          <thead className="sticky top-0">
+          <thead className="sticky top-0 z-10 bg-sd-deep/95 shadow-[0_1px_0_rgb(74_222_128/0.25)] backdrop-blur-md">
             <tr>
               <th className="px-2 py-2 text-left">Branch</th>
               <th className="px-2 py-2 text-left">Area</th>
@@ -213,7 +266,8 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
 
       {message && (
         <p
-          className={`text-sm ${error ? "text-red-300" : "text-emerald-300"}`}
+          className={`text-sm ${error ? "sd-alert-warning" : "sd-alert-info"}`}
+          role="status"
         >
           {message}
         </p>

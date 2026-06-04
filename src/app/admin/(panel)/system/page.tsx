@@ -27,6 +27,14 @@ const migrations = [
     file: "013_manually_advanced_after_round.sql",
     note: "Committee pick badge persisted on published standings",
   },
+  {
+    file: "014_carousel_four_slots.sql",
+    note: "4 carousel slots, 3 MB per photo",
+  },
+  {
+    file: "015_sponsor_logos.sql",
+    note: "3 partner logo slots on home (marquee strip)",
+  },
 ];
 
 const envVars = [
@@ -39,9 +47,9 @@ const envVars = [
 export default function AdminSystemPage() {
   return (
     <div className="space-y-8 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold">System & stack</h1>
-        <p className="mt-1 text-sm text-sd-muted">
+      <div className="sd-page-header">
+        <h1>System & stack</h1>
+        <p>
           Technical reference for setup and troubleshooting. Day-to-day scoring
           is on the Dashboard and Rounds pages.
         </p>

@@ -10,7 +10,7 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 | **Rounds** | Enter and publish scores |
 | **Mechanics** | Edit public “How it works” intro and announcements (rule tables auto-update) |
 | **Competition map** | Set “you are here” on the home page journey + caption |
-| **Branding** | Hero logo, home photo carousel (4 slots), header icon |
+| **Branding** | Hero logo, home photo carousel (4 slots), **partner logos** (3 slots), header icon |
 | **System & stack** | Tech setup, migrations, architecture (IT / troubleshooting) |
 
 Public mechanics: **How it works** on the site header → `/mechanics`
@@ -43,6 +43,12 @@ Optional: **Suggest from latest June round** pre-fills milestone and caption; re
 2. Upload up to **4** photos (slots 1–4). JPG, PNG, or WebP, max **3 MB** each; **1920×1080** landscape recommended.
 3. The home page shows **one** carousel that rotates through uploaded photos. Leave a slot empty if you want fewer than four.
 
+## Partner logos (home marquee)
+
+1. Admin → **Branding** → **Partner logos**
+2. Upload up to **3** logos. JPG, PNG, WebP, or SVG; **320 × 80 px** (4:1) recommended for even sizing.
+3. Logos scroll in a continuous strip above **Live ranks** on the home page.
+
 ## Logo (one-time or when it changes)
 
 1. Admin → **Branding**
@@ -56,6 +62,8 @@ Optional: **Suggest from latest June round** pre-fills milestone and caption; re
 3. **Upload** → **Import for June Round 1**
 4. Or edit names later: **Representatives** → table → **Save all**
 5. Admin → **Rounds** → **June — Round 1** → enter scores → publish
+
+**Regional counts:** Luzon shows **57** branches, NCR **49**, VisMin **29** — **135 total** across all regions. A single regional board is not the full import.
 
 ## Weekly rounds (June & July) — elimination flow
 
@@ -114,14 +122,14 @@ You do **not** need to change the global 32/16/8 caps or enter fake point values
 1. Publish **June — Round 3**.
 2. Check each regional **June** page — 8 survivors per region (24 total).
 3. Admin → **Advancement** → **Lock & advance** for **June**.
-4. July Round 1 shows only those 24 branches.
+4. July Round 1 shows only those **24** branches. You cannot publish July until this lock runs (admin will block publish if the roster is empty).
 
 ## End of July
 
 1. Publish **July — Round 3** for all regions.
 2. Check each regional page — 1 champion per region.
 3. **Lock & advance** for **July**.
-4. August shows three regional champions.
+4. **The Nationals** shows three regional champions. Publish is blocked until July is locked and seeded.
 
 ## TV at an event
 
@@ -159,6 +167,8 @@ If upgrading an existing Supabase project, run in SQL Editor (skip any you alrea
 | `011_branding_bucket_public.sql` | Public read for branding carousel photos |
 | `012_round_finish_order.sql` | Round 3 finish order (race-to-correct) |
 | `013_manually_advanced_after_round.sql` | Committee pick badge on published standings |
+| `014_carousel_four_slots.sql` | 4 carousel slots, 3 MB per photo |
+| `015_sponsor_logos.sql` | 3 partner logo slots on home |
 
 **Note:** Migration `009` (custom page backgrounds) was removed from the repo — backgrounds are built-in only. If you already ran 009, it is harmless. Ensure the branding bucket allows 5MB (included in `ALL-IN-ONE-MIGRATION.sql` tail or re-run the bucket `UPDATE` there).
 

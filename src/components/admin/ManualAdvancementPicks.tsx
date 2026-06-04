@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { InfoTip } from "@/components/admin/InfoTip";
 import { saveManualAdvances } from "@/lib/actions/admin";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
 import type { AdvancementPickBranch } from "@/lib/data/admin-queries";
+
+const ALL_REGIONS: Region[] = ["luzon", "ncr", "vismin"];
 
 interface RegionData {
   autoAdvanced: AdvancementPickBranch[];
@@ -43,6 +44,13 @@ export function ManualAdvancementPicks({
   const [onlyMax, setOnlyMax] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [savedRegions, setSavedRegions] = useState<Set<Region>>(() => {
+    const initial = new Set<Region>();
+    for (const r of ALL_REGIONS) {
+      if (regions[r].selectedIds.length > 0) initial.add(r);
+    }
+    return initial;
+  });
 
   const data = regions[region];
 
@@ -67,6 +75,7 @@ export function ManualAdvancementPicks({
     setMessage("");
     try {
       await saveManualAdvances(roundId, region, [...selected[region]]);
+      setSavedRegions((prev) => new Set(prev).add(region));
       setMessage("Advancement picks saved. Public board updated.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Save failed");
@@ -78,10 +87,7 @@ export function ManualAdvancementPicks({
   return (
     <div className="space-y-6">
       <div className="sd-page-header">
-        <Link href={`/admin/rounds/${roundId}`} className="sd-link text-sm">
-          ← Back to {roundName}
-        </Link>
-        <h1 className="mt-2">
+        <h1>
           Manage advancement
           <InfoTip>
             The system keeps the top N per region automatically. Check extra
@@ -98,21 +104,45 @@ export function ManualAdvancementPicks({
         )}
       </div>
 
+      <p className="text-sm text-sd-muted">
+        <span className="font-medium text-sd-glow">{savedRegions.size}</span> of{" "}
+        {ALL_REGIONS.length} regions saved
+        {savedRegions.size < ALL_REGIONS.length && (
+          <span className="text-sd-muted/70">
+            {" "}
+            — save each region tab after reviewing picks
+          </span>
+        )}
+      </p>
+
       <div className="flex flex-wrap gap-2">
-        {(["luzon", "ncr", "vismin"] as Region[]).map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => setRegion(r)}
-            className={`rounded-lg px-4 py-2 text-sm transition ${
-              r === region
-                ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep"
-                : "sd-glass text-sd-muted hover:text-white"
-            }`}
-          >
-            {REGION_LABELS[r]}
-          </button>
-        ))}
+        {ALL_REGIONS.map((r) => {
+          const isSaved = savedRegions.has(r);
+          return (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setRegion(r)}
+              className={`rounded-lg px-4 py-2 text-sm transition ${
+                r === region
+                  ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep"
+                  : "sd-glass text-sd-muted hover:text-white"
+              }`}
+            >
+              {REGION_LABELS[r]}
+              {isSaved && (
+                <span
+                  className={`ml-1.5 text-xs ${
+                    r === region ? "text-sd-deep/80" : "text-emerald-300/90"
+                  }`}
+                  aria-hidden
+                >
+                  ✓
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div className="sd-neon-panel p-4 text-sm text-sd-muted">
@@ -169,8 +199,9 @@ export function ManualAdvancementPicks({
 
         <ul className="sd-inset max-h-[40vh] overflow-auto rounded-xl">
           {filteredExtra.length === 0 ? (
-            <li className="px-3 py-6 text-center text-sd-muted/60">
-              No eliminated branches to add in this region.
+            <li className="px-3 py-6 text-center text-sm text-sd-muted/70">
+              The automatic cut already decided who advances in{" "}
+              {REGION_LABELS[region]} — no extra picks needed here.
             </li>
           ) : (
             filteredExtra.map((b) => (

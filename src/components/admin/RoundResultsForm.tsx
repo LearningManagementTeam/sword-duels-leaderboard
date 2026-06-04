@@ -10,10 +10,13 @@ import {
   patchOperationStep,
   type OperationStep,
 } from "@/components/admin/AdminOperationPanel";
+import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
+import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
+import { AdminPostPublishChecklist } from "@/components/admin/AdminPostPublishChecklist";
 import { InfoTip } from "@/components/admin/InfoTip";
+import { SdButtonLink } from "@/components/ui/SdButtonLink";
 import {
   checkPublishReadiness,
-  formatPublishConfirmMessage,
 } from "@/lib/publish-readiness";
 import { seasonSlugToPublicPath } from "@/lib/competition-map";
 import {
@@ -45,6 +48,7 @@ interface Props {
   eliminatedBranches?: Branch[];
   priorRoundNumber?: number | null;
   supportsManualAdvances?: boolean;
+  participantGateMessage?: string | null;
   initial: Map<
     string,
     { points: number; wins: number; losses: number; finish_order?: number | null }
@@ -73,6 +77,7 @@ export function RoundResultsForm({
   eliminatedBranches = [],
   priorRoundNumber,
   supportsManualAdvances = false,
+  participantGateMessage = null,
   initial,
 }: Props) {
   const router = useRouter();
@@ -94,6 +99,7 @@ export function RoundResultsForm({
   );
   const [operationError, setOperationError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
   const [values, setValues] = useState<RowValue[]>(() =>
     branches.map((b) => {
       const init = initial.get(b.id);
@@ -182,23 +188,27 @@ export function RoundResultsForm({
     }
   }
 
-  async function handlePublish() {
-    const readiness = checkPublishReadiness(
-      seasonSlug,
-      roundNumber,
-      values,
-      tieBreakerBranches.length
-    );
+  const publishReadiness = useMemo(
+    () =>
+      checkPublishReadiness(
+        seasonSlug,
+        roundNumber,
+        values,
+        tieBreakerBranches.length
+      ),
+    [seasonSlug, roundNumber, values, tieBreakerBranches.length]
+  );
 
-    if (readiness.blockers.length > 0) {
-      setMessage(`Cannot publish: ${readiness.blockers.join(" ")}`);
+  function requestPublish() {
+    if (publishReadiness.blockers.length > 0) {
+      setMessage(`Cannot publish: ${publishReadiness.blockers.join(" ")}`);
       return;
     }
+    setPublishConfirmOpen(true);
+  }
 
-    if (!confirm(formatPublishConfirmMessage(roundName, readiness))) {
-      return;
-    }
-
+  async function executePublish() {
+    setPublishConfirmOpen(false);
     clearOperation();
     setBusy(true);
     setMessage("");
@@ -270,17 +280,6 @@ export function RoundResultsForm({
     }
   }
 
-  const publishReadiness = useMemo(
-    () =>
-      checkPublishReadiness(
-        seasonSlug,
-        roundNumber,
-        values,
-        tieBreakerBranches.length
-      ),
-    [seasonSlug, roundNumber, values, tieBreakerBranches.length]
-  );
-
   function updateRow(index: number, patch: Partial<RowValue>) {
     setValues((prev) => {
       const next = [...prev];
@@ -294,7 +293,7 @@ export function RoundResultsForm({
     operationTitle != null && operationSteps != null && operationSteps.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 pb-4">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-semibold text-white">{roundName}</h2>
         <span
@@ -311,6 +310,19 @@ export function RoundResultsForm({
         )}
       </div>
 
+      {participantGateMessage && (
+        <div className="sd-alert-warning text-sm">
+          <p className="font-medium">Roster not ready</p>
+          <p className="mt-1">{participantGateMessage}</p>
+          <Link
+            href="/admin/advancement"
+            className="mt-2 inline-block text-xs font-medium text-amber-200 underline hover:text-white"
+          >
+            Go to Advancement → Lock &amp; advance
+          </Link>
+        </div>
+      )}
+
       {showOperationPanel && (
         <AdminOperationPanel
           title={operationTitle!}
@@ -319,18 +331,12 @@ export function RoundResultsForm({
           successMessage={successMessage}
           successDetail={
             successMessage ? (
-              <ul className="space-y-1.5 text-xs text-sd-muted/85">
-                <li>
-                  <Link href={liveBoardHref} className="sd-link" target="_blank">
-                    View live board →
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/admin/competition" className="sd-link">
-                    Update competition map on home →
-                  </Link>
-                </li>
-              </ul>
+              <AdminPostPublishChecklist
+                seasonSlug={seasonSlug}
+                roundId={roundId}
+                supportsManualAdvances={supportsManualAdvances}
+                liveBoardHref={liveBoardHref}
+              />
             ) : undefined
           }
           onDismiss={successMessage ? dismissSuccess : undefined}
@@ -338,7 +344,7 @@ export function RoundResultsForm({
       )}
 
       {mechanics && (
-        <div className="rounded-lg border border-sd-glow/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50/90">
+        <div className="sd-alert-info text-sm">
           <p className="font-medium text-sd-glow">{mechanics.label}</p>
           <p className="mt-1">{mechanics.description}</p>
         </div>
@@ -368,14 +374,13 @@ export function RoundResultsForm({
       )}
 
       {supportsManualAdvances && (
-        <p className="text-sm">
-          <Link
-            href={`/admin/rounds/${roundId}/advances`}
-            className="text-sd-glow underline hover:text-emerald-200"
-          >
-            Manage advancement picks
-          </Link>
-        </p>
+        <SdButtonLink
+          href={`/admin/rounds/${roundId}/advances`}
+          variant="fuchsia"
+          className="px-3 py-1.5 text-sm"
+        >
+          Manage advancement picks →
+        </SdButtonLink>
       )}
 
       {(eliminatedBranches.length > 0 || tieBreakerBranches.length > 0) &&
@@ -410,9 +415,35 @@ export function RoundResultsForm({
         disabled={busy}
         className={`min-w-0 space-y-4 border-0 p-0 m-0 ${busy ? "opacity-75" : ""}`}
       >
-        <div className="max-h-[60vh] overflow-auto rounded-xl border border-sd-glow/20 sd-glass">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-sd-panel/95 backdrop-blur">
+        {values.length === 0 ? (
+          <AdminEmptyState
+            title={
+              participantGateMessage
+                ? "Roster not ready for scoring"
+                : "No branches to score yet"
+            }
+            detail={
+              participantGateMessage
+                ? "Lock the prior phase on the Advancement page to seed participants, then return here."
+                : "Import branches for June Round 1, or check that the correct phase is locked."
+            }
+            action={
+              participantGateMessage ? (
+                <SdButtonLink href="/admin/advancement" variant="ghost" className="px-3 py-1.5 text-sm">
+                  Go to Advancement
+                </SdButtonLink>
+              ) : (
+                <SdButtonLink href="/admin/branches" variant="ghost" className="px-3 py-1.5 text-sm">
+                  Load roster
+                </SdButtonLink>
+              )
+            }
+          />
+        ) : (
+          <>
+        <div className="max-h-[min(60vh,calc(100vh-14rem))] overflow-auto rounded-xl border border-sd-glow/20 sd-glass">
+          <table className="sd-table min-w-[320px]">
+            <thead className="sticky top-0 z-10 bg-sd-deep/95 shadow-[0_1px_0_rgb(74_222_128/0.25)] backdrop-blur-md">
               <tr>
                 <th className="px-3 py-2 text-left text-sd-muted">Branch</th>
                 {kind === "last_man_standing" && (
@@ -504,6 +535,8 @@ export function RoundResultsForm({
           seasonSlug={seasonSlug}
           getDraftResults={getDraftResults}
         />
+          </>
+        )}
       </fieldset>
 
       {publishReadiness.blockers.length > 0 && (
@@ -518,10 +551,11 @@ export function RoundResultsForm({
       )}
 
       {publishReadiness.warnings.length > 0 &&
-        publishReadiness.blockers.length === 0 && (
-          <div className="rounded-lg border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+        publishReadiness.blockers.length === 0 &&
+        !publishConfirmOpen && (
+          <div className="sd-alert-warning text-sm">
             <p className="font-medium">Review before publishing</p>
-            <ul className="mt-1 list-inside list-disc text-amber-200/90">
+            <ul className="mt-1 list-inside list-disc opacity-90">
               {publishReadiness.warnings.map((w) => (
                 <li key={w}>{w}</li>
               ))}
@@ -529,35 +563,61 @@ export function RoundResultsForm({
           </div>
         )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={handleSave}
-          className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+      {publishConfirmOpen && (
+        <AdminConfirmPanel
+          title={`Publish ${roundName}?`}
+          confirmLabel="Publish now"
+          onConfirm={executePublish}
+          onCancel={() => setPublishConfirmOpen(false)}
+          busy={busy}
         >
-          {busy && operationTitle === "Saving draft"
-            ? "Saving draft…"
-            : "Save draft"}
-        </button>
-        <button
-          type="button"
-          disabled={busy || publishReadiness.blockers.length > 0}
-          onClick={handlePublish}
-          className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-        >
-          {busy && operationTitle === "Publishing round"
-            ? "Publishing…"
-            : "Save & publish"}
-        </button>
-        <InfoTip>
-          Publishing applies the regional cut. Use advancement picks for tie
-          breakers.
-        </InfoTip>
-      </div>
-      {message && !showOperationPanel && (
-        <p className="text-sm text-sd-glow">{message}</p>
+          <p>This updates the public leaderboard immediately.</p>
+          {publishReadiness.warnings.length > 0 && (
+            <ul className="mt-2 list-inside list-disc opacity-90">
+              {publishReadiness.warnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          )}
+        </AdminConfirmPanel>
       )}
+
+      <div
+        className="sticky bottom-0 z-20 -mx-4 mt-2 space-y-3 border-t border-emerald-500/20 bg-sd-deep/95 px-4 py-3 backdrop-blur-xl sm:-mx-0 sm:rounded-xl sm:border sm:border-emerald-500/15"
+        aria-label="Round actions"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleSave}
+            className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {busy && operationTitle === "Saving draft"
+              ? "Saving draft…"
+              : "Save draft"}
+          </button>
+          <button
+            type="button"
+            disabled={
+              busy || publishReadiness.blockers.length > 0 || publishConfirmOpen
+            }
+            onClick={requestPublish}
+            className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {busy && operationTitle === "Publishing round"
+              ? "Publishing…"
+              : "Save & publish"}
+          </button>
+          <InfoTip>
+            Publishing applies the regional cut. Use advancement picks for tie
+            breakers.
+          </InfoTip>
+        </div>
+        {message && !showOperationPanel && (
+          <p className="text-sm text-sd-glow">{message}</p>
+        )}
+      </div>
     </div>
   );
 }

@@ -18,7 +18,7 @@ export default async function AdvancementPage() {
           lock and copies advancing branches to the next season.{" "}
           <InfoTip>
             Use only after Round 3 is published for all regions. This step seeds
-            the next phase (June → July, July → August) and cannot be undone from
+            the next phase (June → July, July → The Nationals) and cannot be undone from
             this screen.
           </InfoTip>
         </p>

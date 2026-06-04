@@ -5,14 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 const ACTION_OPTIONS = [
   { value: "", label: "All actions" },
   { value: "publish_round", label: "Publish round" },
-  { value: "save_round", label: "Save round (draft)" },
-  { value: "save_competition", label: "Competition map" },
-  { value: "upload_branding", label: "Branding (logo)" },
-  { value: "upload_carousel", label: "Branding (carousel)" },
+  { value: "save_round_results", label: "Save round (draft)" },
+  { value: "save_competition_map", label: "Competition map" },
+  { value: "upload_branding_logo", label: "Branding (logo)" },
+  { value: "upload_carousel_slide", label: "Branding (carousel)" },
+  { value: "upload_sponsor_logo", label: "Branding (partner logos)" },
   { value: "import_", label: "Imports" },
   { value: "lock_phase", label: "Lock phase" },
-  { value: "save_manual", label: "Manual advances" },
-  { value: "save_mechanics", label: "Mechanics content" },
+  { value: "save_manual_advances", label: "Manual advances" },
+  { value: "save_mechanics_content", label: "Mechanics content" },
 ] as const;
 
 const LIMIT_OPTIONS = [50, 100, 200] as const;

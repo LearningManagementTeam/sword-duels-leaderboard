@@ -16,6 +16,12 @@ import {
 } from "@/lib/scoring-config";
 import type { ManualAdvance } from "@/lib/manual-advances";
 import type { StandingRow } from "@/lib/types";
+import {
+  participantGateMessage,
+  resolveParticipantBranchIds,
+} from "@/lib/season-participants";
+import { TARGET_BRANCH_COUNT } from "@/lib/branch-targets";
+import { seasonPhaseLabel } from "@/lib/season-labels";
 
 async function fetchManualAdvances(
   service: Awaited<ReturnType<typeof createServiceClient>>,
@@ -33,9 +39,209 @@ async function fetchManualAdvances(
   }));
 }
 
+export type DashboardRoundRow = {
+  id: string;
+  name: string;
+  round_number: number;
+  status: string;
+  published_at: string | null;
+  created_at: string;
+  seasons: { slug: string; name: string } | { slug: string; name: string }[] | null;
+};
+
+export type DashboardPhaseStatus = {
+  seasonSlug: SeasonSlug;
+  label: string;
+  subtitle: string;
+  rosterCount: number;
+  rosterTarget: number;
+  rosterLabel: string;
+  lockedAt: string | null;
+  round3Published: boolean;
+  latestPublishedRound: {
+    id: string;
+    name: string;
+    published_at: string;
+  } | null;
+  needsAttention: boolean;
+  attentionMessage: string | null;
+  attentionHref: string | null;
+};
+
+function seasonMeta(
+  seasons: DashboardRoundRow["seasons"]
+): { slug: SeasonSlug; name: string } | null {
+  if (!seasons) return null;
+  const raw = Array.isArray(seasons) ? seasons[0] : seasons;
+  if (!raw?.slug) return null;
+  return { slug: raw.slug as SeasonSlug, name: raw.name };
+}
+
+function sortRoundsForRecency(rows: DashboardRoundRow[]): DashboardRoundRow[] {
+  return [...rows].sort((a, b) => {
+    const aTime = a.published_at ?? a.created_at;
+    const bTime = b.published_at ?? b.created_at;
+    return new Date(bTime).getTime() - new Date(aTime).getTime();
+  });
+}
+
+function latestPublishedForSeason(
+  rows: DashboardRoundRow[],
+  seasonSlug: SeasonSlug
+): DashboardPhaseStatus["latestPublishedRound"] {
+  const match = rows
+    .filter((r) => {
+      const meta = seasonMeta(r.seasons);
+      return meta?.slug === seasonSlug && r.status === "published" && r.published_at;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.published_at!).getTime() - new Date(a.published_at!).getTime()
+    )[0];
+  if (!match?.published_at) return null;
+  return {
+    id: match.id,
+    name: match.name,
+    published_at: match.published_at,
+  };
+}
+
+async function buildDashboardPhaseStatuses(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  branchCount: number,
+  rounds: DashboardRoundRow[]
+): Promise<DashboardPhaseStatus[]> {
+  const slugs: SeasonSlug[] = ["june_area", "july_region", "august_finals"];
+  const rosterTargets: Record<SeasonSlug, number> = {
+    june_area: TARGET_BRANCH_COUNT,
+    july_region: 24,
+    august_finals: 3,
+  };
+  const subtitles: Record<SeasonSlug, string> = {
+    june_area: "Area-wide · all branches",
+    july_region: "Regional · 24 survivors",
+    august_finals: "The Nationals · 3 champions",
+  };
+
+  const { data: seasons } = await service
+    .from("seasons")
+    .select("id, slug")
+    .in("slug", slugs);
+
+  const seasonBySlug = new Map(
+    (seasons ?? []).map((s) => [s.slug as SeasonSlug, s.id as string])
+  );
+
+  const statuses: DashboardPhaseStatus[] = [];
+
+  for (const seasonSlug of slugs) {
+    const seasonId = seasonBySlug.get(seasonSlug);
+    let rosterCount = 0;
+    let lockedAt: string | null = null;
+    let round3Published = false;
+
+    if (seasonId) {
+      if (seasonSlug === "june_area") {
+        rosterCount = branchCount;
+      } else {
+        const { count } = await service
+          .from("season_participants")
+          .select("*", { count: "exact", head: true })
+          .eq("season_id", seasonId);
+        rosterCount = count ?? 0;
+      }
+
+      if (seasonSlug !== "august_finals") {
+        const { data: lock } = await service
+          .from("phase_locks")
+          .select("locked_at")
+          .eq("season_id", seasonId)
+          .maybeSingle();
+        lockedAt = lock?.locked_at ?? null;
+      }
+
+      const { data: r3 } = await service
+        .from("rounds")
+        .select("status")
+        .eq("season_id", seasonId)
+        .eq("round_number", 3)
+        .maybeSingle();
+      round3Published = r3?.status === "published";
+    }
+
+    const rosterTarget = rosterTargets[seasonSlug];
+    const latestPublishedRound = latestPublishedForSeason(rounds, seasonSlug);
+    let needsAttention = false;
+    let attentionMessage: string | null = null;
+    let attentionHref: string | null = null;
+
+    if (seasonSlug === "june_area") {
+      if (branchCount > 0 && branchCount < TARGET_BRANCH_COUNT) {
+        needsAttention = true;
+        attentionMessage = `${branchCount} of ${TARGET_BRANCH_COUNT} branches loaded`;
+        attentionHref = "/admin/branches";
+      } else if (round3Published && !lockedAt) {
+        needsAttention = true;
+        attentionMessage = "June Round 3 is live — lock & advance to July";
+        attentionHref = "/admin/advancement";
+      }
+    } else if (seasonSlug === "july_region") {
+      const gate = participantGateMessage(seasonSlug);
+      if (rosterCount === 0 && gate) {
+        needsAttention = true;
+        attentionMessage = "No July roster yet — lock June first";
+        attentionHref = "/admin/advancement";
+      } else if (round3Published && !lockedAt) {
+        needsAttention = true;
+        attentionMessage = "July Round 3 is live — lock & advance to The Nationals";
+        attentionHref = "/admin/advancement";
+      } else if (lockedAt && rosterCount > 0 && rosterCount !== rosterTarget) {
+        needsAttention = true;
+        attentionMessage = `${rosterCount} participants seeded (expect ${rosterTarget})`;
+        attentionHref = "/admin/advancement";
+      }
+    } else {
+      const gate = participantGateMessage(seasonSlug);
+      if (rosterCount === 0 && gate) {
+        needsAttention = true;
+        attentionMessage = "No Nationals roster yet — lock July first";
+        attentionHref = "/admin/advancement";
+      } else if (rosterCount > 0 && rosterCount !== rosterTarget) {
+        needsAttention = true;
+        attentionMessage = `${rosterCount} champions seeded (expect ${rosterTarget})`;
+        attentionHref = "/admin/advancement";
+      }
+    }
+
+    statuses.push({
+      seasonSlug,
+      label: seasonPhaseLabel(seasonSlug),
+      subtitle: subtitles[seasonSlug],
+      rosterCount,
+      rosterTarget,
+      rosterLabel: seasonSlug === "june_area" ? "Branches" : "Participants",
+      lockedAt,
+      round3Published,
+      latestPublishedRound,
+      needsAttention,
+      attentionMessage,
+      attentionHref,
+    });
+  }
+
+  return statuses;
+}
+
 export async function getAdminDashboard() {
   if (!isSupabaseServiceConfigured()) {
-    return { seasons: [], branchCount: 0, rounds: [] };
+    return {
+      seasons: [],
+      branchCount: 0,
+      rounds: [] as DashboardRoundRow[],
+      recentRounds: [] as DashboardRoundRow[],
+      phaseStatuses: [] as DashboardPhaseStatus[],
+      latestPublishedRoundForAdvances: null,
+    };
   }
   const service = await createServiceClient();
 
@@ -44,14 +250,64 @@ export async function getAdminDashboard() {
     service.from("branches").select("*", { count: "exact", head: true }),
     service
       .from("rounds")
-      .select("id, name, round_number, status, published_at, seasons(slug, name)")
+      .select(
+        "id, name, round_number, status, published_at, created_at, seasons(slug, name)"
+      )
       .order("round_number"),
   ]);
 
+  const roundRows = (rounds ?? []) as DashboardRoundRow[];
+  const branchCount = count ?? 0;
+  const phaseStatuses = await buildDashboardPhaseStatuses(
+    service,
+    branchCount,
+    roundRows
+  );
+
   return {
     seasons: seasons ?? [],
-    branchCount: count ?? 0,
-    rounds: rounds ?? [],
+    branchCount,
+    rounds: roundRows,
+    recentRounds: sortRoundsForRecency(roundRows).slice(0, 8),
+    phaseStatuses,
+    latestPublishedRoundForAdvances: pickLatestPublishedRoundForAdvances(
+      roundRows
+    ),
+  };
+}
+
+export type PublishedRoundRef = {
+  id: string;
+  name: string;
+  seasons: { name: string; slug?: string } | { name: string; slug?: string }[] | null;
+};
+
+function pickLatestPublishedRoundForAdvances(
+  rounds: Array<{
+    id: string;
+    name: string;
+    status: string;
+    published_at: string | null;
+    seasons: { slug: string; name: string } | { slug: string; name: string }[] | null;
+  }>
+): PublishedRoundRef | null {
+  const eligible = rounds
+    .filter((r) => r.status === "published" && r.published_at)
+    .filter((r) => {
+      const meta = Array.isArray(r.seasons) ? r.seasons[0] : r.seasons;
+      return meta?.slug === "june_area" || meta?.slug === "july_region";
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.published_at!).getTime() -
+        new Date(a.published_at!).getTime()
+    );
+  const latest = eligible[0];
+  if (!latest) return null;
+  return {
+    id: latest.id,
+    name: latest.name,
+    seasons: latest.seasons,
   };
 }
 
@@ -78,20 +334,25 @@ export async function getRoundWithResults(roundId: string) {
 
   let branchIds: string[] = [];
   if (season) {
-    const { data: participants } = await service
-      .from("season_participants")
-      .select("branch_id")
-      .eq("season_id", season.id);
-    branchIds = (participants ?? []).map((p) => p.branch_id);
+    branchIds = await resolveParticipantBranchIds(
+      service,
+      season.id,
+      seasonSlug
+    );
   }
+
+  const gateMessage =
+    branchIds.length === 0 ? participantGateMessage(seasonSlug) : null;
 
   let branchQuery = service
     .from("branches")
     .select("id, branch_code, branch_name, area, region")
     .order("branch_name");
 
-  if (branchIds.length > 0 && seasonSlug !== "june_area") {
+  if (branchIds.length > 0) {
     branchQuery = branchQuery.in("id", branchIds);
+  } else if (seasonSlug !== "june_area") {
+    branchQuery = branchQuery.in("id", ["00000000-0000-0000-0000-000000000000"]);
   }
 
   const { data: allBranches } = await branchQuery;
@@ -219,6 +480,7 @@ export async function getRoundWithResults(roundId: string) {
     eliminatedBranches,
     priorRoundNumber: round.round_number > 1 ? round.round_number - 1 : null,
     resultMap,
+    participantGateMessage: gateMessage,
     supportsManualAdvances:
       usesPerRoundElimination(seasonSlug) && round.status === "published",
   };
@@ -432,17 +694,7 @@ async function getParticipantBranchIdsForSeason(
   seasonId: string,
   seasonSlug: SeasonSlug
 ) {
-  const { data } = await service
-    .from("season_participants")
-    .select("branch_id")
-    .eq("season_id", seasonId);
-  const ids = (data ?? []).map((r) => r.branch_id);
-  if (ids.length > 0) return ids;
-  if (seasonSlug === "june_area") {
-    const { data: all } = await service.from("branches").select("id");
-    return (all ?? []).map((b) => b.id);
-  }
-  return [];
+  return resolveParticipantBranchIds(service, seasonId, seasonSlug);
 }
 
 export async function getBranchesForRepresentatives() {
@@ -496,7 +748,7 @@ export async function getPhaseLockOverview(): Promise<PhaseLockOverview[]> {
     {
       slug: "july_region",
       description:
-        "Lock July and seed regional champions (Luzon, NCR, VisMin) into August finals.",
+        "Lock July and seed regional champions (Luzon, NCR, VisMin) into The Nationals.",
     },
   ];
 

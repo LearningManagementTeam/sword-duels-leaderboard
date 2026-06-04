@@ -1,4 +1,6 @@
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { BrandingEditor } from "@/components/admin/BrandingEditor";
+import { BrandingSectionNav } from "@/components/admin/BrandingSectionNav";
 import { getBranding } from "@/lib/data/content-queries";
 
 export default async function AdminBrandingPage() {
@@ -6,13 +8,20 @@ export default async function AdminBrandingPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Branding</h1>
-        <p className="mt-1 text-sm text-sd-muted">
-          Upload the Sword Duels logo for the site header and public leaderboard
-          banner.
+      <AdminBreadcrumb
+        items={[
+          { label: "Dashboard", href: "/admin" },
+          { label: "Branding" },
+        ]}
+      />
+      <div className="sd-page-header">
+        <h1>Branding</h1>
+        <p>
+          Partner logos, home photo carousel (4 slots), and hero logo for public
+          leaderboards.
         </p>
       </div>
+      <BrandingSectionNav />
       <BrandingEditor initial={branding} />
     </div>
   );

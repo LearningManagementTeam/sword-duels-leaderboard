@@ -33,6 +33,7 @@ import {
   type BrandingFileCheck,
 } from "@/lib/branding-upload-validation";
 import { HomeSponsorLogoCarousel } from "@/components/home/HomeSponsorLogoCarousel";
+import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 
 interface Props {
   initial: BrandingConfig;
@@ -176,6 +177,8 @@ export function BrandingEditor({ initial }: Props) {
   const [carouselBusySlot, setCarouselBusySlot] = useState<CarouselSlot | null>(
     null
   );
+  const [pendingCarouselRemove, setPendingCarouselRemove] =
+    useState<CarouselSlot | null>(null);
   const [sponsorBusySlot, setSponsorBusySlot] = useState<SponsorLogoSlot | null>(
     null
   );
@@ -299,9 +302,9 @@ export function BrandingEditor({ initial }: Props) {
     }
   }
 
-  async function handleRemoveCarousel(slot: CarouselSlot) {
+  async function executeRemoveCarousel(slot: CarouselSlot) {
     if (carouselLocked) return;
-    if (!confirm(`Remove photo ${slot} from the home carousel?`)) return;
+    setPendingCarouselRemove(null);
 
     setCarouselBusySlot(slot);
     setCarouselStatus({
@@ -493,7 +496,7 @@ export function BrandingEditor({ initial }: Props) {
         photos. Only one file upload runs at a time.
       </p>
 
-      <section className="sd-neon-panel space-y-4 p-6">
+      <section id="branding-partner-logos" className="sd-neon-panel scroll-mt-24 space-y-4 p-6">
         <h2 className="font-semibold text-sd-glow">Partner logos (above Live ranks)</h2>
         <p className="text-sm text-sd-muted">
           Up to 3 company logos in a continuous marquee above Live ranks. Export every
@@ -635,7 +638,7 @@ export function BrandingEditor({ initial }: Props) {
         </div>
       </section>
 
-      <section className="sd-neon-panel space-y-4 p-6">
+      <section id="branding-carousel" className="sd-neon-panel scroll-mt-24 space-y-4 p-6">
         <h2 className="font-semibold text-sd-glow">Home photo carousel</h2>
         <p className="text-sm text-sd-muted">
           One rotating carousel on the home page. Upload up to {CAROUSEL_SLOT_COUNT}{" "}
@@ -753,15 +756,28 @@ export function BrandingEditor({ initial }: Props) {
                         : "Upload photo"}
                   </button>
                 </div>
-                {url && (
-                  <button
-                    type="button"
-                    disabled={carouselLocked}
-                    onClick={() => handleRemoveCarousel(slot)}
-                    className="text-xs text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                {url && pendingCarouselRemove === slot ? (
+                  <AdminConfirmPanel
+                    title={`Remove photo ${slot}?`}
+                    confirmLabel="Remove photo"
+                    tone="danger"
+                    busy={carouselBusySlot === slot}
+                    onConfirm={() => executeRemoveCarousel(slot)}
+                    onCancel={() => setPendingCarouselRemove(null)}
                   >
-                    Remove photo {slot}
-                  </button>
+                    This photo will disappear from the home carousel immediately.
+                  </AdminConfirmPanel>
+                ) : (
+                  url && (
+                    <button
+                      type="button"
+                      disabled={carouselLocked}
+                      onClick={() => setPendingCarouselRemove(slot)}
+                      className="text-xs text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Remove photo {slot}
+                    </button>
+                  )
                 )}
               </div>
             );
@@ -792,7 +808,11 @@ export function BrandingEditor({ initial }: Props) {
         </div>
       </section>
 
-      <form onSubmit={handleLogoUpload} className="sd-neon-panel space-y-3 p-6">
+      <form
+        id="branding-logo"
+        onSubmit={handleLogoUpload}
+        className="sd-neon-panel scroll-mt-24 space-y-3 p-6"
+      >
         <h2 className="font-semibold text-white">Upload logo</h2>
         <p className="text-sm text-sd-muted">
           PNG, JPG, WebP, or SVG · max {LOGO_UPLOAD_SPECS.maxSizeLabel} · hero splash +

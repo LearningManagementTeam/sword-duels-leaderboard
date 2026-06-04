@@ -11,7 +11,7 @@ const regionalExports: { phase: string; region: Region }[] = [
 
 export function ExportStandingsPanel() {
   return (
-    <section className="sd-neon-panel space-y-4 p-5" id="export">
+    <section className="sd-neon-panel space-y-4 p-5">
       <div>
         <h2 className="font-semibold text-sd-glow">Export standings (CSV)</h2>
         <p className="mt-1 text-sm text-sd-muted">
