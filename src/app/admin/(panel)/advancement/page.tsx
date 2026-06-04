@@ -2,6 +2,7 @@ import { AdminCallout } from "@/components/admin/AdminCallout";
 import { PhaseLockPanel } from "@/components/admin/PhaseLockPanel";
 import { InfoTip } from "@/components/admin/InfoTip";
 import { getPhaseLockOverview } from "@/lib/data/admin-queries";
+import { ADMIN_NAV_HINTS } from "@/lib/admin-action-hints";
 import { SetupBanner } from "@/components/SetupBanner";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -16,10 +17,8 @@ export default async function AdvancementPage() {
         <p>
           Run after publishing final standings for a phase. This records a phase
           lock and copies advancing branches to the next season.{" "}
-          <InfoTip>
-            Use only after Round 3 is published for all regions. This step seeds
-            the next phase (June → July, July → The Nationals) and cannot be undone from
-            this screen.
+          <InfoTip label="About phase lock">
+            {ADMIN_NAV_HINTS["/admin/advancement"]}
           </InfoTip>
         </p>
       </div>

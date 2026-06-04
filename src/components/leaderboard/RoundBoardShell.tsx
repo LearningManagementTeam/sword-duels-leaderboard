@@ -2,7 +2,9 @@
 
 import {
   advancingZoneCounts,
+  heartsCounts,
   sortRowsForRoundView,
+  splitHeartsRows,
   splitQualificationRows,
   splitSurvivalRows,
   survivalCounts,
@@ -37,6 +39,44 @@ export function RoundBoardShell({
   compact,
 }: Props) {
   const sorted = sortRowsForRoundView(rows, view);
+
+  if (view.layoutVariant === "hearts_roster") {
+    const { standing, fallen } = splitHeartsRows(sorted);
+    const counts = heartsCounts(sorted);
+
+    return (
+      <div className="space-y-4">
+        {!compact && (
+          <p className="text-center text-xs text-sd-muted">
+            {counts.standing} still fighting · {counts.fallen} eliminated
+          </p>
+        )}
+        <GamifiedRankList
+          rows={standing}
+          advancementCutoff={advancementCutoff}
+          cutLineLabel={cutLineLabel}
+          highlightCode={highlightCode}
+          tvMode={tvMode}
+          view={view}
+          seasonSlug={seasonSlug}
+          zoneLabel="Still fighting"
+        />
+        {fallen.length > 0 && (
+          <GamifiedRankList
+            rows={fallen}
+            advancementCutoff={0}
+            cutLineLabel=""
+            highlightCode={highlightCode}
+            tvMode={tvMode}
+            view={view}
+            seasonSlug={seasonSlug}
+            showRank={false}
+            zoneLabel="Out of hearts"
+          />
+        )}
+      </div>
+    );
+  }
 
   if (view.layoutVariant === "survival_roster") {
     const { standing, fallen } = splitSurvivalRows(sorted);
@@ -120,6 +160,48 @@ export function RoundBoardShell({
             zoneLabel="Eliminated"
           />
         )}
+      </div>
+    );
+  }
+
+  if (
+    view.layoutVariant === "percentage_score" ||
+    view.layoutVariant === "judged_score"
+  ) {
+    const topThree = sorted.filter((r) => r.rank <= 3);
+    const rest = sorted.filter((r) => r.rank > 3);
+
+    return (
+      <div className="space-y-4">
+        {!compact && (
+          <p className="text-center text-xs text-sd-muted">
+            Cumulative total shown on each card · Round {view.latestPublishedRound}{" "}
+            score in the hero badge
+          </p>
+        )}
+        {!compact && topThree.length > 0 && (
+          <PodiumTopThree
+            topThree={topThree}
+            tvMode={tvMode}
+            mode="quiz_score"
+            seasonSlug={seasonSlug}
+            latestPublishedRound={view.latestPublishedRound}
+          />
+        )}
+        <GamifiedRankList
+          rows={rest.length > 0 ? rest : sorted}
+          advancementCutoff={advancementCutoff}
+          cutLineLabel={cutLineLabel}
+          highlightCode={highlightCode}
+          tvMode={tvMode}
+          view={view}
+          seasonSlug={seasonSlug}
+          zoneLabel={
+            view.layoutVariant === "judged_score"
+              ? "Judge scores"
+              : "Round scores"
+          }
+        />
       </div>
     );
   }

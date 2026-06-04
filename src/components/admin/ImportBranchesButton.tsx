@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { AdminActionRow } from "@/components/admin/AdminActionHint";
 import { importBranchesFromCsv } from "@/lib/actions/admin";
+import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
 
 export function ImportBranchesButton() {
   const [message, setMessage] = useState("");
@@ -21,14 +23,16 @@ export function ImportBranchesButton() {
 
   return (
     <div className="space-y-2">
-      <button
-        type="button"
-        disabled={loading}
-        onClick={handleClick}
-        className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-      >
-        {loading ? "Importing…" : "Import branches from CSV"}
-      </button>
+      <AdminActionRow hint={ADMIN_ROSTER_HINTS.devImport}>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleClick}
+          className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+        >
+          {loading ? "Importing…" : "Import branches from CSV"}
+        </button>
+      </AdminActionRow>
       {message && <p className="text-sm text-sd-glow">{message}</p>}
     </div>
   );

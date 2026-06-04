@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AdminActionRow } from "@/components/admin/AdminActionHint";
 import { InfoTip } from "@/components/admin/InfoTip";
 import { saveManualAdvances } from "@/lib/actions/admin";
+import { ADMIN_ADVANCEMENT_HINTS, ADMIN_ROUND_HINTS } from "@/lib/admin-action-hints";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
 import type { AdvancementPickBranch } from "@/lib/data/admin-queries";
 
@@ -89,10 +91,8 @@ export function ManualAdvancementPicks({
       <div className="sd-page-header">
         <h1>
           Manage advancement
-          <InfoTip>
-            The system keeps the top N per region automatically. Check extra
-            branches here only when the committee wants more than the automatic
-            cut (e.g. many 10/10 scores). Save separately for each region.
+          <InfoTip label="About advancement picks">
+            {ADMIN_ROUND_HINTS.advancementPicks}
           </InfoTip>
         </h1>
         <p>
@@ -232,7 +232,7 @@ export function ManualAdvancementPicks({
         </p>
       </section>
 
-      <div className="flex flex-wrap gap-2">
+      <AdminActionRow hint={ADMIN_ADVANCEMENT_HINTS.saveRegionPicks}>
         <button
           type="button"
           disabled={loading}
@@ -241,7 +241,7 @@ export function ManualAdvancementPicks({
         >
           {loading ? "Saving…" : `Save picks for ${REGION_LABELS[region]}`}
         </button>
-      </div>
+      </AdminActionRow>
       {message && <p className="text-sm text-sd-glow">{message}</p>}
     </div>
   );

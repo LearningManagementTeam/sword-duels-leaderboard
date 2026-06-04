@@ -4,11 +4,14 @@ import { BranchHighlightBlock } from "@/components/BranchHighlight";
 import {
   branchSubtext,
   formatHeroMetric,
+  hasHeartsRemaining,
   participantDisplayName,
   participantInitials,
+  roundPointsForRound,
   resolveCutLineRank,
   type RoundViewConfig,
 } from "@/lib/leaderboard-display";
+import { HeartsMeter } from "@/components/leaderboard/HeartsMeter";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { StandingRow } from "@/lib/types";
 import type { SeasonSlug } from "@/lib/scoring-config";
@@ -56,9 +59,14 @@ export function GamifiedRankList({
   const cutLineRank =
     view.layoutVariant === "quiz_ladder"
       ? resolveCutLineRank(listRows, advancementCutoff, (row) => row.round1_points)
-      : advancementCutoff > 0
-        ? advancementCutoff + 1
-        : null;
+      : view.layoutVariant === "percentage_score" ||
+          view.layoutVariant === "judged_score"
+        ? resolveCutLineRank(listRows, advancementCutoff, (row) =>
+            roundPointsForRound(row, view.latestPublishedRound)
+          )
+        : advancementCutoff > 0
+          ? advancementCutoff + 1
+          : null;
 
   if (listRows.length === 0 && !zoneLabel) return null;
 
@@ -117,7 +125,10 @@ export function GamifiedRankList({
                           !inZone &&
                           row.round2_points === 0
                         ? "sd-glass border-fuchsia-900/30 opacity-70"
-                        : "sd-glass border-emerald-900/20 opacity-85"
+                        : view.layoutVariant === "hearts_roster" &&
+                            hasHeartsRemaining(row) === false
+                          ? "sd-glass border-fuchsia-900/30 opacity-70"
+                          : "sd-glass border-emerald-900/20 opacity-85"
                 }`}
               >
                 {showRank && (
@@ -158,10 +169,24 @@ export function GamifiedRankList({
                         ? hero === "Survived"
                           ? "text-emerald-200"
                           : "text-fuchsia-200/90"
-                        : ""
+                        : view.layoutVariant === "judged_score"
+                          ? "text-violet-100"
+                          : view.layoutVariant === "percentage_score"
+                            ? "text-amber-100"
+                            : ""
                     }`}
                   >
-                    {hero}
+                    {view.layoutVariant === "hearts_roster" &&
+                    row.round2_points != null ? (
+                      <HeartsMeter
+                        hearts={row.round2_points}
+                        tvMode={tvMode}
+                      />
+                    ) : view.layoutVariant === "judged_score" ? (
+                      hero
+                    ) : (
+                      hero
+                    )}
                   </span>
                 )}
                 <div className="shrink-0 sm:block">

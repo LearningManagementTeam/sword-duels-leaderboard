@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { AdminActionRow } from "@/components/admin/AdminActionHint";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 import {
   previewDraftStandings,
   type DraftPreviewResult,
 } from "@/lib/actions/admin";
+import { ADMIN_ROUND_HINTS } from "@/lib/admin-action-hints";
 import {
   getSurvivorCount,
   REGION_LABELS,
@@ -59,14 +61,16 @@ export function DraftStandingsPreview({
 
   return (
     <div className="space-y-3">
-      <button
-        type="button"
-        disabled={loading}
-        onClick={handlePreview}
-        className="sd-btn-secondary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-      >
-        {loading ? "Loading preview…" : "Preview standings (draft)"}
-      </button>
+      <AdminActionRow hint={ADMIN_ROUND_HINTS.previewDraft}>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handlePreview}
+          className="sd-btn-secondary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+        >
+          {loading ? "Loading preview…" : "Preview standings (draft)"}
+        </button>
+      </AdminActionRow>
       {error && <p className="text-sm text-red-300">{error}</p>}
 
       {open && preview && (

@@ -78,9 +78,15 @@ function applyRegionalSurvivorCut(
 function compareRoundEntry(
   a: { points: number; finish_order?: number | null; branch_name: string },
   b: { points: number; finish_order?: number | null; branch_name: string },
-  roundKind?: "quiz" | "last_man_standing" | "race_to_correct"
+  roundKind?:
+    | "quiz"
+    | "last_man_standing"
+    | "hearts_survival"
+    | "race_to_correct"
+    | "lifelines_quiz"
+    | "judged_round"
 ): number {
-  if (roundKind === "last_man_standing") {
+  if (roundKind === "last_man_standing" || roundKind === "hearts_survival") {
     if (b.points !== a.points) return b.points - a.points;
     return a.branch_name.localeCompare(b.branch_name);
   }

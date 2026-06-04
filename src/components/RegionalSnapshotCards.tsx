@@ -45,6 +45,13 @@ export function RegionalSnapshotCards({
         return typeof pts === "number" && pts >= maxScore;
       }).length;
       perfectLabel = `Scored max (${maxScore}) this round`;
+    } else if (mechanics.kind === "hearts_survival") {
+      const key = "round2_points";
+      perfectCount = rows.filter((r) => {
+        const pts = r[key as keyof StandingRow];
+        return typeof pts === "number" && pts > 0;
+      }).length;
+      perfectLabel = "Still fighting (hearts remaining)";
     } else if (mechanics.kind === "last_man_standing") {
       perfectCount = rows.filter((r) => r.round2_points === 1).length;
       perfectLabel = "Still standing";

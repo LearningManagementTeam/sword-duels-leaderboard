@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { AdminActionHint } from "@/components/admin/AdminActionHint";
+import { ADMIN_TOOLS_HINTS } from "@/lib/admin-action-hints";
 
 const ACTION_OPTIONS = [
   { value: "", label: "All actions" },
@@ -70,6 +72,10 @@ export function AuditLogFilters() {
           ))}
         </select>
       </div>
+      <AdminActionHint
+        hint={ADMIN_TOOLS_HINTS.auditFilter}
+        className="pb-2 sm:max-w-xs"
+      />
     </div>
   );
 }

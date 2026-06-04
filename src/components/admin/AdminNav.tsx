@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment } from "react";
+import { InfoTip } from "@/components/admin/InfoTip";
+import { ADMIN_NAV_HINTS } from "@/lib/admin-action-hints";
 
 type NavLink = {
   href: string;
@@ -62,23 +64,34 @@ function isActive(pathname: string, href: string, exact?: boolean) {
 function NavPill({
   link,
   pathname,
+  tipPlacement,
 }: {
   link: NavLink;
   pathname: string;
+  tipPlacement: "right" | "below";
 }) {
   const active = isActive(pathname, link.href, link.exact);
+  const hint = ADMIN_NAV_HINTS[link.href];
+
   return (
-    <Link
-      href={link.href}
-      aria-current={active ? "page" : undefined}
-      className={`shrink-0 rounded-lg px-3 py-1.5 transition ${
-        active
-          ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep shadow-[0_0_12px_rgb(163_230_53/0.3)]"
-          : "sd-glass text-sd-muted hover:text-white"
-      }`}
-    >
-      {link.label}
-    </Link>
+    <span className="inline-flex shrink-0 items-center gap-0.5">
+      <Link
+        href={link.href}
+        aria-current={active ? "page" : undefined}
+        className={`rounded-lg px-3 py-1.5 transition ${
+          active
+            ? "bg-gradient-to-r from-sd-lime to-emerald-400 font-semibold text-sd-deep shadow-[0_0_12px_rgb(163_230_53/0.3)]"
+            : "sd-glass text-sd-muted hover:text-white"
+        }`}
+      >
+        {link.label}
+      </Link>
+      {hint && (
+        <InfoTip label={`About ${link.label}`} placement={tipPlacement}>
+          {hint}
+        </InfoTip>
+      )}
+    </span>
   );
 }
 
@@ -105,7 +118,12 @@ function MobileNav({ pathname }: { pathname: string }) {
               )}
               <span className="sr-only">{group.label}</span>
               {group.links.map((link) => (
-                <NavPill key={link.href} link={link} pathname={pathname} />
+                <NavPill
+                  key={link.href}
+                  link={link}
+                  pathname={pathname}
+                  tipPlacement="below"
+                />
               ))}
             </Fragment>
           ))}
@@ -124,7 +142,12 @@ function DesktopNav({ pathname }: { pathname: string }) {
             {group.label}
           </span>
           {group.links.map((link) => (
-            <NavPill key={link.href} link={link} pathname={pathname} />
+            <NavPill
+              key={link.href}
+              link={link}
+              pathname={pathname}
+              tipPlacement="below"
+            />
           ))}
         </div>
       ))}
@@ -137,6 +160,10 @@ export function AdminNav() {
 
   return (
     <nav aria-label="Admin sections" className="text-sm">
+      <p className="mb-2 hidden text-xs text-sd-muted/60 md:block">
+        Tap <span className="text-sd-muted">?</span> beside any page for what it
+        does and when to use it.
+      </p>
       <MobileNav pathname={pathname} />
       <DesktopNav pathname={pathname} />
     </nav>

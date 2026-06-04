@@ -1,4 +1,6 @@
+import { AdminActionHint } from "@/components/admin/AdminActionHint";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
+import { ADMIN_TOOLS_HINTS } from "@/lib/admin-action-hints";
 
 const regionalExports: { phase: string; region: Region }[] = [
   { phase: "june", region: "luzon" },
@@ -36,6 +38,10 @@ export function ExportStandingsPanel() {
                 </a>
               ))}
           </div>
+          <AdminActionHint
+            hint={ADMIN_TOOLS_HINTS.exportRegional}
+            className="mt-1.5"
+          />
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-sd-muted/60">
@@ -54,6 +60,10 @@ export function ExportStandingsPanel() {
                 </a>
               ))}
           </div>
+          <AdminActionHint
+            hint={ADMIN_TOOLS_HINTS.exportRegional}
+            className="mt-1.5"
+          />
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-sd-muted/60">
@@ -67,6 +77,10 @@ export function ExportStandingsPanel() {
               Download Nationals CSV
             </a>
           </div>
+          <AdminActionHint
+            hint={ADMIN_TOOLS_HINTS.exportNationals}
+            className="mt-1.5"
+          />
         </div>
       </div>
     </section>

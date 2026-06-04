@@ -61,12 +61,21 @@ function buildEliminationResults(
     regional.forEach((row, i) => {
       const list = results.get(row.branch_id);
       if (!list) return;
-      list.push({
-        round_number: 2,
-        points: i < r2Cut ? 1 : 0,
-        wins: 0,
-        losses: 0,
-      });
+      if (seasonSlug === "july_region") {
+        list.push({
+          round_number: 2,
+          points: i < r2Cut ? Math.max(1, 3 - (i % 3)) : 0,
+          wins: 0,
+          losses: 0,
+        });
+      } else {
+        list.push({
+          round_number: 2,
+          points: i < r2Cut ? 1 : 0,
+          wins: 0,
+          losses: 0,
+        });
+      }
     });
   }
 
@@ -172,16 +181,11 @@ export function getDemoAugustStandings(): StandingRow[] {
 
   const results = new Map<string, RoundPoints[]>();
   champions.forEach((branch, index) => {
-    const rounds: RoundPoints[] = [];
-    for (let r = 1; r <= 3; r++) {
-      rounds.push({
-        round_number: r,
-        points: 5 + index,
-        wins: 0,
-        losses: 0,
-      });
-    }
-    results.set(branch.id, rounds);
+    results.set(branch.id, [
+      { round_number: 1, points: 100 - index * 5, wins: 0, losses: 0 },
+      { round_number: 2, points: index === 0 ? 100 : index === 1 ? 50 : 100, wins: 0, losses: 0 },
+      { round_number: 3, points: index === 0 ? 100 : index === 1 ? 100 : 50, wins: 0, losses: 0 },
+    ]);
   });
 
   return attachReps(

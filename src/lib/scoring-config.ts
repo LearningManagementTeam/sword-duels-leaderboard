@@ -74,7 +74,10 @@ export const CUMULATIVE_TIE_BREAKER_LABELS = [
 export type RoundLayoutVariant =
   | "quiz_ladder"
   | "survival_roster"
+  | "hearts_roster"
   | "finish_order_champions"
+  | "percentage_score"
+  | "judged_score"
   | "cumulative";
 
 export type RoundMechanics =
@@ -96,6 +99,15 @@ export type RoundMechanics =
       bannerTagline: string;
     }
   | {
+      kind: "hearts_survival";
+      roundName: string;
+      label: string;
+      description: string;
+      maxHearts: number;
+      layoutVariant: "hearts_roster";
+      bannerTagline: string;
+    }
+  | {
       kind: "race_to_correct";
       roundName: string;
       label: string;
@@ -103,7 +115,33 @@ export type RoundMechanics =
       maxCorrect: number;
       layoutVariant: "finish_order_champions";
       bannerTagline: string;
+    }
+  | {
+      kind: "lifelines_quiz";
+      roundName: string;
+      label: string;
+      description: string;
+      maxPoints: number;
+      layoutVariant: "percentage_score";
+      bannerTagline: string;
+    }
+  | {
+      kind: "judged_round";
+      roundName: string;
+      label: string;
+      description: string;
+      layoutVariant: "judged_score";
+      bannerTagline: string;
     };
+
+export const JUDGED_SCORES = [0, 50, 100] as const;
+export type JudgedScore = (typeof JUDGED_SCORES)[number];
+
+export function judgedScoreLabel(score: number): string {
+  if (score >= 100) return "Right";
+  if (score >= 50) return "Incomplete";
+  return "Wrong";
+}
 
 const ROUND_MECHANICS: Partial<
   Record<SeasonSlug, Partial<Record<number, RoundMechanics>>>
@@ -139,29 +177,57 @@ const ROUND_MECHANICS: Partial<
   july_region: {
     1: {
       kind: "quiz",
-      roundName: "Regional Quiz",
-      label: "Round 1 — Quiz",
-      description: "15-question quiz — enter 0–15 per branch",
+      roundName: "Regional Quiz Blitz",
+      label: "Round 1 — 15-item quiz",
+      description: "15-question quiz — highest scores fill the top 4 spots per region",
       maxPoints: 15,
       layoutVariant: "quiz_ladder",
-      bannerTagline: "15-question quiz · Top 4 per region advance",
+      bannerTagline: "15-item quiz · Top 4 per region advance",
     },
     2: {
-      kind: "last_man_standing",
-      roundName: "Regional Last Standing",
-      label: "Round 2 — Last standing",
-      description: "Mark exactly 2 survivors per region",
-      layoutVariant: "survival_roster",
-      bannerTagline: "Last 2 standing per region advance",
+      kind: "hearts_survival",
+      roundName: "Triple Heart Survival",
+      label: "Round 2 — Triple heart survival",
+      description: "Enter hearts remaining (0–3) — last 2 standing per region advance",
+      maxHearts: 3,
+      layoutVariant: "hearts_roster",
+      bannerTagline: "3 hearts each · Last 2 standing per region advance",
     },
     3: {
       kind: "race_to_correct",
       roundName: "Regional Clash",
-      label: "Round 3 — Clash",
+      label: "Round 3 — First to 5 correct",
       description: "First to 5 correct wins the region — assign finish order",
       maxCorrect: 5,
       layoutVariant: "finish_order_champions",
-      bannerTagline: "Regional champion advances to August",
+      bannerTagline: "First to 5 correct · Regional champion advances to The Nationals",
+    },
+  },
+  august_finals: {
+    1: {
+      kind: "lifelines_quiz",
+      roundName: "Lifelines Challenge",
+      label: "Round 1 — Lifelines challenge",
+      description: "Enter round score 0–100% — perfect run keeps all 3 lifelines with no wrong-answer deductions",
+      maxPoints: 100,
+      layoutVariant: "percentage_score",
+      bannerTagline: "3 lifelines · Perfect run = 100%",
+    },
+    2: {
+      kind: "judged_round",
+      roundName: "Roleplay Round",
+      label: "Round 2 — Roleplay (SME judges)",
+      description: "Subject-matter expert judges score each answer: Right 100%, Incomplete 50%, Wrong 0%",
+      layoutVariant: "judged_score",
+      bannerTagline: "SME judges · Right 100% · Incomplete 50% · Wrong 0%",
+    },
+    3: {
+      kind: "judged_round",
+      roundName: "Q&A Finals",
+      label: "Round 3 — Q&A finals",
+      description: "Miss Universe–style Q&A — 3 judges score: Right 100%, Incomplete 50%, Wrong 0%",
+      layoutVariant: "judged_score",
+      bannerTagline: "3 judges · Q&A finals · Right / Incomplete / Wrong",
     },
   },
 };
@@ -205,8 +271,23 @@ export function validateRoundPoints(
   if (mechanics.kind === "quiz" && points > mechanics.maxPoints) {
     return `Score cannot exceed ${mechanics.maxPoints} for ${mechanics.roundName}.`;
   }
+  if (mechanics.kind === "lifelines_quiz" && points > mechanics.maxPoints) {
+    return `Score cannot exceed ${mechanics.maxPoints}% for ${mechanics.roundName}.`;
+  }
   if (mechanics.kind === "last_man_standing" && points !== 0 && points !== 1) {
     return "Use 1 for survived or 0 for out.";
+  }
+  if (
+    mechanics.kind === "hearts_survival" &&
+    (!Number.isInteger(points) || points < 0 || points > mechanics.maxHearts)
+  ) {
+    return `Hearts remaining must be 0–${mechanics.maxHearts}.`;
+  }
+  if (
+    mechanics.kind === "judged_round" &&
+    !JUDGED_SCORES.includes(points as JudgedScore)
+  ) {
+    return "Judge score must be 0 (Wrong), 50 (Incomplete), or 100 (Right).";
   }
   if (mechanics.kind === "race_to_correct" && points > mechanics.maxCorrect) {
     return `Correct answers cannot exceed ${mechanics.maxCorrect}.`;

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { AdminActionRow } from "@/components/admin/AdminActionHint";
 import Link from "next/link";
 import { saveMechanicsContent } from "@/lib/actions/admin";
+import { ADMIN_SITE_HINTS } from "@/lib/admin-action-hints";
 import { MechanicsPageContent } from "@/components/MechanicsPageContent";
 import type {
   MechanicsCustomSection,
@@ -176,14 +178,16 @@ export function MechanicsEditor({ initial }: Props) {
             ))}
           </div>
 
-          <button
-            type="button"
-            disabled={loading}
-            onClick={handleSave}
-            className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {loading ? "Saving…" : "Save mechanics content"}
-          </button>
+          <AdminActionRow hint={ADMIN_SITE_HINTS.saveMechanics}>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleSave}
+              className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+            >
+              {loading ? "Saving…" : "Save mechanics content"}
+            </button>
+          </AdminActionRow>
         </div>
       ) : (
         <div className="sd-neon-panel p-6">

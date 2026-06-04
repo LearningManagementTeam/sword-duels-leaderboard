@@ -104,11 +104,16 @@ export function GamifiedLeaderboard({
   const themeAccent =
     view.layoutVariant === "quiz_ladder"
       ? "border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent"
-      : view.layoutVariant === "survival_roster"
+      : view.layoutVariant === "survival_roster" ||
+          view.layoutVariant === "hearts_roster"
         ? "border-fuchsia-500/20 bg-gradient-to-br from-fuchsia-500/5 to-transparent"
         : view.layoutVariant === "finish_order_champions"
           ? "border-fuchsia-500/20 bg-gradient-to-br from-fuchsia-500/5 to-transparent"
-          : "";
+          : view.layoutVariant === "percentage_score"
+            ? "border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent"
+            : view.layoutVariant === "judged_score"
+              ? "border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-transparent"
+              : "";
 
   return (
     <div

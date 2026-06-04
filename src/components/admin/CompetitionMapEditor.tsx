@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AdminActionRow } from "@/components/admin/AdminActionHint";
 import { CompetitionMapDisplay } from "@/components/competition/CompetitionMapDisplay";
 import {
   saveCompetitionMap,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/competition-map";
 import type { RemainingContestantsResult } from "@/lib/data/competition-map-queries";
 import { REGIONS, REGION_LABELS } from "@/lib/scoring-config";
+import { ADMIN_SITE_HINTS } from "@/lib/admin-action-hints";
 
 interface Props {
   initial: CompetitionMapConfig;
@@ -232,23 +234,27 @@ export function CompetitionMapEditor({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={handleSave}
-              className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-            >
-              {loading ? "Saving…" : "Save competition map"}
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={handleSuggest}
-              className="sd-btn-secondary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-            >
-              Suggest from latest published round
-            </button>
+          <div className="flex flex-wrap items-start gap-4">
+            <AdminActionRow hint={ADMIN_SITE_HINTS.saveCompetitionMap}>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleSave}
+                className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+              >
+                {loading ? "Saving…" : "Save competition map"}
+              </button>
+            </AdminActionRow>
+            <AdminActionRow hint={ADMIN_SITE_HINTS.suggestCompetitionMap}>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleSuggest}
+                className="sd-btn-secondary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+              >
+                Suggest from latest published round
+              </button>
+            </AdminActionRow>
           </div>
 
           <p className="text-xs text-sd-muted/70">

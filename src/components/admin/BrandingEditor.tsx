@@ -33,7 +33,12 @@ import {
   type BrandingFileCheck,
 } from "@/lib/branding-upload-validation";
 import { HomeSponsorLogoCarousel } from "@/components/home/HomeSponsorLogoCarousel";
+import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
+import {
+  ADMIN_CONFIRM_HINTS,
+  ADMIN_SITE_HINTS,
+} from "@/lib/admin-action-hints";
 
 interface Props {
   initial: BrandingConfig;
@@ -604,33 +609,38 @@ export function BrandingEditor({ initial }: Props) {
                     onChange={() => handleSponsorFileChange(slot)}
                   />
                   <FilePickNotice check={fileCheck} />
-                  <button
-                    type="button"
-                    disabled={uploadBlocked}
-                    aria-busy={isThisSlotBusy}
-                    onClick={() => handleSponsorUpload(slot)}
-                    className={`w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                      isThisSlotBusy
-                        ? "cursor-wait bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep ring-2 ring-emerald-300/50"
-                        : "sd-btn-primary"
-                    }`}
-                  >
-                    {isThisSlotBusy
-                      ? "Uploading…"
-                      : url
-                        ? "Replace logo"
-                        : "Upload logo"}
-                  </button>
+                  <AdminActionRow hint={ADMIN_SITE_HINTS.uploadPartnerLogo}>
+                    <button
+                      type="button"
+                      disabled={uploadBlocked}
+                      aria-busy={isThisSlotBusy}
+                      onClick={() => handleSponsorUpload(slot)}
+                      className={`w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                        isThisSlotBusy
+                          ? "cursor-wait bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep ring-2 ring-emerald-300/50"
+                          : "sd-btn-primary"
+                      }`}
+                    >
+                      {isThisSlotBusy
+                        ? "Uploading…"
+                        : url
+                          ? "Replace logo"
+                          : "Upload logo"}
+                    </button>
+                  </AdminActionRow>
                 </div>
                 {url && (
-                  <button
-                    type="button"
-                    disabled={sponsorLocked}
-                    onClick={() => handleRemoveSponsor(slot)}
-                    className="text-xs text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Remove logo {slot}
-                  </button>
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      disabled={sponsorLocked}
+                      onClick={() => handleRemoveSponsor(slot)}
+                      className="text-xs text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Remove logo {slot}
+                    </button>
+                    <AdminActionHint hint={ADMIN_SITE_HINTS.removePartnerLogo} />
+                  </div>
                 )}
               </div>
             );
@@ -738,23 +748,25 @@ export function BrandingEditor({ initial }: Props) {
                     onChange={() => handleCarouselFileChange(slot)}
                   />
                   <FilePickNotice check={fileCheck} />
-                  <button
-                    type="button"
-                    disabled={uploadBlocked}
-                    aria-busy={isThisSlotBusy}
-                    onClick={() => handleCarouselUpload(slot)}
-                    className={`w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                      isThisSlotBusy
-                        ? "cursor-wait bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep ring-2 ring-emerald-300/50"
-                        : "sd-btn-primary"
-                    }`}
-                  >
-                    {isThisSlotBusy
-                      ? "Uploading…"
-                      : url
-                        ? "Replace photo"
-                        : "Upload photo"}
-                  </button>
+                  <AdminActionRow hint={ADMIN_SITE_HINTS.uploadCarousel}>
+                    <button
+                      type="button"
+                      disabled={uploadBlocked}
+                      aria-busy={isThisSlotBusy}
+                      onClick={() => handleCarouselUpload(slot)}
+                      className={`w-full rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                        isThisSlotBusy
+                          ? "cursor-wait bg-gradient-to-r from-sd-lime to-emerald-400 text-sd-deep ring-2 ring-emerald-300/50"
+                          : "sd-btn-primary"
+                      }`}
+                    >
+                      {isThisSlotBusy
+                        ? "Uploading…"
+                        : url
+                          ? "Replace photo"
+                          : "Upload photo"}
+                    </button>
+                  </AdminActionRow>
                 </div>
                 {url && pendingCarouselRemove === slot ? (
                   <AdminConfirmPanel
@@ -766,17 +778,24 @@ export function BrandingEditor({ initial }: Props) {
                     onCancel={() => setPendingCarouselRemove(null)}
                   >
                     This photo will disappear from the home carousel immediately.
+                    <AdminActionHint
+                      hint={ADMIN_CONFIRM_HINTS.removeAsset}
+                      className="mt-2 text-sd-muted/90"
+                    />
                   </AdminConfirmPanel>
                 ) : (
                   url && (
-                    <button
-                      type="button"
-                      disabled={carouselLocked}
-                      onClick={() => setPendingCarouselRemove(slot)}
-                      className="text-xs text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Remove photo {slot}
-                    </button>
+                    <div className="space-y-1">
+                      <button
+                        type="button"
+                        disabled={carouselLocked}
+                        onClick={() => setPendingCarouselRemove(slot)}
+                        className="text-xs text-red-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Remove photo {slot}
+                      </button>
+                      <AdminActionHint hint={ADMIN_SITE_HINTS.removeCarousel} />
+                    </div>
                   )
                 )}
               </div>
@@ -835,15 +854,17 @@ export function BrandingEditor({ initial }: Props) {
           }}
         />
         <FilePickNotice check={logoFileCheck} />
-        <button
-          type="submit"
-          disabled={
-            logoBusy || carouselLocked || (logoFileCheck !== undefined && !logoFileCheck.ok)
-          }
-          className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-        >
-          {logoBusy ? "Uploading…" : "Upload logo"}
-        </button>
+        <AdminActionRow hint={ADMIN_SITE_HINTS.uploadLogo}>
+          <button
+            type="submit"
+            disabled={
+              logoBusy || carouselLocked || (logoFileCheck !== undefined && !logoFileCheck.ok)
+            }
+            className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {logoBusy ? "Uploading…" : "Upload logo"}
+          </button>
+        </AdminActionRow>
       </form>
 
       <div className="sd-neon-panel space-y-2 p-6">
@@ -869,14 +890,17 @@ export function BrandingEditor({ initial }: Props) {
       </div>
 
       {branding.logo_url && (
-        <button
-          type="button"
-          disabled={logoBusy || sponsorLocked}
-          onClick={handleRemoveLogo}
-          className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
-        >
-          Remove logo
-        </button>
+        <div className="space-y-1">
+          <button
+            type="button"
+            disabled={logoBusy || sponsorLocked}
+            onClick={handleRemoveLogo}
+            className="text-sm text-red-400 hover:text-red-300 disabled:opacity-50"
+          >
+            Remove logo
+          </button>
+          <AdminActionHint hint={ADMIN_SITE_HINTS.removeLogo} />
+        </div>
       )}
 
       {message && <p className="text-sm text-sd-glow">{message}</p>}

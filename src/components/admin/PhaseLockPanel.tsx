@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
+import { ADMIN_ADVANCEMENT_HINTS, ADMIN_CONFIRM_HINTS } from "@/lib/admin-action-hints";
 import { lockPhaseAndAdvance } from "@/lib/actions/admin";
 import type { PhaseLockOverview } from "@/lib/data/admin-queries";
 
@@ -134,21 +136,34 @@ export function PhaseLockPanel({ phases }: Props) {
                   <p className="mt-2 opacity-90">
                     This cannot be undone from this screen.
                   </p>
+                  <AdminActionHint
+                    hint={ADMIN_CONFIRM_HINTS.lockPhase}
+                    className="mt-2 text-sd-muted/90"
+                  />
                 </AdminConfirmPanel>
               </div>
             ) : (
-              <button
-                type="button"
-                disabled={loading !== null || !phase.round3Published}
-                onClick={() => requestLock(phase)}
-                className="sd-btn-ghost mt-4 rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+              <AdminActionRow
+                hint={
+                  isLocked
+                    ? ADMIN_ADVANCEMENT_HINTS.relockPhase
+                    : ADMIN_ADVANCEMENT_HINTS.lockPhase
+                }
+                className="mt-4"
               >
-                {loading === phase.seasonSlug
-                  ? "Locking…"
-                  : isLocked
-                    ? "Re-lock & re-seed"
-                    : "Lock & advance"}
-              </button>
+                <button
+                  type="button"
+                  disabled={loading !== null || !phase.round3Published}
+                  onClick={() => requestLock(phase)}
+                  className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+                >
+                  {loading === phase.seasonSlug
+                    ? "Locking…"
+                    : isLocked
+                      ? "Re-lock & re-seed"
+                      : "Lock & advance"}
+                </button>
+              </AdminActionRow>
             )}
           </div>
         );

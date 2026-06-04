@@ -2,6 +2,7 @@ import { AdminCallout } from "@/components/admin/AdminCallout";
 import { InfoTip } from "@/components/admin/InfoTip";
 import { MechanicsEditor } from "@/components/admin/MechanicsEditor";
 import { getMechanicsContent } from "@/lib/data/content-queries";
+import { ADMIN_NAV_HINTS } from "@/lib/admin-action-hints";
 
 export default async function AdminMechanicsPage() {
   const content = await getMechanicsContent();
@@ -16,9 +17,8 @@ export default async function AdminMechanicsPage() {
             /mechanics
           </a>
           . Phase tables and caps are auto-generated from scoring rules.{" "}
-          <InfoTip>
-            Change intro, announcements, or custom sections here. Survivor
-            counts and tie-breakers always match the live scoring engine.
+          <InfoTip label="About mechanics editor">
+            {ADMIN_NAV_HINTS["/admin/mechanics"]}
           </InfoTip>
         </p>
       </div>

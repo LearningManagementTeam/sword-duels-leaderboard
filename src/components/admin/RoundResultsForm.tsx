@@ -13,7 +13,11 @@ import {
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminPostPublishChecklist } from "@/components/admin/AdminPostPublishChecklist";
-import { InfoTip } from "@/components/admin/InfoTip";
+import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
+import {
+  ADMIN_CONFIRM_HINTS,
+  ADMIN_ROUND_HINTS,
+} from "@/lib/admin-action-hints";
 import { SdButtonLink } from "@/components/ui/SdButtonLink";
 import {
   checkPublishReadiness,
@@ -86,9 +90,16 @@ export function RoundResultsForm({
   const maxPoints =
     mechanics?.kind === "quiz"
       ? mechanics.maxPoints
-      : mechanics?.kind === "race_to_correct"
-        ? mechanics.maxCorrect
-        : 1;
+      : mechanics?.kind === "lifelines_quiz"
+        ? mechanics.maxPoints
+        : mechanics?.kind === "race_to_correct"
+          ? mechanics.maxCorrect
+          : mechanics?.kind === "hearts_survival"
+            ? mechanics.maxHearts
+            : 1;
+
+  const usesSurvivorCount =
+    kind === "last_man_standing" || kind === "hearts_survival";
 
   const [showOut, setShowOut] = useState(false);
   const [message, setMessage] = useState("");
@@ -117,12 +128,14 @@ export function RoundResultsForm({
 
   const survivorCounts = useMemo(() => {
     const counts: Record<Region, number> = { luzon: 0, ncr: 0, vismin: 0 };
-    if (kind !== "last_man_standing") return counts;
+    if (!usesSurvivorCount) return counts;
     for (const row of values) {
-      if (row.survived) counts[row.region]++;
+      const alive =
+        kind === "hearts_survival" ? row.points > 0 : row.survived;
+      if (alive) counts[row.region]++;
     }
     return counts;
-  }, [values, kind]);
+  }, [values, kind, usesSurvivorCount]);
 
   const getDraftResults = useCallback(() => {
     return values.map((v) => {
@@ -130,6 +143,13 @@ export function RoundResultsForm({
         return {
           branch_id: v.branch_id,
           points: v.survived ? 1 : 0,
+          finish_order: null as number | null,
+        };
+      }
+      if (kind === "hearts_survival") {
+        return {
+          branch_id: v.branch_id,
+          points: v.points,
           finish_order: null as number | null,
         };
       }
@@ -350,13 +370,15 @@ export function RoundResultsForm({
         </div>
       )}
 
-      {kind === "last_man_standing" && (
+      {usesSurvivorCount && (
         <div className="flex flex-wrap gap-2 text-xs">
           {REGIONS.map((region) => {
             const required =
               requiredSurvivorsPerRegion(seasonSlug, roundNumber, region) ?? 0;
             const count = survivorCounts[region];
             const ok = count === required;
+            const unit =
+              kind === "hearts_survival" ? "still fighting" : "survived";
             return (
               <span
                 key={region}
@@ -366,7 +388,7 @@ export function RoundResultsForm({
                     : "bg-amber-500/15 text-amber-100"
                 }`}
               >
-                {REGION_LABELS[region]}: {count}/{required} survived
+                {REGION_LABELS[region]}: {count}/{required} {unit}
               </span>
             );
           })}
@@ -374,13 +396,15 @@ export function RoundResultsForm({
       )}
 
       {supportsManualAdvances && (
-        <SdButtonLink
-          href={`/admin/rounds/${roundId}/advances`}
-          variant="fuchsia"
-          className="px-3 py-1.5 text-sm"
-        >
-          Manage advancement picks →
-        </SdButtonLink>
+        <AdminActionRow hint={ADMIN_ROUND_HINTS.advancementPicks}>
+          <SdButtonLink
+            href={`/admin/rounds/${roundId}/advances`}
+            variant="fuchsia"
+            className="inline-flex px-3 py-1.5 text-sm"
+          >
+            Manage advancement picks →
+          </SdButtonLink>
+        </AdminActionRow>
       )}
 
       {(eliminatedBranches.length > 0 || tieBreakerBranches.length > 0) &&
@@ -449,9 +473,20 @@ export function RoundResultsForm({
                 {kind === "last_man_standing" && (
                   <th className="px-3 py-2 text-center text-sd-muted">Survived</th>
                 )}
-                {kind !== "last_man_standing" && (
+                {kind === "hearts_survival" && (
                   <th className="px-3 py-2 text-right text-sd-muted">
-                    {kind === "race_to_correct" ? "Correct (0–5)" : `Score (0–${maxPoints})`}
+                    Hearts left (0–{maxPoints})
+                  </th>
+                )}
+                {kind !== "last_man_standing" && kind !== "hearts_survival" && (
+                  <th className="px-3 py-2 text-right text-sd-muted">
+                    {kind === "race_to_correct"
+                      ? "Correct (0–5)"
+                      : kind === "judged_round"
+                        ? "Judge score"
+                        : kind === "lifelines_quiz"
+                          ? "Score (0–100%)"
+                          : `Score (0–${maxPoints})`}
                   </th>
                 )}
                 {kind === "race_to_correct" && (
@@ -478,7 +513,7 @@ export function RoundResultsForm({
                       />
                     </td>
                   )}
-                  {kind !== "last_man_standing" && (
+                  {kind === "hearts_survival" && (
                     <td className="px-3 py-2">
                       <input
                         type="number"
@@ -491,16 +526,49 @@ export function RoundResultsForm({
                             maxPoints,
                             Math.max(0, Number(e.target.value))
                           );
-                          updateRow(i, {
-                            points,
-                            finish_order:
-                              kind === "race_to_correct" && points !== maxPoints
-                                ? null
-                                : row.finish_order,
-                          });
+                          updateRow(i, { points, survived: points > 0 });
                         }}
                         className="sd-input w-28 rounded-lg px-2 py-1.5 text-right tabular-nums"
                       />
+                    </td>
+                  )}
+                  {kind !== "last_man_standing" && kind !== "hearts_survival" && (
+                    <td className="px-3 py-2">
+                      {kind === "judged_round" ? (
+                        <select
+                          value={row.points}
+                          onChange={(e) =>
+                            updateRow(i, { points: Number(e.target.value) })
+                          }
+                          className="sd-input w-36 rounded-lg px-2 py-1.5 text-sm"
+                        >
+                          <option value={100}>Right — 100%</option>
+                          <option value={50}>Incomplete — 50%</option>
+                          <option value={0}>Wrong — 0%</option>
+                        </select>
+                      ) : (
+                        <input
+                          type="number"
+                          min={0}
+                          max={maxPoints}
+                          step={1}
+                          value={row.points}
+                          onChange={(e) => {
+                            const points = Math.min(
+                              maxPoints,
+                              Math.max(0, Number(e.target.value))
+                            );
+                            updateRow(i, {
+                              points,
+                              finish_order:
+                                kind === "race_to_correct" && points !== maxPoints
+                                  ? null
+                                  : row.finish_order,
+                            });
+                          }}
+                          className="sd-input w-28 rounded-lg px-2 py-1.5 text-right tabular-nums"
+                        />
+                      )}
                     </td>
                   )}
                   {kind === "race_to_correct" && (
@@ -572,6 +640,10 @@ export function RoundResultsForm({
           busy={busy}
         >
           <p>This updates the public leaderboard immediately.</p>
+          <AdminActionHint
+            hint={ADMIN_CONFIRM_HINTS.publish}
+            className="mt-2 text-sd-muted/90"
+          />
           {publishReadiness.warnings.length > 0 && (
             <ul className="mt-2 list-inside list-disc opacity-90">
               {publishReadiness.warnings.map((w) => (
@@ -586,33 +658,33 @@ export function RoundResultsForm({
         className="sticky bottom-0 z-20 -mx-4 mt-2 space-y-3 border-t border-emerald-500/20 bg-sd-deep/95 px-4 py-3 backdrop-blur-xl sm:-mx-0 sm:rounded-xl sm:border sm:border-emerald-500/15"
         aria-label="Round actions"
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={handleSave}
-            className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {busy && operationTitle === "Saving draft"
-              ? "Saving draft…"
-              : "Save draft"}
-          </button>
-          <button
-            type="button"
-            disabled={
-              busy || publishReadiness.blockers.length > 0 || publishConfirmOpen
-            }
-            onClick={requestPublish}
-            className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {busy && operationTitle === "Publishing round"
-              ? "Publishing…"
-              : "Save & publish"}
-          </button>
-          <InfoTip>
-            Publishing applies the regional cut. Use advancement picks for tie
-            breakers.
-          </InfoTip>
+        <div className="flex flex-wrap items-start gap-4 sm:gap-6">
+          <AdminActionRow hint={ADMIN_ROUND_HINTS.saveDraft}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={handleSave}
+              className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+            >
+              {busy && operationTitle === "Saving draft"
+                ? "Saving draft…"
+                : "Save draft"}
+            </button>
+          </AdminActionRow>
+          <AdminActionRow hint={ADMIN_ROUND_HINTS.publish}>
+            <button
+              type="button"
+              disabled={
+                busy || publishReadiness.blockers.length > 0 || publishConfirmOpen
+              }
+              onClick={requestPublish}
+              className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+            >
+              {busy && operationTitle === "Publishing round"
+                ? "Publishing…"
+                : "Save & publish"}
+            </button>
+          </AdminActionRow>
         </div>
         {message && !showOperationPanel && (
           <p className="text-sm text-sd-glow">{message}</p>

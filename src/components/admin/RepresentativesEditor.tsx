@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AdminActionRow } from "@/components/admin/AdminActionHint";
 import { saveBranchRepresentatives } from "@/lib/actions/admin";
+import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
 import type { Branch } from "@/lib/types";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { Region } from "@/lib/scoring-config";
@@ -255,14 +257,16 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
         Showing {filtered.length} of {rows.length} branches
       </p>
 
-      <button
-        type="button"
-        disabled={loading}
-        onClick={handleSaveAll}
-        className="sd-btn-primary rounded-lg px-5 py-2.5 text-sm disabled:opacity-50"
-      >
-        {loading ? "Saving…" : "Save all representatives"}
-      </button>
+      <AdminActionRow hint={ADMIN_ROSTER_HINTS.saveRepresentatives}>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleSaveAll}
+          className="sd-btn-primary rounded-lg px-5 py-2.5 text-sm disabled:opacity-50"
+        >
+          {loading ? "Saving…" : "Save all representatives"}
+        </button>
+      </AdminActionRow>
 
       {message && (
         <p

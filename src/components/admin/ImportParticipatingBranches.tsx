@@ -2,7 +2,9 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
 import { importParticipatingBranchesForJuneArea } from "@/lib/actions/admin";
+import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
 
 export function ImportParticipatingBranches() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,26 +63,32 @@ export function ImportParticipatingBranches() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <a
-          href="/templates/participants-import-template.csv"
-          download="participants-import-template.csv"
-          className="sd-btn-ghost rounded-lg px-4 py-2 text-sm text-sd-muted hover:bg-emerald-500/10"
-        >
-          Download combined template
-        </a>
-        <Link
-          href="/admin/representatives"
-          className="sd-btn-ghost rounded-lg px-4 py-2 text-sm text-sd-muted hover:bg-emerald-500/10"
-        >
-          Edit representatives
-        </Link>
-        <Link
-          href="/admin/rounds"
-          className="sd-btn-ghost rounded-lg px-4 py-2 text-sm text-sd-muted hover:bg-emerald-500/10"
-        >
-          Go to Rounds
-        </Link>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <AdminActionRow hint={ADMIN_ROSTER_HINTS.downloadTemplate}>
+          <a
+            href="/templates/participants-import-template.csv"
+            download="participants-import-template.csv"
+            className="sd-btn-ghost inline-flex rounded-lg px-4 py-2 text-sm text-sd-muted hover:bg-emerald-500/10"
+          >
+            Download combined template
+          </a>
+        </AdminActionRow>
+        <AdminActionRow hint={ADMIN_ROSTER_HINTS.editRepresentatives}>
+          <Link
+            href="/admin/representatives"
+            className="sd-btn-ghost inline-flex rounded-lg px-4 py-2 text-sm text-sd-muted hover:bg-emerald-500/10"
+          >
+            Edit representatives
+          </Link>
+        </AdminActionRow>
+        <AdminActionRow hint={ADMIN_ROSTER_HINTS.goToRounds}>
+          <Link
+            href="/admin/rounds"
+            className="sd-btn-ghost inline-flex rounded-lg px-4 py-2 text-sm text-sd-muted hover:bg-emerald-500/10"
+          >
+            Go to Rounds
+          </Link>
+        </AdminActionRow>
       </div>
 
       <div className="space-y-2">
@@ -120,14 +128,16 @@ export function ImportParticipatingBranches() {
         )}
       </div>
 
-      <button
-        type="button"
-        disabled={loading}
-        onClick={handleImport}
-        className="sd-btn-primary rounded-lg px-5 py-2.5 text-sm disabled:opacity-50"
-      >
-        {loading ? "Importing…" : "Import for June Round 1"}
-      </button>
+      <AdminActionRow hint={ADMIN_ROSTER_HINTS.importJune}>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleImport}
+          className="sd-btn-primary rounded-lg px-5 py-2.5 text-sm disabled:opacity-50"
+        >
+          {loading ? "Importing…" : "Import for June Round 1"}
+        </button>
+      </AdminActionRow>
 
       {message && (
         <p

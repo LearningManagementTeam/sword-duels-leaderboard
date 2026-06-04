@@ -36,18 +36,33 @@ export function checkPublishReadiness(
     return { blockers, warnings };
   }
 
-  if (kind === "last_man_standing") {
+  if (kind === "last_man_standing" || kind === "hearts_survival") {
     for (const region of ["luzon", "ncr", "vismin"] as Region[]) {
       const required =
         requiredSurvivorsPerRegion(seasonSlug, roundNumber, region) ?? 0;
       const count = values.filter(
-        (v) => v.region === region && v.survived
+        (v) =>
+          v.region === region &&
+          (kind === "hearts_survival" ? v.points > 0 : v.survived)
       ).length;
       if (count !== required) {
+        const label =
+          kind === "hearts_survival"
+            ? "with hearts remaining"
+            : "marked survived";
         blockers.push(
-          `${region}: ${count} marked survived — need exactly ${required}.`
+          `${region}: ${count} ${label} — need exactly ${required}.`
         );
       }
+    }
+  }
+
+  if (kind === "judged_round" || kind === "lifelines_quiz") {
+    const invalid = values.filter(
+      (v) => Number.isNaN(v.points) || v.points < 0
+    );
+    if (invalid.length > 0) {
+      blockers.push(`${invalid.length} branch(es) have invalid scores.`);
     }
   }
 

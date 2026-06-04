@@ -5,11 +5,22 @@ import { useId, useState } from "react";
 interface Props {
   label?: string;
   children: React.ReactNode;
+  /** Tooltip placement — use `below` in tight horizontal nav. */
+  placement?: "right" | "below";
 }
 
-export function InfoTip({ label = "Help", children }: Props) {
+export function InfoTip({
+  label = "Help",
+  children,
+  placement = "right",
+}: Props) {
   const id = useId();
   const [open, setOpen] = useState(false);
+
+  const panelClass =
+    placement === "below"
+      ? "absolute left-0 top-full z-50 mt-1.5 w-72 max-w-[min(18rem,calc(100vw-2rem))]"
+      : "absolute left-6 top-0 z-50 w-64 max-w-[min(16rem,calc(100vw-2rem))]";
 
   return (
     <span className="relative inline-flex items-center">
@@ -19,8 +30,9 @@ export function InfoTip({ label = "Help", children }: Props) {
         aria-describedby={open ? id : undefined}
         onClick={() => setOpen((o) => !o)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full sd-glass text-xs text-sd-muted ring-1 ring-fuchsia-400/30 hover:text-sd-glow"
+        className="ml-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full sd-glass text-xs text-sd-muted ring-1 ring-fuchsia-400/30 hover:text-sd-glow"
         title={label}
+        aria-label={label}
       >
         ?
       </button>
@@ -28,7 +40,7 @@ export function InfoTip({ label = "Help", children }: Props) {
         <span
           id={id}
           role="tooltip"
-          className="sd-neon-panel absolute left-6 top-0 z-50 w-64 px-3 py-2 text-left text-xs font-normal text-sd-muted shadow-xl"
+          className={`sd-neon-panel px-3 py-2 text-left text-xs font-normal leading-relaxed text-sd-muted shadow-xl ${panelClass}`}
         >
           {children}
         </span>

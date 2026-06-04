@@ -75,17 +75,26 @@ export function getJulySurvivorTable() {
 export function getRoundCapRows() {
   const rows: { season: string; round: string; format: string; max: string }[] =
     [];
-  for (const slug of ["june_area", "july_region"] as SeasonSlug[]) {
-    const name = SCORING_CONFIG[slug].name.split(" — ")[0];
+  for (const slug of ["june_area", "july_region", "august_finals"] as SeasonSlug[]) {
+    const name =
+      slug === "august_finals"
+        ? PHASE_DISPLAY.august.label
+        : SCORING_CONFIG[slug].name.split(" — ")[0];
     for (let r = 1; r <= 3; r++) {
       const m = getRoundMechanics(slug, r);
       if (m) {
         const max =
-          m.kind === "quiz"
-            ? String(m.maxPoints)
+          m.kind === "quiz" || m.kind === "lifelines_quiz"
+            ? m.kind === "lifelines_quiz"
+              ? `${m.maxPoints}%`
+              : String(m.maxPoints)
             : m.kind === "race_to_correct"
               ? `${m.maxCorrect} correct`
-              : "Survived / Out";
+              : m.kind === "hearts_survival"
+                ? `${m.maxHearts} hearts (0 = out)`
+                : m.kind === "judged_round"
+                  ? "Right 100 / Incomplete 50 / Wrong 0"
+                  : "Survived / Out";
         rows.push({
           season: name,
           round: `Round ${r}`,

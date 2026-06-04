@@ -8,8 +8,8 @@ Update [`src/lib/scoring-config.ts`](../src/lib/scoring-config.ts) when official
 | Phase | Season | Participants | Rounds | Advancement |
 |-------|--------|--------------|--------|-------------|
 | June | `june_area` | All branches (130+) | 3 weekly rounds | **8 per region** after R3 → **24** to July |
-| July | `july_region` | 24 from June | 3 weekly rounds per region | **1 champion per region** → August |
-| August | `august_finals` | 3 regional champions | Finals (format TBD) | **1 overall champion** |
+| July | `july_region` | 24 from June (8 per region) | 3 weekly rounds per region | **1 champion per region** → The Nationals |
+| The Nationals | `august_finals` | 3 regional champions | 3 rounds (one day) | **1 overall champion** |
 
 ## June — per-round regional elimination
 
@@ -21,30 +21,43 @@ Each round uses **that round’s score only** (not cumulative). Within each regi
 | Round 2 | top 16 | top 16 | top 16 | **48** |
 | Round 3 | top 8 | top 8 | top 8 | **24** → July |
 
-Eliminated branches do **not** compete in later rounds. The public board shows **—** for rounds they did not play.
+### June round formats
 
-## Round formats (score entry limits)
-
-| Season | Round | Format | Max points |
-|--------|-------|--------|------------|
-| June | Round 1 | Quiz game | **10** |
-| July | Round 1 | Quiz game (same style, harder/longer) | **15** |
-
-Admins cannot enter above these caps. Rounds 2–3 limits will be added when formats are confirmed.
+| Round | Format | Scoring |
+|-------|--------|---------|
+| Round 1 | Bingo Phallanx — 10-question quiz | 0–10 points; top 32 per region advance |
+| Round 2 | Last KaBingoPlus Standing | Survived / Out; exactly 16 per region advance |
+| Round 3 | Clash of the Knowledge Swords | First to 5 correct; finish order 1–8; top 8 per region advance |
 
 ## July — per-round regional elimination
 
-Starting pool: **8 per region** (24 total from June).
+Starting pool: **8 per region** (24 total from June). Same *shape* as June (quiz → survival → race) with regional stakes and extra elements.
 
 | After round | Per region | Total survivors |
 |-------------|------------|-----------------|
 | Round 1 | top 4 | **12** |
 | Round 2 | top 2 | **6** |
-| Round 3 | top 1 | **3** → August |
+| Round 3 | top 1 | **3** → The Nationals |
 
-## August
+### July round formats
 
-Three regional champions compete in a single-day event. Scoring format to be confirmed separately.
+| Round | Format | Scoring |
+|-------|--------|---------|
+| Round 1 | 15-item quiz | 0–15 points; **highest scores** fill the top 4 spots per region |
+| Round 2 | Triple heart survival | **0–3 hearts** remaining per branch; last **2 standing** per region advance (0 hearts = out) |
+| Round 3 | First to 5 correct | Same as June R3; **regional champion** advances to The Nationals |
+
+## The Nationals — one-day cumulative contest
+
+Three regional champions compete in a **scored 3-round contest**. Round scores are **percentages (0–100)** that **sum cumulatively** for the championship board.
+
+| Round | Format | Scoring |
+|-------|--------|---------|
+| Round 1 | Lifelines challenge | 0–100%; perfect run = all **3 lifelines** kept with **no wrong-answer deductions** |
+| Round 2 | Roleplay round | SME judges: **Right 100%**, **Incomplete 50%**, **Wrong 0%** |
+| Round 3 | Q&A finals | Miss Universe–style Q&A; **3 judges**; same **100 / 50 / 0** scale |
+
+Overall champion = highest **total %** after all three rounds.
 
 ## Tie-breakers (within a round, for elimination cuts)
 
@@ -52,37 +65,28 @@ Three regional champions compete in a single-day event. Scoring format to be con
 2. Higher **wins in that round**
 3. **Branch name** (A–Z)
 
-Only the top **N** per region advance automatically (see tables above). Ties at the cut line are broken by these rules; there are no shared slots.
+Only the top **N** per region advance automatically (see tables above). Ties at the cut line may require committee tie-breaker picks or manual advancement.
 
 ## Manual extra advancement (committee picks)
 
-When many branches score the maximum (e.g. several **10/10** on June Round 1) but only **32** advance per region automatically, the central team may **manually add** extra branches after publish:
+When many branches score the maximum but only **N** advance per region automatically:
 
 1. Publish the round as usual (automatic cut applies).
-2. Admin → **Rounds** → that round → **Manage advancement picks** (or **advancement picks** on the rounds list).
-3. Choose **Luzon**, **NCR**, or **VisMin**.
-4. Check branches under **Also advance** (sorted best score first; optional filter for max scores only).
-5. **Save** — public badges update and the next round’s score entry includes those branches.
-
-Picks are stored in `manual_round_advances` and re-applied whenever standings are recomputed (including re-publish). Unchecking removes a pick.
+2. Admin → **Rounds** → that round → **Manage advancement picks**.
+3. Choose region, check extra branches, **Save**.
 
 ## Status labels
 
 | Status | Meaning |
 |--------|---------|
 | `active` | Still competing — advancing to next round |
-| `active` (committee pick) | Manually added after the automatic cut; badge shows “Advancing to R*n* (committee pick)” |
 | `advanced` | Survived June R3 (8 per region) |
-| `eliminated` | Out after a specific round (see badge: “Eliminated — R1”) |
+| `eliminated` | Out after a specific round |
 | `regional_finalist` | Won July R3 in their region |
-| `champion` | August winner |
+| `champion` | The Nationals winner |
 
 ## Draft vs published
 
 - Admins save round results as **draft**.
 - **Publish** applies elimination for that round and updates the public leaderboard.
-- Only **published** rounds trigger elimination. Draft scores do not eliminate anyone publicly.
-
-## Forfeits / no-shows
-
-Enter **0 points** for the round; the branch can still be eliminated if others score higher.
+- Only **published** rounds trigger elimination publicly.

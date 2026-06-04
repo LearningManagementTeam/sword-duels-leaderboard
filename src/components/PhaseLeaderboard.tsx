@@ -4,6 +4,8 @@ import { PhaseNav } from "@/components/PhaseNav";
 import { getRoundViewConfig } from "@/lib/leaderboard-display";
 import { LeaderboardSection } from "./LeaderboardSection";
 import { PhaseJourneyBar } from "./PhaseJourneyBar";
+import { RegionalPlayoffMap } from "./playoff/RegionalPlayoffMap";
+import { NationalsConvergenceMap } from "./playoff/NationalsConvergenceMap";
 import { RegionalSnapshotCards } from "./RegionalSnapshotCards";
 import { PreviewBanner } from "./PreviewBanner";
 import { SetupBanner } from "./SetupBanner";
@@ -124,6 +126,19 @@ export async function PhaseLeaderboard({
 
       {showBoard && (
         <>
+          {slug === "july_region" && region && rows.length > 0 && (
+            <RegionalPlayoffMap
+              region={region}
+              rows={rows}
+              latestPublishedRound={latestPublishedRound}
+            />
+          )}
+          {slug === "august_finals" && rows.length > 0 && (
+            <NationalsConvergenceMap
+              rows={rows}
+              latestPublishedRound={latestPublishedRound}
+            />
+          )}
           <Suspense
             fallback={
               <p className="text-sm text-sd-muted/60">Loading leaderboard…</p>

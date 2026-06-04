@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminCallout } from "@/components/admin/AdminCallout";
 import { InfoTip } from "@/components/admin/InfoTip";
 import { getAdminDashboard } from "@/lib/data/admin-queries";
+import { ADMIN_NAV_HINTS, ADMIN_ROUND_HINTS } from "@/lib/admin-action-hints";
 import { seasonPhaseLabel } from "@/lib/season-labels";
 import {
   usesPerRoundElimination,
@@ -59,10 +60,8 @@ export default async function AdminRoundsPage() {
         <h1>Rounds</h1>
         <p>
           Enter results per round. Save as draft, then publish when ready.{" "}
-          <InfoTip>
-            Draft saves scores without updating the public site. Publish applies
-            elimination for that round. After publish on June/July, use
-            advancement picks if many branches tied at the cut.
+          <InfoTip label="About scoring rounds">
+            {ADMIN_NAV_HINTS["/admin/rounds"]} {ADMIN_ROUND_HINTS.advancementPicks}
           </InfoTip>
         </p>
       </div>

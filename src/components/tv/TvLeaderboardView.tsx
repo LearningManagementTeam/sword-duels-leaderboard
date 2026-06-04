@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HeroLogo } from "@/components/branding/HeroLogo";
 import { GamifiedLeaderboard } from "@/components/leaderboard/GamifiedLeaderboard";
+import { RegionalPlayoffMap } from "@/components/playoff/RegionalPlayoffMap";
+import { NationalsConvergenceMap } from "@/components/playoff/NationalsConvergenceMap";
 import type { BrandingConfig } from "@/lib/branding";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
 import { PHASE_DISPLAY } from "@/lib/season-labels";
@@ -96,6 +98,21 @@ export function TvLeaderboardView({
         <p className="text-center text-sm text-sd-glow">
           Auto-rotate regions every {rotateSec}s
         </p>
+      )}
+      {phase === "july" && rows.length > 0 && (
+        <RegionalPlayoffMap
+          region={region}
+          rows={rows}
+          latestPublishedRound={latestPublishedRound}
+          tvMode
+        />
+      )}
+      {phase === "august" && rows.length > 0 && (
+        <NationalsConvergenceMap
+          rows={rows}
+          latestPublishedRound={latestPublishedRound}
+          tvMode
+        />
       )}
       <GamifiedLeaderboard
         bannerSubtitle={subtitle}

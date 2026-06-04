@@ -2,6 +2,7 @@ import type { StandingRow } from "@/lib/types";
 import {
   getRoundMechanics,
   getSurvivorCount,
+  judgedScoreLabel,
   SCORING_CONFIG,
   type RoundLayoutVariant,
   type SeasonSlug,
@@ -37,9 +38,30 @@ export function branchSubtext(row: StandingRow): string {
   return `${row.branch_name} · ${row.branch_code}`;
 }
 
+export function roundPointsForRound(
+  row: StandingRow,
+  round: number
+): number | null {
+  if (round === 1) return row.round1_points;
+  if (round === 2) return row.round2_points;
+  if (round === 3) return row.round3_points;
+  return null;
+}
+
 export function round2Survived(row: StandingRow): boolean | null {
   if (row.round2_points === null) return null;
   return row.round2_points >= 1;
+}
+
+export function heartsRemaining(row: StandingRow): number | null {
+  if (row.round2_points === null) return null;
+  return row.round2_points;
+}
+
+export function hasHeartsRemaining(row: StandingRow): boolean | null {
+  const hearts = heartsRemaining(row);
+  if (hearts === null) return null;
+  return hearts > 0;
 }
 
 export function formatQuizScore(
@@ -142,6 +164,48 @@ export function getRoundViewConfig(
     };
   }
 
+  if (mechanics.kind === "hearts_survival") {
+    return {
+      latestPublishedRound,
+      roundName: mechanics.roundName,
+      layoutVariant: mechanics.layoutVariant,
+      bannerTagline: mechanics.bannerTagline,
+      cutLineLabel,
+      emptyMessage: "Heart counts appear after publish.",
+      heroLabel: "Hearts",
+      showPodium: false,
+      podiumMode: "none",
+    };
+  }
+
+  if (mechanics.kind === "lifelines_quiz") {
+    return {
+      latestPublishedRound,
+      roundName: mechanics.roundName,
+      layoutVariant: mechanics.layoutVariant,
+      bannerTagline: mechanics.bannerTagline,
+      cutLineLabel: "Championship standings — cumulative % across finals rounds",
+      emptyMessage: "Nationals scores appear after publish.",
+      heroLabel: "Round score",
+      showPodium: true,
+      podiumMode: "quiz_score",
+    };
+  }
+
+  if (mechanics.kind === "judged_round") {
+    return {
+      latestPublishedRound,
+      roundName: mechanics.roundName,
+      layoutVariant: mechanics.layoutVariant,
+      bannerTagline: mechanics.bannerTagline,
+      cutLineLabel: "Championship standings — cumulative % across finals rounds",
+      emptyMessage: "Judge scores appear after publish.",
+      heroLabel: "Judge score",
+      showPodium: true,
+      podiumMode: "quiz_score",
+    };
+  }
+
   return {
     latestPublishedRound,
     roundName: mechanics.roundName,
@@ -187,6 +251,37 @@ export function sortRowsForRoundView(
     return copy;
   }
 
+  if (view.layoutVariant === "hearts_roster") {
+    copy.sort((a, b) => {
+      const aHearts = heartsRemaining(a) ?? -1;
+      const bHearts = heartsRemaining(b) ?? -1;
+      if (bHearts !== aHearts) return bHearts - aHearts;
+      return a.branch_name.localeCompare(b.branch_name);
+    });
+    copy.forEach((r, i) => {
+      r.rank = i + 1;
+    });
+    return copy;
+  }
+
+  if (
+    view.layoutVariant === "percentage_score" ||
+    view.layoutVariant === "judged_score"
+  ) {
+    const round = view.latestPublishedRound;
+    copy.sort((a, b) => {
+      const aScore = roundPointsForRound(a, round) ?? -1;
+      const bScore = roundPointsForRound(b, round) ?? -1;
+      if (bScore !== aScore) return bScore - aScore;
+      if (b.total_points !== a.total_points) return b.total_points - a.total_points;
+      return a.branch_name.localeCompare(b.branch_name);
+    });
+    copy.forEach((r, i) => {
+      r.rank = i + 1;
+    });
+    return copy;
+  }
+
   if (view.layoutVariant === "finish_order_champions") {
     copy.sort((a, b) => {
       const aOrder = a.round3_finish_order ?? 999;
@@ -207,6 +302,34 @@ export function sortRowsForRoundView(
   }
 
   return copy;
+}
+
+export function splitHeartsRows(rows: StandingRow[]): {
+  standing: StandingRow[];
+  fallen: StandingRow[];
+} {
+  const standing: StandingRow[] = [];
+  const fallen: StandingRow[] = [];
+  for (const row of rows) {
+    if (hasHeartsRemaining(row)) standing.push(row);
+    else if (hasHeartsRemaining(row) === false) fallen.push(row);
+    else standing.push(row);
+  }
+  return { standing, fallen };
+}
+
+export function heartsCounts(rows: StandingRow[]): {
+  standing: number;
+  fallen: number;
+} {
+  let standing = 0;
+  let fallen = 0;
+  for (const row of rows) {
+    const alive = hasHeartsRemaining(row);
+    if (alive) standing++;
+    else if (alive === false) fallen++;
+  }
+  return { standing, fallen };
 }
 
 export function splitSurvivalRows(rows: StandingRow[]): {
@@ -249,6 +372,21 @@ export function formatHeroMetric(
   }
   if (view.layoutVariant === "survival_roster") {
     return formatRound2Status(row);
+  }
+  if (view.layoutVariant === "hearts_roster") {
+    const hearts = heartsRemaining(row);
+    if (hearts === null) return "—";
+    return `${hearts} ♥`;
+  }
+  if (view.layoutVariant === "percentage_score") {
+    const pts = roundPointsForRound(row, view.latestPublishedRound);
+    if (pts === null) return "—";
+    return `${pts}%`;
+  }
+  if (view.layoutVariant === "judged_score") {
+    const pts = roundPointsForRound(row, view.latestPublishedRound);
+    if (pts === null) return "—";
+    return `${judgedScoreLabel(pts)} · ${pts}%`;
   }
   if (view.layoutVariant === "finish_order_champions") {
     if (row.round3_finish_order != null && row.round3_finish_order <= 3) {
