@@ -3,8 +3,17 @@
  * @see docs/sword-duels-mechanics.md
  */
 
-export const SD_GROUP_SPLIT_RULE =
-  "Branches in the same area are sorted by branch code. The first half forms Group A; the second half forms Group B.";
+import type { SdGroupSortMode } from "./area-groups";
+
+export const SD_GROUP_SPLIT_RULES: Record<SdGroupSortMode, string> = {
+  branch_code:
+    "Branches in the same area are sorted by branch code. The first half forms Group A; the second half forms Group B.",
+  branch_name:
+    "Branches in the same area are sorted alphabetically by branch name (A–Z). The first half forms Group A; the second half forms Group B.",
+};
+
+/** @deprecated use SD_GROUP_SPLIT_RULES with sort mode */
+export const SD_GROUP_SPLIT_RULE = SD_GROUP_SPLIT_RULES.branch_code;
 
 export const SD_SPOTS_PER_AREA = 2;
 export const SD_AREA_REP_COUNT = 1;

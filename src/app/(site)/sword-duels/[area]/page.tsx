@@ -43,7 +43,7 @@ export default async function SwordDuelsAreaPublicPage({
     );
   }
 
-  const { bracket, sets, scoreMap } = ctx;
+  const { bracket, sets, scoreMap, event } = ctx;
   const publicScores = filterPublicScores(sets, scoreMap);
 
   const groupSets = sets.filter(
@@ -68,7 +68,10 @@ export default async function SwordDuelsAreaPublicPage({
         </p>
       </div>
 
-      <AreaGroupSplitPanel bracket={bracket} />
+      <AreaGroupSplitPanel
+        bracket={bracket}
+        groupSortMode={event.group_sort_mode}
+      />
 
       <AreaTournamentMap
         bracket={bracket}

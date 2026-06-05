@@ -65,7 +65,10 @@ export default async function SwordDuelsAreaPage({
         </p>
       </div>
 
-      <AreaGroupSplitPanel bracket={bracket} />
+      <AreaGroupSplitPanel
+        bracket={bracket}
+        groupSortMode={event.group_sort_mode}
+      />
 
       {missingSets ? (
         <div className="sd-neon-panel p-4 text-sm text-amber-100">

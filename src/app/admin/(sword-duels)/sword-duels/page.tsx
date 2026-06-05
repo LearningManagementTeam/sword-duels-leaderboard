@@ -41,10 +41,20 @@ export default async function SwordDuelsDashboardPage() {
       )}
 
       {configured && !event && (
-        <div className="sd-neon-panel p-4 text-sm text-amber-100">
-          Sword Duels database tables are missing. Run migration{" "}
-          <code className="text-xs">016_sword_duels.sql</code> in Supabase, then
-          refresh this page to see the sync button.
+        <div className="sd-neon-panel space-y-2 p-4 text-sm text-amber-100">
+          <p>
+            Sword Duels could not load the event row. If you already ran{" "}
+            <code className="text-xs">016_sword_duels.sql</code> and saw
+            &quot;type already exists&quot;, the migration is partially applied —
+            that is normal.
+          </p>
+          <p>
+            Run{" "}
+            <code className="text-xs">016_sword_duels_repair.sql</code> in
+            Supabase SQL Editor (safe to re-run), then refresh this page. The{" "}
+            <strong className="text-white">Sync from branches</strong> button
+            should appear.
+          </p>
         </div>
       )}
 

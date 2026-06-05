@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { syncSdBracketsForm, updateSdGroupSortMode } from "@/lib/actions/sword-duels-admin";
+import {
+  syncSdBracketsForm,
+  updateSdGroupSortMode,
+} from "@/lib/actions/sword-duels-admin";
 import {
   SD_GROUP_SORT_LABELS,
   type SdGroupSortMode,
@@ -13,17 +16,37 @@ interface Props {
 
 export function SdGroupSortSettings({ currentMode }: Props) {
   const [mode, setMode] = useState<SdGroupSortMode>(currentMode);
+  const [savedMode, setSavedMode] = useState<SdGroupSortMode>(currentMode);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function saveMode() {
+  function handleSync() {
+    setError(null);
+    setMessage(null);
+    startTransition(async () => {
+      try {
+        await syncSdBracketsForm(mode);
+        setSavedMode(mode);
+        setMessage(
+          `Brackets synced using ${SD_GROUP_SORT_LABELS[mode]}. Open an area to verify Group A / B.`
+        );
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Sync failed");
+      }
+    });
+  }
+
+  function saveModeOnly() {
     setError(null);
     setMessage(null);
     startTransition(async () => {
       try {
         await updateSdGroupSortMode(mode);
-        setMessage("Sort preference saved. Re-sync brackets to apply new groups.");
+        setSavedMode(mode);
+        setMessage(
+          `Sort preference saved (${SD_GROUP_SORT_LABELS[mode]}). Click Sync to rebuild groups.`
+        );
       } catch (e) {
         setError(e instanceof Error ? e.message : "Save failed");
       }
@@ -39,29 +62,32 @@ export function SdGroupSortSettings({ currentMode }: Props) {
           </p>
           <p className="mt-1 font-medium text-white">Sync area brackets</p>
           <p className="mt-1 max-w-xl text-sm text-sd-muted">
-            Pulls branches from the master roster (with area assigned), splits
-            each area into Group A and Group B, and creates scoring sets. Do this
-            after importing branches — not the representatives CSV alone.
+            Pulls branches from the master roster (with area assigned), sorts them
+            using the option below, splits each area into Group A and Group B, and
+            creates scoring sets.
+          </p>
+          <p className="mt-2 text-xs text-sd-glow/80">
+            Active sort:{" "}
+            <strong className="text-white">{SD_GROUP_SORT_LABELS[savedMode]}</strong>
           </p>
         </div>
-        <form action={syncSdBracketsForm}>
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-lg bg-gradient-to-r from-cyan-400 to-emerald-400 px-5 py-2.5 text-sm font-semibold text-sd-deep shadow-[0_0_16px_rgb(34_211_238/0.25)] disabled:opacity-50"
-          >
-            Sync from branches
-          </button>
-        </form>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={handleSync}
+          className="rounded-lg bg-gradient-to-r from-cyan-400 to-emerald-400 px-5 py-2.5 text-sm font-semibold text-sd-deep shadow-[0_0_16px_rgb(34_211_238/0.25)] disabled:opacity-50"
+        >
+          Sync from branches
+        </button>
       </div>
 
       <div>
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sd-muted/70">
-          Optional — group order
+          Sort before A / B split
         </p>
-        <p className="mt-1 font-medium text-white">Group assignment order</p>
         <p className="mt-1 text-sm text-sd-muted">
-          Choose how branches are sorted before the A/B split, then sync again.
+          Choose how branches are ordered within each area. Sync applies this
+          immediately — you do not need to save first.
         </p>
       </div>
 
@@ -85,18 +111,13 @@ export function SdGroupSortSettings({ currentMode }: Props) {
         </label>
         <button
           type="button"
-          disabled={pending || mode === currentMode}
-          onClick={saveMode}
+          disabled={pending || mode === savedMode}
+          onClick={saveModeOnly}
           className="sd-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
-          Save preference
+          Save preference only
         </button>
       </div>
-
-      <p className="text-xs text-sd-muted/75">
-        After changing sort order, click <strong className="text-white">Sync from branches</strong>{" "}
-        above to rebuild groups.
-      </p>
 
       {message && <p className="text-sm text-emerald-300">{message}</p>}
       {error && <p className="text-sm text-red-300">{error}</p>}

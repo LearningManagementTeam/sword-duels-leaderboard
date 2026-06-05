@@ -1,5 +1,7 @@
 import type { SdAreaBracket } from "@/lib/products/sword-duels/types";
-import { SD_GROUP_SPLIT_RULE } from "@/lib/products/sword-duels/scoring-config";
+import type { SdGroupSortMode } from "@/lib/products/sword-duels/area-groups";
+import { SD_GROUP_SORT_LABELS } from "@/lib/products/sword-duels/area-groups";
+import { SD_GROUP_SPLIT_RULES } from "@/lib/products/sword-duels/scoring-config";
 
 function RepLine({
   rep1,
@@ -103,12 +105,23 @@ function GroupColumn({
   );
 }
 
-export function AreaGroupSplitPanel({ bracket }: { bracket: SdAreaBracket }) {
+export function AreaGroupSplitPanel({
+  bracket,
+  groupSortMode = "branch_code",
+}: {
+  bracket: SdAreaBracket;
+  groupSortMode?: SdGroupSortMode;
+}) {
   return (
     <section className="sd-neon-panel space-y-3 p-4 sm:p-5">
       <div>
         <h2 className="text-base font-semibold text-white">Group assignment</h2>
-        <p className="mt-1 text-sm text-sd-muted">{SD_GROUP_SPLIT_RULE}</p>
+        <p className="mt-1 text-sm text-sd-muted">
+          {SD_GROUP_SPLIT_RULES[groupSortMode]}
+        </p>
+        <p className="mt-1 text-xs text-sd-glow/75">
+          Current order: {SD_GROUP_SORT_LABELS[groupSortMode]}
+        </p>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <GroupColumn label="Group A — Set 1 battle" branches={bracket.groupA} accent="cyan" />

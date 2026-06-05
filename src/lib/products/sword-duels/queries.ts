@@ -17,16 +17,29 @@ import { SD_SET_ORDER } from "./types";
 
 export async function getSdEvent(): Promise<SdEvent | null> {
   const service = await createServiceClient();
-  const { data } = await service
+  const { data, error } = await service
     .from("sd_events")
-    .select("id, slug, name, group_sort_mode")
+    .select("id, slug, name")
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (!data) return null;
+
+  if (error || !data) return null;
+
+  let group_sort_mode: SdGroupSortMode = "branch_code";
+  const { data: modeRow, error: modeError } = await service
+    .from("sd_events")
+    .select("group_sort_mode")
+    .eq("id", data.id)
+    .maybeSingle();
+
+  if (!modeError && modeRow?.group_sort_mode) {
+    group_sort_mode = modeRow.group_sort_mode as SdGroupSortMode;
+  }
+
   return {
     ...data,
-    group_sort_mode: (data.group_sort_mode ?? "branch_code") as SdGroupSortMode,
+    group_sort_mode,
   } as SdEvent;
 }
 

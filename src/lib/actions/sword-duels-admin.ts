@@ -53,17 +53,27 @@ function revalidateSd(area?: string) {
   }
 }
 
-export async function syncSdBracketsForm(): Promise<void> {
-  await syncSdBrackets();
+export async function syncSdBracketsForm(sortMode: SdGroupSortMode): Promise<void> {
+  await syncSdBrackets(sortMode);
 }
 
-export async function syncSdBrackets(): Promise<{ areaCount: number }> {
+export async function syncSdBrackets(
+  explicitMode?: SdGroupSortMode
+): Promise<{ areaCount: number; group_sort_mode: SdGroupSortMode }> {
   const { email } = await requireAdmin();
   const service = await createServiceClient();
   const event = await getSdEvent();
   if (!event) throw new Error("Sword Duels event not found");
 
-  const sortMode = event.group_sort_mode ?? "branch_code";
+  const sortMode = explicitMode ?? event.group_sort_mode ?? "branch_code";
+
+  if (explicitMode) {
+    const { error: modeError } = await service
+      .from("sd_events")
+      .update({ group_sort_mode: explicitMode })
+      .eq("id", event.id);
+    if (modeError) throw new Error(modeError.message);
+  }
 
   const { data: branches } = await service
     .from("branches")
@@ -118,7 +128,7 @@ export async function syncSdBrackets(): Promise<{ areaCount: number }> {
     group_sort_mode: sortMode,
   });
   revalidateSd();
-  return { areaCount: brackets.length };
+  return { areaCount: brackets.length, group_sort_mode: sortMode };
 }
 
 export async function ensureSdSet(
