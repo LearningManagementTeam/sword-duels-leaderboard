@@ -40,6 +40,14 @@ export default async function SwordDuelsDashboardPage() {
         <SdGroupSortSettings currentMode={event.group_sort_mode ?? "branch_code"} />
       )}
 
+      {configured && !event && (
+        <div className="sd-neon-panel p-4 text-sm text-amber-100">
+          Sword Duels database tables are missing. Run migration{" "}
+          <code className="text-xs">016_sword_duels.sql</code> in Supabase, then
+          refresh this page to see the sync button.
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <Link
           href={swordDuelsPath("representatives")}

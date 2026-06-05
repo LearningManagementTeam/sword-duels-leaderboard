@@ -31,12 +31,37 @@ export function SdGroupSortSettings({ currentMode }: Props) {
   }
 
   return (
-    <div className="sd-neon-panel space-y-4 p-4">
+    <div className="sd-neon-panel space-y-4 p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-emerald-500/15 pb-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sd-glow">
+            Step 1 — Build brackets
+          </p>
+          <p className="mt-1 font-medium text-white">Sync area brackets</p>
+          <p className="mt-1 max-w-xl text-sm text-sd-muted">
+            Pulls branches from the master roster (with area assigned), splits
+            each area into Group A and Group B, and creates scoring sets. Do this
+            after importing branches — not the representatives CSV alone.
+          </p>
+        </div>
+        <form action={syncSdBracketsForm}>
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-lg bg-gradient-to-r from-cyan-400 to-emerald-400 px-5 py-2.5 text-sm font-semibold text-sd-deep shadow-[0_0_16px_rgb(34_211_238/0.25)] disabled:opacity-50"
+          >
+            Sync from branches
+          </button>
+        </form>
+      </div>
+
       <div>
-        <p className="font-medium text-white">Group assignment order</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sd-muted/70">
+          Optional — group order
+        </p>
+        <p className="mt-1 font-medium text-white">Group assignment order</p>
         <p className="mt-1 text-sm text-sd-muted">
-          Branches in each area are sorted, split in half (Group A / Group B),
-          then synced to the tournament map.
+          Choose how branches are sorted before the A/B split, then sync again.
         </p>
       </div>
 
@@ -68,18 +93,10 @@ export function SdGroupSortSettings({ currentMode }: Props) {
         </button>
       </div>
 
-      <form action={syncSdBracketsForm} className="flex flex-wrap items-center justify-between gap-3 border-t border-emerald-500/15 pt-4">
-        <p className="text-xs text-sd-muted/80">
-          After changing sort order, re-sync to rebuild Group A / B assignments.
-        </p>
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-lg bg-gradient-to-r from-cyan-400 to-emerald-400 px-4 py-2 text-sm font-semibold text-sd-deep disabled:opacity-50"
-        >
-          Sync from branches
-        </button>
-      </form>
+      <p className="text-xs text-sd-muted/75">
+        After changing sort order, click <strong className="text-white">Sync from branches</strong>{" "}
+        above to rebuild groups.
+      </p>
 
       {message && <p className="text-sm text-emerald-300">{message}</p>}
       {error && <p className="text-sm text-red-300">{error}</p>}
