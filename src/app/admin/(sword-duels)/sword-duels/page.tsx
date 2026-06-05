@@ -78,6 +78,15 @@ export default async function SwordDuelsDashboardPage() {
             Live tournament maps update as sets are published.
           </p>
         </Link>
+        <Link
+          href={swordDuelsPath("preview", "nationals-wildcard")}
+          className="sd-neon-panel block p-5 transition hover:ring-1 hover:ring-fuchsia-400/30"
+        >
+          <h2 className="font-semibold text-fuchsia-200">Nationals wildcard preview</h2>
+          <p className="mt-1 text-sm text-sd-muted">
+            Temporary map · 15 area reps + slot 16 tiebreak demo
+          </p>
+        </Link>
       </div>
 
       <section className="space-y-3">

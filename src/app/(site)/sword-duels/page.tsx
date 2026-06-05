@@ -35,6 +35,12 @@ export default async function SwordDuelsHomePage() {
               TV bracket view →
             </Link>
           )}
+          <Link
+            href="/preview/sword-duels/nationals"
+            className="sd-link text-sm"
+          >
+            Nationals wildcard preview →
+          </Link>
         </p>
       </div>
 

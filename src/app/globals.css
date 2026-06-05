@@ -247,6 +247,102 @@ summary:focus-visible {
   animation: sd-bracket-reveal 0.45s ease-out both;
 }
 
+/* Sword Duels — Nationals wildcard round (distinct purple / fuchsia theme) */
+.sd-wildcard-arena {
+  position: relative;
+  border-radius: 1rem;
+  background: linear-gradient(
+    145deg,
+    rgb(88 28 135 / 0.22) 0%,
+    rgb(15 23 42 / 0.55) 45%,
+    rgb(136 19 55 / 0.18) 100%
+  );
+  ring: 1px solid rgb(217 70 239 / 0.35);
+  border: 1px solid rgb(217 70 239 / 0.35);
+  box-shadow:
+    0 0 32px rgb(168 85 247 / 0.12),
+    inset 0 1px 0 rgb(232 121 249 / 0.08);
+}
+
+.sd-wildcard-arena::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgb(232 121 249 / 0.45),
+    rgb(168 85 247 / 0.15) 40%,
+    rgb(217 70 239 / 0.4)
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes sd-wildcard-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 16px rgb(217 70 239 / 0.35),
+      inset 0 0 0 1px rgb(232 121 249 / 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 28px rgb(168 85 247 / 0.55),
+      0 0 40px rgb(217 70 239 / 0.2),
+      inset 0 0 0 1px rgb(232 121 249 / 0.45);
+  }
+}
+
+.sd-wildcard-slot-live {
+  animation: sd-wildcard-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes sd-wildcard-shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.sd-wildcard-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 40%,
+    rgb(232 121 249 / 0.12) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sd-wildcard-shimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sd-wildcard-badge {
+  0%,
+  100% {
+    transform: rotate(-2deg) scale(1);
+  }
+  50% {
+    transform: rotate(2deg) scale(1.04);
+  }
+}
+
+.sd-wildcard-badge-float {
+  animation: sd-wildcard-badge 2.6s ease-in-out infinite;
+}
+
 @keyframes sd-arena-shimmer {
   0% {
     opacity: 0.35;
