@@ -1,9 +1,13 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { BRANCH_WITH_REPS_SELECT } from "@/lib/representative-fields";
 import type { Branch } from "@/lib/types";
-import { buildAreaBrackets } from "./area-groups";
+import {
+  buildAreaBrackets,
+  type SdGroupSortMode,
+} from "./area-groups";
 import type {
   SdAreaBracket,
+  SdAreaGroupBranch,
   SdEvent,
   SdSet,
   SdSetScore,
@@ -15,11 +19,15 @@ export async function getSdEvent(): Promise<SdEvent | null> {
   const service = await createServiceClient();
   const { data } = await service
     .from("sd_events")
-    .select("id, slug, name")
+    .select("id, slug, name, group_sort_mode")
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  return data as SdEvent | null;
+  if (!data) return null;
+  return {
+    ...data,
+    group_sort_mode: (data.group_sort_mode ?? "branch_code") as SdGroupSortMode,
+  } as SdEvent;
 }
 
 export async function getAllBranches(): Promise<Branch[]> {
@@ -32,9 +40,83 @@ export async function getAllBranches(): Promise<Branch[]> {
   return (data ?? []) as Branch[];
 }
 
+interface AreaGroupRow {
+  area: string;
+  branch_id: string;
+  group_label: string;
+  sort_order: number;
+}
+
+async function loadPersistedAreaBrackets(
+  eventId: string,
+  branches: Branch[]
+): Promise<SdAreaBracket[] | null> {
+  const service = await createServiceClient();
+  const { data: groupRows } = await service
+    .from("sd_area_groups")
+    .select("area, branch_id, group_label, sort_order")
+    .eq("event_id", eventId);
+
+  if (!groupRows?.length) return null;
+
+  const branchById = new Map(branches.map((b) => [b.id, b]));
+  const byArea = new Map<string, AreaGroupRow[]>();
+
+  for (const row of groupRows as AreaGroupRow[]) {
+    if (!byArea.has(row.area)) byArea.set(row.area, []);
+    byArea.get(row.area)!.push(row);
+  }
+
+  return [...byArea.entries()]
+    .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+    .map(([area, rows]) => {
+      const sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order);
+      const groupA: SdAreaGroupBranch[] = [];
+      const groupB: SdAreaGroupBranch[] = [];
+
+      for (const row of sorted) {
+        const branch = branchById.get(row.branch_id);
+        if (!branch) continue;
+        const entry: SdAreaGroupBranch = {
+          branch_id: branch.id,
+          branch_code: branch.branch_code,
+          branch_name: branch.branch_name,
+          area: branch.area,
+          region: branch.region,
+          group_label: row.group_label as "a" | "b",
+          sort_order: row.sort_order,
+          representative_1: branch.representative_1,
+          representative_2: branch.representative_2,
+          representative_1_employee_no: branch.representative_1_employee_no,
+          representative_1_position: branch.representative_1_position,
+          representative_2_employee_no: branch.representative_2_employee_no,
+          representative_2_position: branch.representative_2_position,
+        };
+        if (row.group_label === "a") groupA.push(entry);
+        else groupB.push(entry);
+      }
+
+      const region = groupA[0]?.region ?? groupB[0]?.region ?? "luzon";
+      return {
+        area,
+        region,
+        groupA,
+        groupB,
+        branchCount: groupA.length + groupB.length,
+      };
+    });
+}
+
 export async function getSdAreaBrackets(eventId: string): Promise<SdAreaBracket[]> {
-  const branches = await getAllBranches();
-  return buildAreaBrackets(branches);
+  const [event, branches] = await Promise.all([
+    getSdEvent(),
+    getAllBranches(),
+  ]);
+  const persisted = await loadPersistedAreaBrackets(eventId, branches);
+  if (persisted?.length) return persisted;
+
+  const mode = event?.group_sort_mode ?? "branch_code";
+  return buildAreaBrackets(branches, mode);
 }
 
 export async function getSdSetsForEvent(eventId: string): Promise<SdSet[]> {
@@ -68,7 +150,9 @@ export async function getSdSetScores(setIds: string[]): Promise<SdSetScore[]> {
   const service = await createServiceClient();
   const { data } = await service
     .from("sd_set_scores")
-    .select("branch_id, points, hearts_remaining, is_eliminated, set_id")
+    .select(
+      "branch_id, points, hearts_remaining, is_eliminated, active_representative, set_id"
+    )
     .in("set_id", setIds);
 
   return (data ?? []).map((row) => ({
@@ -76,6 +160,7 @@ export async function getSdSetScores(setIds: string[]): Promise<SdSetScore[]> {
     points: Number(row.points),
     hearts_remaining: row.hearts_remaining,
     is_eliminated: row.is_eliminated,
+    active_representative: (row.active_representative === 2 ? 2 : 1) as 1 | 2,
     set_id: row.set_id as string,
   })) as (SdSetScore & { set_id: string })[];
 }
@@ -93,6 +178,7 @@ export function scoresBySetId(
       points: row.points,
       hearts_remaining: row.hearts_remaining,
       is_eliminated: row.is_eliminated,
+      active_representative: row.active_representative ?? 1,
     });
     map.set(setId, list);
   }
@@ -193,7 +279,7 @@ export async function getSdSetWithScores(setId: string) {
 
   const { data: scores } = await service
     .from("sd_set_scores")
-    .select("branch_id, points, hearts_remaining, is_eliminated")
+    .select("branch_id, points, hearts_remaining, is_eliminated, active_representative")
     .eq("set_id", setId);
 
   return {
@@ -203,6 +289,7 @@ export async function getSdSetWithScores(setId: string) {
       points: Number(s.points),
       hearts_remaining: s.hearts_remaining,
       is_eliminated: s.is_eliminated,
+      active_representative: (s.active_representative === 2 ? 2 : 1) as 1 | 2,
     })) as SdSetScore[],
   };
 }

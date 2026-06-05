@@ -1,4 +1,5 @@
 import type { BranchRepresentativeFields } from "@/lib/representative-fields";
+import type { SdGroupSortMode } from "./area-groups";
 
 export type SdSetType = "group_a" | "group_b" | "area_final";
 export type SdSetStatus = "draft" | "published";
@@ -8,6 +9,7 @@ export interface SdEvent {
   id: string;
   slug: string;
   name: string;
+  group_sort_mode: SdGroupSortMode;
 }
 
 export interface SdAreaGroupBranch extends BranchRepresentativeFields {
@@ -36,6 +38,7 @@ export interface SdSetScore {
   points: number;
   hearts_remaining: number | null;
   is_eliminated: boolean;
+  active_representative?: 1 | 2;
 }
 
 export interface SdAreaBracket {

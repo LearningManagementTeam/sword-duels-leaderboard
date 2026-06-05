@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC, swordDuelsPath } from "@/lib/admin-routes";
 import { requireAdminEmail } from "@/lib/admin-auth";
 import { buildAreaBrackets } from "@/lib/products/sword-duels/area-groups";
+import type { SdGroupSortMode } from "@/lib/products/sword-duels/area-groups";
 import {
   getSdAreaContext,
   getSdEvent,
@@ -62,10 +63,15 @@ export async function syncSdBrackets(): Promise<{ areaCount: number }> {
   const event = await getSdEvent();
   if (!event) throw new Error("Sword Duels event not found");
 
+  const sortMode = event.group_sort_mode ?? "branch_code";
+
   const { data: branches } = await service
     .from("branches")
     .select("id, branch_code, branch_name, area, region");
-  const brackets = buildAreaBrackets((branches ?? []) as Parameters<typeof buildAreaBrackets>[0]);
+  const brackets = buildAreaBrackets(
+    (branches ?? []) as Parameters<typeof buildAreaBrackets>[0],
+    sortMode
+  );
 
   await service.from("sd_area_groups").delete().eq("event_id", event.id);
 
@@ -109,6 +115,7 @@ export async function syncSdBrackets(): Promise<{ areaCount: number }> {
   await logAudit(email, "sync_sd_brackets", event.id, {
     areaCount: brackets.length,
     branchCount: rows.length,
+    group_sort_mode: sortMode,
   });
   revalidateSd();
   return { areaCount: brackets.length };
@@ -176,6 +183,7 @@ export type SdScoreInput = {
   points: number;
   hearts_remaining?: number | null;
   is_eliminated?: boolean;
+  active_representative?: 1 | 2;
 };
 
 export async function saveSdSetScores(
@@ -203,6 +211,7 @@ export async function saveSdSetScores(
         points: row.points,
         hearts_remaining: row.hearts_remaining ?? null,
         is_eliminated: row.is_eliminated ?? false,
+        active_representative: row.active_representative === 2 ? 2 : 1,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "set_id,branch_id" }
@@ -496,4 +505,22 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
     warnings: warnings.length ? warnings : undefined,
     message: `Imported representatives for ${updated} branch${updated === 1 ? "" : "es"}.`,
   };
+}
+
+export async function updateSdGroupSortMode(
+  mode: SdGroupSortMode
+): Promise<void> {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const event = await getSdEvent();
+  if (!event) throw new Error("Sword Duels event not found");
+
+  const { error } = await service
+    .from("sd_events")
+    .update({ group_sort_mode: mode })
+    .eq("id", event.id);
+  if (error) throw new Error(error.message);
+
+  await logAudit(email, "update_sd_group_sort", event.id, { group_sort_mode: mode });
+  revalidateSd();
 }

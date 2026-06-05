@@ -1,4 +1,5 @@
 import type { PlayoffSlot } from "@/lib/playoff-map";
+import { resolveActiveRepresentativeName } from "@/lib/representative-active";
 import type { Region } from "@/lib/scoring-config";
 import type {
   SdAreaBracket,
@@ -44,10 +45,31 @@ function toSlot(
         : row.is_winner
           ? "advanced"
           : "active",
-    representative_1: row.representative_1,
+    representative_1:
+      row.active_representative_name ?? row.representative_1,
     roundScore: row.points,
     isChampion: opts?.isChampion,
     eliminatedInRound: opts?.eliminated ? 1 : null,
+  };
+}
+
+function draftFieldSlot(
+  b: SdAreaGroupBranch,
+  rank: number,
+  scores: SdSetScore[]
+): PlayoffSlot {
+  const score = scores.find((s) => s.branch_id === b.branch_id);
+  return {
+    branch_id: b.branch_id,
+    branch_name: b.branch_name,
+    branch_code: b.branch_code,
+    rank,
+    status: "active" as const,
+    representative_1: resolveActiveRepresentativeName(
+      b,
+      score?.active_representative
+    ),
+    roundScore: score?.points ?? null,
   };
 }
 
@@ -143,17 +165,13 @@ export function buildAreaTournamentMap(input: {
           eliminated: r.branch_id !== groupAWinnerId,
         })
       )
-    : bracket.groupA.map((b, i) => ({
-        branch_id: b.branch_id,
-        branch_name: b.branch_name,
-        branch_code: b.branch_code,
-        rank: i + 1,
-        status: "active" as const,
-        representative_1: b.representative_1,
-        roundScore: scoresForSet(groupASet?.id, input.scoresBySetId).find(
-          (s) => s.branch_id === b.branch_id
-        )?.points ?? null,
-      }));
+    : bracket.groupA.map((b, i) =>
+        draftFieldSlot(
+          b,
+          i + 1,
+          scoresForSet(groupASet?.id, input.scoresBySetId)
+        )
+      );
 
   const groupBFieldSlots: PlayoffSlot[] = isPublished(groupBSet)
     ? groupBResults.ranked.map((r) =>
@@ -162,17 +180,13 @@ export function buildAreaTournamentMap(input: {
           eliminated: r.branch_id !== groupBWinnerId,
         })
       )
-    : bracket.groupB.map((b, i) => ({
-        branch_id: b.branch_id,
-        branch_name: b.branch_name,
-        branch_code: b.branch_code,
-        rank: i + 1,
-        status: "active" as const,
-        representative_1: b.representative_1,
-        roundScore: scoresForSet(groupBSet?.id, input.scoresBySetId).find(
-          (s) => s.branch_id === b.branch_id
-        )?.points ?? null,
-      }));
+    : bracket.groupB.map((b, i) =>
+        draftFieldSlot(
+          b,
+          i + 1,
+          scoresForSet(groupBSet?.id, input.scoresBySetId)
+        )
+      );
 
   function winnerSlot(
     winnerId: string,

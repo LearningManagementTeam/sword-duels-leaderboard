@@ -5,6 +5,7 @@ import type { SdAreaBracket, SdSet, SdSetScore } from "@/lib/products/sword-duel
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { PlayoffSlot } from "@/lib/playoff-map";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
+import { SdMobileBracketJourney } from "./SdMobileBracketJourney";
 import { SdBracketFanConnectors } from "./SdBracketConnectors";
 import { SdBracketCenterStage } from "./SdBracketCenterStage";
 import { SdBracketSlot } from "./SdBracketSlot";
@@ -321,16 +322,7 @@ export function AreaTournamentMap({
       <div className="hidden lg:block">
         <BracketGrid model={model} bracket={bracket} />
       </div>
-      <details className="lg:hidden">
-        <summary className="sd-btn-ghost cursor-pointer list-none rounded-lg px-4 py-2.5 text-center text-sm font-semibold text-white [&::-webkit-details-marker]:hidden">
-          View tournament bracket
-        </summary>
-        <div className="mt-4 overflow-x-auto pb-2">
-          <div className="min-w-[640px]">
-            <BracketGrid model={model} bracket={bracket} />
-          </div>
-        </div>
-      </details>
+      <SdMobileBracketJourney model={model} bracket={bracket} />
     </MapShell>
   );
 }

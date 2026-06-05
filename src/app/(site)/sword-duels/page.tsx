@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
+import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
 import { getSdPublicOverview } from "@/lib/products/sword-duels/public-queries";
@@ -76,6 +77,11 @@ export default async function SwordDuelsHomePage() {
           })}
         </div>
       )}
+
+      <SwordDuelsPublicFooter
+        sharePath={SWORD_DUELS_PUBLIC}
+        shareTitle="Share Sword Duels standings"
+      />
     </div>
   );
 }

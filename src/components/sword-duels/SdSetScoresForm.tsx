@@ -45,6 +45,7 @@ type RowState = {
   points: string;
   hearts: string;
   is_eliminated: boolean;
+  active_representative: 1 | 2;
 };
 
 export function SdSetScoresForm({
@@ -76,6 +77,7 @@ export function SdSetScoresForm({
         points: s ? String(s.points) : "0",
         hearts: s?.hearts_remaining != null ? String(s.hearts_remaining) : "3",
         is_eliminated: s?.is_eliminated ?? false,
+        active_representative: s?.active_representative === 2 ? 2 : 1,
       };
     })
   );
@@ -124,6 +126,7 @@ export function SdSetScoresForm({
         hearts_remaining:
           mode === "survival" ? Number(r.hearts) || 0 : null,
         is_eliminated: mode === "survival" ? r.is_eliminated : false,
+        active_representative: r.active_representative,
       }));
       await saveSdSetScores(set.id, payload);
       setMessage("Scores saved.");
@@ -224,7 +227,7 @@ export function SdSetScoresForm({
           <thead>
             <tr className="border-b border-emerald-500/15 text-xs uppercase tracking-wide text-sd-muted">
               <th className="px-2 py-2">Branch</th>
-              <th className="px-2 py-2">Representatives</th>
+              <th className="px-2 py-2">Competing rep</th>
               <th className="px-2 py-2">Points</th>
               {mode === "survival" && (
                 <>
@@ -259,26 +262,36 @@ export function SdSetScoresForm({
                       {row.branch_code}
                     </span>
                   </td>
-                  <td className="px-2 py-2 text-xs text-sd-muted">
-                    <span className="block font-medium text-white/90">
-                      {row.representative_1?.trim() || "—"}
-                    </span>
-                    {(row.representative_1_employee_no?.trim() ||
-                      row.representative_1_position?.trim()) && (
-                      <span className="block text-[10px] text-sd-muted/60">
-                        {row.representative_1_employee_no?.trim() &&
-                          `#${row.representative_1_employee_no.trim()}`}
-                        {row.representative_1_employee_no?.trim() &&
-                          row.representative_1_position?.trim() &&
-                          " · "}
-                        {row.representative_1_position?.trim()}
-                      </span>
-                    )}
-                    {row.representative_2?.trim() && (
-                      <span className="mt-1 block text-sd-muted/70">
-                        {row.representative_2.trim()}
-                      </span>
-                    )}
+                  <td className="px-2 py-2 text-xs">
+                    <select
+                      disabled={disabled}
+                      value={row.active_representative}
+                      onChange={(e) =>
+                        setRows((prev) =>
+                          prev.map((r) =>
+                            r.branch_id === row.branch_id
+                              ? {
+                                  ...r,
+                                  active_representative: Number(
+                                    e.target.value
+                                  ) as 1 | 2,
+                                }
+                              : r
+                          )
+                        )
+                      }
+                      className="w-full max-w-[11rem] rounded sd-input px-2 py-1 text-xs"
+                    >
+                      <option value={1}>
+                        Rep 1: {row.representative_1?.trim() || "—"}
+                      </option>
+                      <option value={2}>
+                        Rep 2: {row.representative_2?.trim() || "—"}
+                      </option>
+                    </select>
+                    <p className="mt-1 text-[10px] text-sd-muted/60">
+                      Record who competed in this set
+                    </p>
                   </td>
                   <td className="px-2 py-2">
                     <input

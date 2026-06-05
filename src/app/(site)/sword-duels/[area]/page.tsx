@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { AreaGroupSplitPanel } from "@/components/sword-duels/AreaGroupSplitPanel";
 import { AreaTournamentMap } from "@/components/sword-duels/AreaTournamentMap";
+import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
-import { decodeAreaSlug } from "@/lib/products/sword-duels/area-groups";
+import { areaSlug, decodeAreaSlug } from "@/lib/products/sword-duels/area-groups";
 import {
   filterPublicScores,
   getSdPublicArea,
@@ -106,7 +107,7 @@ export default async function SwordDuelsAreaPublicPage({
                         }`}
                       >
                         <span>
-                          #{r.rank} {r.branch_name}
+                          #{r.rank} {r.active_representative_name ?? r.branch_name}
                           {r.is_winner && " ★"}
                         </span>
                         <span className="tabular-nums">{r.points}</span>
@@ -119,6 +120,11 @@ export default async function SwordDuelsAreaPublicPage({
           })}
         </div>
       </section>
+
+      <SwordDuelsPublicFooter
+        sharePath={`${SWORD_DUELS_PUBLIC}/${areaSlug(area)}`}
+        shareTitle={`Share ${area} — Sword Duels`}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
-import { syncSdBracketsForm } from "@/lib/actions/sword-duels-admin";
+import { SdGroupSortSettings } from "@/components/sword-duels/SdGroupSortSettings";
 import { swordDuelsPath, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { getSdDashboard, getSdEvent } from "@/lib/products/sword-duels/queries";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
@@ -37,24 +37,7 @@ export default async function SwordDuelsDashboardPage() {
       {!configured && <SetupBanner />}
 
       {configured && event && (
-        <form
-          action={syncSdBracketsForm}
-          className="sd-neon-panel flex flex-wrap items-center justify-between gap-4 p-4"
-        >
-          <div>
-            <p className="font-medium text-white">Sync area brackets</p>
-            <p className="text-sm text-sd-muted">
-              Rebuild groups from uploaded branches (first half → Group A, second
-              half → Group B per area).
-            </p>
-          </div>
-          <button
-            type="submit"
-            className="rounded-lg bg-gradient-to-r from-cyan-400 to-emerald-400 px-4 py-2 text-sm font-semibold text-sd-deep"
-          >
-            Sync from branches
-          </button>
-        </form>
+        <SdGroupSortSettings currentMode={event.group_sort_mode ?? "branch_code"} />
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">

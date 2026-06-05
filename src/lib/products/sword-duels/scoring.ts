@@ -1,3 +1,4 @@
+import { resolveActiveRepresentativeName } from "@/lib/representative-active";
 import type { SdAreaGroupBranch, SdScoringMode, SdSetScore } from "./types";
 
 export interface ScoredBranch {
@@ -11,6 +12,9 @@ export interface ScoredBranch {
   is_winner: boolean;
   representative_1?: string | null;
   representative_2?: string | null;
+  /** Rep who competed in this set (from active_representative). */
+  active_representative_name?: string | null;
+  active_representative_slot?: 1 | 2;
 }
 
 function scoreMap(scores: SdSetScore[]): Map<string, SdSetScore> {
@@ -47,6 +51,7 @@ export function computeSetResults(
 
   const rows = participants.map((p) => {
     const s = byScore.get(p.branch_id);
+    const activeSlot = s?.active_representative ?? 1;
     return {
       branch_id: p.branch_id,
       branch_code: p.branch_code,
@@ -56,10 +61,8 @@ export function computeSetResults(
       is_eliminated: s?.is_eliminated ?? false,
       representative_1: p.representative_1,
       representative_2: p.representative_2,
-      representative_1_employee_no: p.representative_1_employee_no,
-      representative_1_position: p.representative_1_position,
-      representative_2_employee_no: p.representative_2_employee_no,
-      representative_2_position: p.representative_2_position,
+      active_representative_name: resolveActiveRepresentativeName(p, activeSlot),
+      active_representative_slot: activeSlot,
     };
   });
 
