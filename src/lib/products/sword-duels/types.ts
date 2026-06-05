@@ -1,0 +1,55 @@
+export type SdSetType = "group_a" | "group_b" | "area_final";
+export type SdSetStatus = "draft" | "published";
+export type SdScoringMode = "high_score" | "survival";
+
+export interface SdEvent {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+export interface SdAreaGroupBranch {
+  branch_id: string;
+  branch_code: string;
+  branch_name: string;
+  area: string;
+  region: string;
+  group_label: "a" | "b";
+  sort_order: number;
+  representative_1?: string | null;
+  representative_2?: string | null;
+}
+
+export interface SdSet {
+  id: string;
+  event_id: string;
+  area: string;
+  set_type: SdSetType;
+  scoring_mode: SdScoringMode;
+  status: SdSetStatus;
+  winner_branch_id: string | null;
+  published_at: string | null;
+}
+
+export interface SdSetScore {
+  branch_id: string;
+  points: number;
+  hearts_remaining: number | null;
+  is_eliminated: boolean;
+}
+
+export interface SdAreaBracket {
+  area: string;
+  region: string;
+  groupA: SdAreaGroupBranch[];
+  groupB: SdAreaGroupBranch[];
+  branchCount: number;
+}
+
+export const SD_SET_LABELS: Record<SdSetType, string> = {
+  group_a: "Group A battle",
+  group_b: "Group B battle",
+  area_final: "Area final",
+};
+
+export const SD_SET_ORDER: SdSetType[] = ["group_a", "group_b", "area_final"];

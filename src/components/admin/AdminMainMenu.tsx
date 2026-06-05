@@ -13,9 +13,11 @@ const MENU_ITEMS = [
   },
   {
     title: "Sword Duels",
-    description: "Branch duel events and area-wide competition runs.",
+    description:
+      "Area group battles — two sets per area fight for one area representative.",
     href: ADMIN_PRODUCTS.swordDuels,
-    variant: "ghost" as const,
+    variant: "primary" as const,
+    featured: true,
   },
   {
     title: "National Competitions",
@@ -23,7 +25,6 @@ const MENU_ITEMS = [
       "June area-wide → July regional → The Nationals leaderboard and phase advancement.",
     href: ADMIN_PRODUCTS.nationalCompetitions,
     variant: "primary" as const,
-    featured: true,
   },
   {
     title: "General Quiz",

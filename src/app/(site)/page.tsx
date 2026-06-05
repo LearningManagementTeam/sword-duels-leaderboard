@@ -1,3 +1,4 @@
+import { HomeProgramsStrip } from "@/components/home/HomeProgramsStrip";
 import { CollapsibleCompetitionMap } from "@/components/home/CollapsibleCompetitionMap";
 import { HomeCarouselSection } from "@/components/home/HomeCarouselSection";
 import { HomeStandingsPreview } from "@/components/home/HomeStandingsPreview";
@@ -24,6 +25,7 @@ export default async function HomePage() {
       {!configured && <SetupBanner />}
 
       <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
+        <HomeProgramsStrip />
         <HomeCarouselSection branding={branding} />
         <CollapsibleCompetitionMap mapConfig={mapConfig} />
         <ShareCard url={siteUrl} />

@@ -16,7 +16,7 @@ export function AdminComingSoon({ title, description }: Props) {
         <h1 className="text-2xl font-bold text-sd-glow">{title}</h1>
         <p className="text-sm text-sd-muted">
           {description ??
-            "This operations dashboard is not available yet. Use National Competitions for the live Sword Duels leaderboard."}
+            "This operations dashboard is not available yet."}
         </p>
         <Link
           href={ADMIN_HUB}
