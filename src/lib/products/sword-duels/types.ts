@@ -78,3 +78,30 @@ export interface SdWildcardScore {
   area_final_score: number;
   points: number;
 }
+
+export type SdKnockoutRound = "r16" | "qf" | "sf" | "final";
+export type SdKnockoutBracketStatus = "pending" | "active" | "complete";
+
+export interface SdKnockoutBracket {
+  id: string;
+  event_id: string;
+  status: SdKnockoutBracketStatus;
+  champion_branch_id: string | null;
+}
+
+export interface SdKnockoutMatch {
+  id: string;
+  event_id: string;
+  round: SdKnockoutRound;
+  match_index: number;
+  entrant_a_branch_id: string | null;
+  entrant_b_branch_id: string | null;
+  winner_branch_id: string | null;
+  status: SdSetStatus;
+  published_at: string | null;
+}
+
+export interface SdKnockoutMatchScore {
+  branch_id: string;
+  points: number;
+}

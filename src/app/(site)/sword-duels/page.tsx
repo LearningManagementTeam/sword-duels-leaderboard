@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
+import { SdPublicAreaStatus } from "@/components/sword-duels/SdPublicAreaStatus";
 import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
+import { getSdPublicAreaSummary } from "@/lib/products/sword-duels/public-area-summary";
 import { getSdPublicOverview } from "@/lib/products/sword-duels/public-queries";
+import { getAllBranches } from "@/lib/products/sword-duels/queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { Region } from "@/lib/scoring-config";
@@ -17,6 +20,8 @@ export const metadata = {
 export default async function SwordDuelsHomePage() {
   const configured = isSupabaseConfigured();
   const data = configured ? await getSdPublicOverview() : null;
+  const branches = configured ? await getAllBranches() : [];
+  const branchById = new Map(branches.map((b) => [b.id, b]));
 
   return (
     <div className="space-y-8">
@@ -36,16 +41,16 @@ export default async function SwordDuelsHomePage() {
             </Link>
           )}
           <Link
+            href={`${SWORD_DUELS_PUBLIC}/tv?mode=event&rotate=90`}
+            className="sd-link text-sm"
+          >
+            Full event TV →
+          </Link>
+          <Link
             href={`${SWORD_DUELS_PUBLIC}/nationals`}
             className="sd-link text-sm"
           >
-            Nationals · wild card →
-          </Link>
-          <Link
-            href="/preview/sword-duels/nationals/knockout"
-            className="sd-link text-sm"
-          >
-            Knockout bracket preview →
+            Nationals →
           </Link>
         </p>
       </div>
@@ -63,9 +68,11 @@ export default async function SwordDuelsHomePage() {
             const areaSets = data.sets.filter((s) => s.area === b.area);
             const final = areaSets.find((s) => s.set_type === "area_final");
             const champId = final?.winner_branch_id;
-            const champ = champId
-              ? [...b.groupA, ...b.groupB].find((x) => x.branch_id === champId)
+            const champ = champId ? branchById.get(champId) : null;
+            const championName = champ
+              ? champ.representative_1?.trim() || champ.branch_name
               : null;
+            const summary = getSdPublicAreaSummary(areaSets, championName);
 
             return (
               <Link
@@ -77,13 +84,11 @@ export default async function SwordDuelsHomePage() {
                 <p className="mt-1 text-sm text-sd-muted">
                   {REGION_LABELS[b.region as Region]} · {b.branchCount} branches
                 </p>
-                {champ ? (
-                  <p className="mt-2 text-sm text-sd-gold">
-                    Area rep: {champ.branch_name}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs text-sd-muted/70">In progress</p>
-                )}
+                <SdPublicAreaStatus
+                  label={summary.label}
+                  phase={summary.phase}
+                  championName={summary.championName}
+                />
               </Link>
             );
           })}

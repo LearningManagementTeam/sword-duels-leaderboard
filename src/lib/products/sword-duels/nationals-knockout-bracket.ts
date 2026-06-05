@@ -13,7 +13,7 @@ export const KNOCKOUT_ROUND_LABELS: Record<KnockoutRoundKey, string> = {
 };
 
 export interface KnockoutMatch {
-  id: string;
+  id?: string;
   round: KnockoutRoundKey;
   roundIndex: number;
   matchIndex: number;

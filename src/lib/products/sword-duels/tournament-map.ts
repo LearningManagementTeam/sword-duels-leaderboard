@@ -1,5 +1,5 @@
 import type { PlayoffSlot } from "@/lib/playoff-map";
-import { resolveActiveRepresentativeName } from "@/lib/representative-active";
+import { resolveActiveRepresentativeProfile } from "@/lib/representative-active";
 import type { Region } from "@/lib/scoring-config";
 import type {
   SdAreaBracket,
@@ -51,6 +51,8 @@ function toSlot(
           : "active",
     representative_1:
       row.active_representative_name ?? row.representative_1,
+    employee_no: row.active_representative_employee_no,
+    position: row.active_representative_position,
     roundScore: row.points,
     isChampion: opts?.isAreaChampion,
     eliminatedInRound: opts?.eliminated ? 1 : null,
@@ -63,17 +65,45 @@ function draftFieldSlot(
   scores: SdSetScore[]
 ): PlayoffSlot {
   const score = scores.find((s) => s.branch_id === b.branch_id);
+  const profile = resolveActiveRepresentativeProfile(
+    b,
+    score?.active_representative
+  );
   return {
     branch_id: b.branch_id,
     branch_name: b.branch_name,
     branch_code: b.branch_code,
     rank,
     status: "active" as const,
-    representative_1: resolveActiveRepresentativeName(
-      b,
-      score?.active_representative
-    ),
+    representative_1: profile.name,
+    employee_no: profile.employeeNo,
+    position: profile.position,
     roundScore: score?.points ?? null,
+  };
+}
+
+function slotFromBranch(
+  b: SdAreaGroupBranch,
+  opts: {
+    rank: number;
+    status: PlayoffSlot["status"];
+    roundScore: number | null;
+    activeSlot?: number | null;
+    isChampion?: boolean;
+  }
+): PlayoffSlot {
+  const profile = resolveActiveRepresentativeProfile(b, opts.activeSlot);
+  return {
+    branch_id: b.branch_id,
+    branch_name: b.branch_name,
+    branch_code: b.branch_code,
+    rank: opts.rank,
+    status: opts.status,
+    representative_1: profile.name,
+    employee_no: profile.employeeNo,
+    position: profile.position,
+    roundScore: opts.roundScore,
+    isChampion: opts.isChampion,
   };
 }
 
@@ -200,15 +230,17 @@ export function buildAreaTournamentMap(input: {
     const row = ranked.find((r) => r.branch_id === winnerId);
     if (row) return toSlot(row, { isSetWinner: true });
     const b = pool.find((x) => x.branch_id === winnerId);
-    return {
-      branch_id: winnerId,
-      branch_name: b?.branch_name ?? "Winner",
-      branch_code: b?.branch_code ?? "",
-      rank: 1,
-      status: "advanced",
-      representative_1: b?.representative_1,
-      roundScore: null,
-    };
+    if (!b) {
+      return {
+        branch_id: winnerId,
+        branch_name: "Winner",
+        branch_code: "",
+        rank: 1,
+        status: "advanced",
+        roundScore: null,
+      };
+    }
+    return slotFromBranch(b, { rank: 1, status: "advanced", roundScore: null });
   }
 
   const groupAWinnerSlot: PlayoffSlot[] = groupAWinnerId
@@ -228,18 +260,18 @@ export function buildAreaTournamentMap(input: {
               eliminated: r.branch_id !== areaChampionId,
             })
           )
-        : finalParticipants.map((b, i) => ({
-            branch_id: b.branch_id,
-            branch_name: b.branch_name,
-            branch_code: b.branch_code,
-            rank: i + 1,
-            status: "active" as const,
-            representative_1: b.representative_1,
-            roundScore:
-              scoresForSet(finalSet?.id, input.scoresBySetId).find(
-                (s) => s.branch_id === b.branch_id
-              )?.points ?? null,
-          }))
+        : finalParticipants.map((b, i) => {
+            const finalScore = scoresForSet(
+              finalSet?.id,
+              input.scoresBySetId
+            ).find((s) => s.branch_id === b.branch_id);
+            return slotFromBranch(b, {
+              rank: i + 1,
+              status: "active",
+              roundScore: finalScore?.points ?? null,
+              activeSlot: finalScore?.active_representative,
+            });
+          })
       : [placeholderSlot("Awaiting group winners", 0)];
 
   const areaChampion: PlayoffSlot | null = areaChampionId
@@ -248,16 +280,17 @@ export function buildAreaTournamentMap(input: {
         if (row) return toSlot(row, { isAreaChampion: true });
         const b = finalParticipants.find((x) => x.branch_id === areaChampionId);
         if (!b) return null;
-        return {
-          branch_id: b.branch_id,
-          branch_name: b.branch_name,
-          branch_code: b.branch_code,
+        const champScore = scoresForSet(
+          finalSet?.id,
+          input.scoresBySetId
+        ).find((s) => s.branch_id === areaChampionId);
+        return slotFromBranch(b, {
           rank: 1,
-          status: "champion" as const,
-          representative_1: b.representative_1,
-          roundScore: null,
+          status: "champion",
+          roundScore: champScore?.points ?? null,
+          activeSlot: champScore?.active_representative,
           isChampion: true,
-        };
+        });
       })()
     : null;
 

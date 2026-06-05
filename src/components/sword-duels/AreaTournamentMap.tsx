@@ -218,7 +218,7 @@ function MapShell({
         <div>
           <div className="inline-flex items-stretch overflow-hidden rounded-lg shadow-lg">
             <span
-              className={`bg-sd-gold font-black uppercase tracking-widest text-sd-deep ${
+              className={`bg-gradient-to-r from-emerald-400 to-lime-400 font-black uppercase tracking-widest text-sd-deep ${
                 tvMode ? "px-5 py-2 text-base" : "px-4 py-1.5 text-sm"
               }`}
             >

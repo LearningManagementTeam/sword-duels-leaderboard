@@ -14,6 +14,8 @@ interface Props {
   wildcard?: boolean;
   muted?: boolean;
   highlight?: boolean;
+  /** Hover scale + glow for knockout duels */
+  interactive?: boolean;
 }
 
 function initials(name: string): string {
@@ -31,6 +33,7 @@ export function NationalsParticipantCard({
   wildcard = false,
   muted = false,
   highlight = false,
+  interactive = false,
 }: Props) {
   const ring = wildcard
     ? "ring-fuchsia-400/35"
@@ -44,9 +47,16 @@ export function NationalsParticipantCard({
         ? "bg-gradient-to-br from-emerald-900/90 via-emerald-800/70 to-lime-900/50"
         : "bg-gradient-to-br from-emerald-950/80 via-emerald-900/45 to-emerald-800/35";
 
+  const winnerFx =
+    highlight
+      ? "sd-bracket-winner-live sd-bracket-winner-shimmer overflow-hidden"
+      : interactive
+        ? "transition duration-300 hover:scale-[1.02] hover:ring-emerald-400/40"
+        : "";
+
   return (
     <div
-      className={`relative overflow-hidden rounded-lg px-2.5 py-2 ring-1 ring-inset ${shell} ${ring} ${
+      className={`relative overflow-hidden rounded-lg px-2.5 py-2 ring-1 ring-inset ${shell} ${ring} ${winnerFx} ${
         compact ? "py-1.5" : ""
       } ${muted ? "opacity-60" : ""}`}
     >

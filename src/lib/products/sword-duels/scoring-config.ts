@@ -64,3 +64,24 @@ export const SD_MECHANICS_SUMMARY = [
   "The two spot holders fight in the area final for the single area representative slot.",
   "Enter two representatives per branch before battles. Names appear on the public tournament map.",
 ];
+
+export const SD_NATIONALS_PHASES = [
+  {
+    key: "area_finals",
+    title: "Phase 1 — Area representatives",
+    description:
+      "Every area publishes Group A, Group B, and the area final. One rep per area advances to nationals.",
+  },
+  {
+    key: "wildcard",
+    title: "Phase 2 — Wild card (slot 16)",
+    description:
+      "Among area-final losers, the branch with the sole 2nd-highest score auto-claims the wild card. If several tie at that tier, the committee runs a wildcard tiebreak round.",
+  },
+  {
+    key: "knockout",
+    title: "Phase 3 — Nationals knockout",
+    description:
+      "Area 1 vs Area 2, Area 3 vs Area 4, and so on — plus the wild card in slot 16. Winners advance round by round until one national champion remains.",
+  },
+] as const;

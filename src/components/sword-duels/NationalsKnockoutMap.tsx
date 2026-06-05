@@ -1,10 +1,7 @@
-import {
-  KNOCKOUT_ROUND_LABELS,
-  type KnockoutMatch,
-  type KnockoutRoundKey,
-  type NationalsKnockoutModel,
-} from "@/lib/products/sword-duels/nationals-knockout-bracket";
-import { NationalsParticipantCard } from "./NationalsParticipantCard";
+import type { NationalsKnockoutModel } from "@/lib/products/sword-duels/nationals-knockout-bracket";
+import { NationalsChampionPedestal } from "./NationalsChampionPedestal";
+import { NationalsKnockoutJourney } from "./NationalsKnockoutJourney";
+import { SdTrophyIcon } from "./SdTrophyIcon";
 
 interface Props {
   model: NationalsKnockoutModel;
@@ -12,165 +9,83 @@ interface Props {
   tvMode?: boolean;
 }
 
-function KnockoutMatchCard({
-  match,
-  preview,
-  tvMode,
-}: {
-  match: KnockoutMatch;
-  preview?: boolean;
-  tvMode?: boolean;
-}) {
-  const isFinal = match.round === "final";
-
-  return (
-    <div
-      className={`relative rounded-xl p-2 ring-1 ring-inset ${
-        isFinal
-          ? "bg-emerald-500/10 ring-emerald-400/40"
-          : "bg-sd-deep/35 ring-emerald-900/30"
-      }`}
-    >
-      <p className="mb-1.5 text-center text-[8px] font-bold uppercase tracking-wider text-sd-muted/70">
-        {match.label}
-      </p>
-      <div className="space-y-1">
-        {match.entrantA ? (
-          <NationalsParticipantCard
-            entrant={match.entrantA}
-            compact={!tvMode}
-            tvMode={tvMode}
-            wildcard={match.entrantA.isWildcard}
-          />
-        ) : (
-          <div className="rounded-lg border border-dashed border-emerald-500/20 px-2 py-3 text-center text-[10px] text-sd-muted/50">
-            TBD
-          </div>
-        )}
-        <p className="text-center text-[10px] font-black tracking-wider text-lime-300/80">
-          VS
-        </p>
-        {match.entrantB ? (
-          <NationalsParticipantCard
-            entrant={match.entrantB}
-            compact={!tvMode}
-            tvMode={tvMode}
-            wildcard={match.entrantB.isWildcard}
-          />
-        ) : (
-          <div className="rounded-lg border border-dashed border-emerald-500/20 px-2 py-3 text-center text-[10px] text-sd-muted/50">
-            TBD
-          </div>
-        )}
-      </div>
-      {preview && (
-        <p className="mt-1.5 text-center text-[8px] text-sd-muted/45">
-          Winner advances →
-        </p>
-      )}
-    </div>
-  );
-}
-
-function RoundColumn({
-  roundKey,
-  matches,
-  preview,
-  tvMode,
-}: {
-  roundKey: KnockoutRoundKey;
-  matches: KnockoutMatch[];
-  preview?: boolean;
-  tvMode?: boolean;
-}) {
-  return (
-    <div className="flex min-w-[11rem] flex-1 flex-col gap-3">
-      <h3 className="sticky top-0 z-10 bg-sd-deep/80 py-1 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-sd-glow backdrop-blur-sm">
-        {KNOCKOUT_ROUND_LABELS[roundKey]}
-      </h3>
-      <div className="flex flex-1 flex-col justify-around gap-3">
-        {matches.map((match) => (
-          <KnockoutMatchCard
-            key={match.id}
-            match={match}
-            preview={preview}
-            tvMode={tvMode}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function NationalsKnockoutMap({ model, preview = false, tvMode = false }: Props) {
   return (
     <div className="space-y-6">
-      <div className="sd-neon-panel overflow-hidden p-4 sm:p-5">
-        <div className="inline-flex items-stretch overflow-hidden rounded-lg shadow-lg">
-          <span className="bg-gradient-to-r from-emerald-400 to-lime-400 px-4 py-1.5 text-sm font-black uppercase tracking-widest text-sd-deep">
-            Sword Duels
-          </span>
-          <span className="bg-emerald-500/25 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-100 ring-1 ring-inset ring-emerald-400/40">
-            Nationals knockout
-          </span>
-        </div>
-        <h2 className={`mt-3 font-bold text-white ${tvMode ? "text-3xl" : "text-xl"}`}>
-          Road to champion
-        </h2>
-        <p className={`mt-1 text-sd-muted ${tvMode ? "text-base" : "text-sm"}`}>
-          {model.fieldSize} entrants · Area vs Area until one national champion
-          {preview ? " · Placeholder preview" : ""}
-        </p>
-        <p className="mt-2 text-xs text-sd-muted/70">
-          Round 1 pairs: Area 1 vs 2, 3 vs 4, … Area 15 vs Wild card
-        </p>
-      </div>
+      {/* Arena shell — matches area bracket energy */}
+      <div className="sd-nationals-knockout-arena relative overflow-hidden rounded-2xl">
+        <div className="sd-bracket-arena-glow" aria-hidden />
+        <div className="sd-nationals-knockout-arena-shimmer pointer-events-none absolute inset-0" aria-hidden />
 
-      <div className="hidden overflow-x-auto lg:block">
-        <div className="sd-bracket-arena flex min-w-[56rem] gap-3 p-4">
-          {model.rounds.map((matches) => {
-            const roundKey = matches[0]?.round ?? "r16";
-            return (
-              <RoundColumn
-                key={roundKey}
-                roundKey={roundKey}
-                matches={matches}
-                preview={preview}
-                tvMode={tvMode}
-              />
-            );
-          })}
-          <div className="flex min-w-[10rem] flex-col items-center justify-center gap-2 px-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-sd-gold">
-              Champion
-            </p>
-            <div className="sd-inset flex h-24 w-full items-center justify-center rounded-xl border border-dashed border-emerald-500/25 text-center text-[10px] text-sd-muted/55">
-              {model.champion ? model.champion.repName : "Crown awaits"}
+        <div className="relative p-4 sm:p-6">
+          {/* Header + floating trophy */}
+          <div className="mb-6 flex flex-col items-center gap-3 text-center sm:mb-8">
+            <SdTrophyIcon
+              size={tvMode ? 52 : 44}
+              className="sd-bracket-trophy-float"
+            />
+            <div className="inline-flex items-stretch overflow-hidden rounded-lg shadow-lg">
+              <span className="bg-gradient-to-r from-emerald-400 to-lime-400 px-4 py-1.5 text-sm font-black uppercase tracking-widest text-sd-deep">
+                Sword Duels
+              </span>
+              <span className="bg-amber-500/25 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-100 ring-1 ring-inset ring-amber-400/40">
+                Nationals
+              </span>
             </div>
+            <div>
+              <h2
+                className={`font-black tracking-tight text-white ${
+                  tvMode ? "text-3xl" : "text-xl sm:text-2xl"
+                }`}
+              >
+                Battle path to champion
+              </h2>
+              <p className={`mt-1 text-sd-muted ${tvMode ? "text-base" : "text-sm"}`}>
+                {model.fieldSize} area reps · one national crown
+                {preview ? " · Preview" : ""}
+              </p>
+            </div>
+            {preview && (
+              <span className="rounded-full bg-lime-400/15 px-3 py-1 text-[9px] font-semibold uppercase tracking-wider text-lime-100 ring-1 ring-lime-400/35 ring-inset">
+                All clashes ready · scores coming soon
+              </span>
+            )}
+          </div>
+
+          {/* Floating title banner like area tournament */}
+          <div className="pointer-events-none absolute left-1/2 top-3 z-10 hidden -translate-x-1/2 lg:block">
+            <div className="sd-glass-strong rounded-lg px-5 py-1.5 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sd-glow">
+                National tournament
+              </p>
+            </div>
+          </div>
+
+          <NationalsKnockoutJourney
+            rounds={model.rounds}
+            preview={preview}
+            tvMode={tvMode}
+          />
+
+          <div className="mt-6">
+            <FlowConnectorFinal />
+            <NationalsChampionPedestal champion={model.champion} tvMode={tvMode} />
           </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="space-y-6 lg:hidden">
-        {model.rounds.map((matches) => {
-          const roundKey = matches[0]?.round ?? "r16";
-          return (
-            <section key={roundKey} className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-sd-glow">
-                {KNOCKOUT_ROUND_LABELS[roundKey]}
-              </h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {matches.map((match) => (
-                  <KnockoutMatchCard
-                    key={match.id}
-                    match={match}
-                    preview={preview}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+function FlowConnectorFinal() {
+  return (
+    <div className="flex justify-center py-4" aria-hidden>
+      <div className="flex flex-col items-center gap-2">
+        <div className="h-8 w-px bg-gradient-to-b from-lime-400/50 to-amber-400/50 sd-knockout-flow-line" />
+        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-amber-200/70">
+          Champion rises
+        </span>
+        <div className="h-8 w-px bg-gradient-to-b from-amber-400/50 to-transparent sd-knockout-flow-line" />
       </div>
     </div>
   );

@@ -63,6 +63,18 @@ export function SdTvAreaRotator({ areas, currentArea, rotateSec }: Props) {
         <Link href={`/sword-duels/${areaSlug(currentArea)}`} className="text-sd-muted hover:text-sd-glow">
           Standard view
         </Link>
+        <Link
+          href="/sword-duels/tv?mode=nationals&view=wildcard"
+          className="text-sd-muted hover:text-sd-glow"
+        >
+          Nationals TV
+        </Link>
+        <Link
+          href="/sword-duels/tv?mode=event&rotate=90"
+          className="text-sd-muted hover:text-sd-glow"
+        >
+          Full event rotate
+        </Link>
         <span className="text-sd-muted/70">Auto-refresh 30s</span>
       </div>
     </div>

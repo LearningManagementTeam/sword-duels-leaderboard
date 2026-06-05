@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   SD_MECHANICS_SUMMARY,
+  SD_NATIONALS_PHASES,
   SD_SCORING_MODE_LABELS,
   SD_SET_FLOW,
   SD_GROUP_SPLIT_RULE,
@@ -8,7 +9,7 @@ import {
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 
 export const metadata = {
-  title: "How area tournaments work — Sword Duels",
+  title: "How Sword Duels works",
 };
 
 export default function SwordDuelsMechanicsPage() {
@@ -18,10 +19,10 @@ export default function SwordDuelsMechanicsPage() {
         <Link href={SWORD_DUELS_PUBLIC} className="sd-link text-sm">
           ← Sword Duels
         </Link>
-        <h1>How area tournaments work</h1>
+        <h1>How Sword Duels works</h1>
         <p>
-          Each area runs two group battles. Two spot holders fight for one area
-          representative.
+          Area group battles crown one representative per area. Nationals adds a
+          wild card and a knockout bracket to one champion.
         </p>
       </div>
 
@@ -33,17 +34,35 @@ export default function SwordDuelsMechanicsPage() {
         </ul>
       </section>
 
+      <section className="space-y-3">
+        <h2 className="font-semibold text-white">Nationals journey</h2>
+        {SD_NATIONALS_PHASES.map((phase, i) => (
+          <div key={phase.key} className="sd-inset rounded-lg p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-200/80">
+              Step {i + 1}
+            </p>
+            <h3 className="font-medium text-white">{phase.title}</h3>
+            <p className="mt-1 text-sm text-sd-muted">{phase.description}</p>
+          </div>
+        ))}
+        <p className="text-sm">
+          <Link href={`${SWORD_DUELS_PUBLIC}/nationals`} className="sd-link">
+            View live nationals map →
+          </Link>
+        </p>
+      </section>
+
       <section className="sd-neon-panel p-5">
         <h2 className="font-semibold text-white">Grouping</h2>
         <p className="mt-2 text-sm text-sd-muted">{SD_GROUP_SPLIT_RULE}</p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold text-white">The three sets</h2>
+        <h2 className="font-semibold text-white">The three area sets</h2>
         {SD_SET_FLOW.map((step) => (
           <div key={step.key} className="sd-inset rounded-lg p-4">
             <h3 className="font-medium text-white">{step.title}</h3>
-            <p className="text-xs text-sd-gold">{step.spotLabel}</p>
+            <p className="text-xs text-emerald-300/90">{step.spotLabel}</p>
             <p className="mt-1 text-sm text-sd-muted">{step.description}</p>
           </div>
         ))}

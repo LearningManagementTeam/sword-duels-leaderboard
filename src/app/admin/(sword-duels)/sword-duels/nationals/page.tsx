@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { KnockoutAdminForm } from "@/components/sword-duels/KnockoutAdminForm";
 import { WildcardAdminForm } from "@/components/sword-duels/WildcardAdminForm";
 import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
 import { getSdEvent } from "@/lib/products/sword-duels/queries";
@@ -25,7 +26,28 @@ export default async function AdminSwordDuelsNationalsPage() {
     context = await getSdNationalsContext(event.id);
   } catch (e) {
     loadError =
-      e instanceof Error ? e.message : "Could not load nationals wildcard data";
+      e instanceof Error ? e.message : "Could not load nationals data";
+  }
+
+  const scoresByMatchId: Record<
+    string,
+    { branch_id: string; points: number }[]
+  > = {};
+
+  if (context?.knockoutMatches.length) {
+    try {
+      const { loadKnockoutMatchScores } = await import(
+        "@/lib/products/sword-duels/knockout-sync"
+      );
+      const map = await loadKnockoutMatchScores(
+        context.knockoutMatches.map((m) => m.id)
+      );
+      for (const [matchId, rows] of map.entries()) {
+        scoresByMatchId[matchId] = rows;
+      }
+    } catch {
+      /* migration 020 not applied */
+    }
   }
 
   return (
@@ -33,9 +55,8 @@ export default async function AdminSwordDuelsNationalsPage() {
       <div className="sd-page-header">
         <h1>Sword Duels Nationals</h1>
         <p>
-          Wildcard slot opens after every area final is published. Auto-select
-          when one runner-up holds the sole 2nd-highest loser score; otherwise
-          score and publish the tiebreak round.
+          Wildcard slot opens after every area final is published. When the full
+          field is locked, score and publish knockout matches round by round.
         </p>
         <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <Link
@@ -57,13 +78,22 @@ export default async function AdminSwordDuelsNationalsPage() {
           <p>{loadError}</p>
           <p>
             Run{" "}
-            <code className="text-xs">019_sd_nationals_wildcard.sql</code> or{" "}
+            <code className="text-xs">019_sd_nationals_wildcard.sql</code>,{" "}
+            <code className="text-xs">020_sd_nationals_knockout.sql</code>, or{" "}
             <code className="text-xs">016_sword_duels_repair.sql</code> in
-            Supabase SQL Editor, then use Sync from area finals.
+            Supabase SQL Editor, then refresh.
           </p>
         </div>
       ) : context ? (
-        <WildcardAdminForm model={context.model} />
+        <>
+          <WildcardAdminForm model={context.model} />
+          <KnockoutAdminForm
+            wildcardModel={context.model}
+            knockoutModel={context.knockoutModel}
+            dbMatches={context.knockoutMatches}
+            scoresByMatchId={scoresByMatchId}
+          />
+        </>
       ) : null}
     </div>
   );

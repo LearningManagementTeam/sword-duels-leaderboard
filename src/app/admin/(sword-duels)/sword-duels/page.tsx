@@ -2,7 +2,9 @@ import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
 import { SdGroupSortSettings } from "@/components/sword-duels/SdGroupSortSettings";
 import { SdAreaStatusBadge } from "@/components/sword-duels/SdAreaStatusBadge";
+import { SdNationalsPhaseStrip } from "@/components/sword-duels/SdNationalsPhaseStrip";
 import { swordDuelsPath, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
+import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
 import { getSdDashboard, getSdEvent } from "@/lib/products/sword-duels/queries";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
@@ -16,12 +18,20 @@ export default async function SwordDuelsDashboardPage() {
   const event = configured ? await getSdEvent() : null;
 
   let areas: Awaited<ReturnType<typeof getSdDashboard>>["areas"] = [];
+  let nationalsContext: Awaited<ReturnType<typeof getSdNationalsContext>> | null =
+    null;
+
   if (event) {
     try {
       const dash = await getSdDashboard(event.id);
       areas = dash.areas;
     } catch {
       areas = [];
+    }
+    try {
+      nationalsContext = await getSdNationalsContext(event.id);
+    } catch {
+      nationalsContext = null;
     }
   }
 
@@ -35,10 +45,28 @@ export default async function SwordDuelsDashboardPage() {
         </p>
       </div>
 
+      <div className="sd-alert-info text-sm">
+        <strong className="text-white">Branch import</strong> lives under{" "}
+        <Link href="/admin/national-competitions/branches" className="sd-link">
+          National Competitions → Branches
+        </Link>
+        . Score area battles here — not on the June/July/August round editor.
+        See{" "}
+        <code className="text-xs">docs/SD-DAILY-OPERATIONS.md</code> for the full
+        operator sequence.
+      </div>
+
       {!configured && <SetupBanner />}
 
       {configured && event && (
         <SdGroupSortSettings currentMode={event.group_sort_mode ?? "branch_code"} />
+      )}
+
+      {nationalsContext && (
+        <SdNationalsPhaseStrip
+          model={nationalsContext.model}
+          knockoutBracket={nationalsContext.knockoutBracket}
+        />
       )}
 
       {configured && !event && (
@@ -82,9 +110,9 @@ export default async function SwordDuelsDashboardPage() {
           href={swordDuelsPath("nationals")}
           className="sd-neon-panel block p-5 transition hover:ring-1 hover:ring-fuchsia-400/30"
         >
-          <h2 className="font-semibold text-fuchsia-200">Nationals · Wild card</h2>
+          <h2 className="font-semibold text-fuchsia-200">Nationals</h2>
           <p className="mt-1 text-sm text-sd-muted">
-            Area reps + slot 16 wildcard map and tiebreak scoring
+            Wild card + knockout bracket scoring
           </p>
         </Link>
       </div>

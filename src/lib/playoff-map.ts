@@ -37,6 +37,8 @@ export interface PlayoffSlot {
   eliminatedInRound?: number | null;
   tieBreakerInRound?: number | null;
   representative_1?: string | null;
+  employee_no?: string | null;
+  position?: string | null;
   roundScore: number | null;
   isChampion?: boolean;
   isPlaceholder?: boolean;

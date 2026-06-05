@@ -130,6 +130,31 @@ export function SdBracketSlot({
             {slot.branch_code ? ` · ${slot.branch_code}` : ""}
           </p>
         )}
+        {!isPlaceholder &&
+          (role === "spot" || role === "final" || role === "champion" || tvMode) &&
+          (slot.employee_no || slot.position) && (
+            <p
+              className={`truncate text-[8px] ${
+                isAreaChampion
+                  ? "text-sd-deep/70"
+                  : eliminated
+                    ? "text-zinc-600"
+                    : "text-sd-muted/65"
+              }`}
+            >
+              {[slot.employee_no, slot.position].filter(Boolean).join(" · ")}
+            </p>
+          )}
+        {!isPlaceholder && role === "field" && tvMode && slot.employee_no && (
+          <p
+            className={`truncate text-[8px] ${
+              eliminated ? "text-zinc-600" : "text-sd-muted/60"
+            }`}
+          >
+            {slot.employee_no}
+            {slot.position ? ` · ${slot.position}` : ""}
+          </p>
+        )}
       </div>
       {slot.roundScore != null && !isPlaceholder && (
         <span

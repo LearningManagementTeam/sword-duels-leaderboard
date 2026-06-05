@@ -158,6 +158,14 @@ export function SdSetScoresForm({
 
   async function handleUnpublish() {
     if (!set.id) return;
+    if (
+      setType === "area_final" &&
+      !window.confirm(
+        "Unpublishing the area final resets wildcard selection and knockout bracket progress. Continue?"
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {

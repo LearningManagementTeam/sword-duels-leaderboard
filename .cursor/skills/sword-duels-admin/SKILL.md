@@ -13,6 +13,8 @@ Read **[reference.md](reference.md)** for route inventory, audit action names, a
 
 For **operator journey + UI consistency audits** → [journey-audit.md](journey-audit.md) (sprint backlog).
 
+For **Sword Duels area/nationals ecosystem audits** (design, gamification, knockout gaps) → [sword-duels-ecosystem-audit](../sword-duels-ecosystem-audit/SKILL.md).
+
 For owner-facing steps → [beginner-friendly-guide](../beginner-friendly-guide/SKILL.md) + [docs/DAILY-OPERATIONS.md](../../docs/DAILY-OPERATIONS.md).
 
 For public site rules → [public-viewer-journey](../public-viewer-journey/SKILL.md).

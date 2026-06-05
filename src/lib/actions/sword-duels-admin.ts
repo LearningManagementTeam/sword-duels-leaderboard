@@ -18,6 +18,14 @@ import {
   syncWildcardRound,
   unpublishWildcardRound,
 } from "@/lib/products/sword-duels/wildcard-sync";
+import {
+  publishKnockoutMatch,
+  saveKnockoutMatchScores,
+  syncKnockoutBracket,
+  trySyncKnockoutBracket,
+  unpublishKnockoutMatch,
+} from "@/lib/products/sword-duels/knockout-sync";
+import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
 import { parseRepresentativesCsv } from "@/lib/representatives-csv";
 import { representativeDbUpdate } from "@/lib/representative-fields";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -311,8 +319,9 @@ export async function publishSdSet(setId: string): Promise<{ winnerId: string | 
   if (set.set_type === "area_final") {
     try {
       await syncWildcardRound(set.event_id);
+      await trySyncKnockoutBracket(set.event_id);
     } catch {
-      /* wildcard tables may not exist until migration 019 */
+      /* wildcard/knockout tables may not exist until migrations 019/020 */
     }
     revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
     revalidatePath(swordDuelsPath("nationals"));
@@ -380,8 +389,9 @@ export async function unpublishSdSet(setId: string): Promise<void> {
   if (set.set_type === "area_final") {
     try {
       await syncWildcardRound(set.event_id);
+      await trySyncKnockoutBracket(set.event_id);
     } catch {
-      /* wildcard tables may not exist until migration 019 */
+      /* wildcard/knockout tables may not exist until migrations 019/020 */
     }
     revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
     revalidatePath(swordDuelsPath("nationals"));
@@ -615,6 +625,8 @@ export async function publishSdWildcardRoundForm(): Promise<void> {
 
   await publishWildcardRound(event.id);
 
+  await trySyncKnockoutBracket(event.id);
+
   await logAudit(email, "publish_sd_wildcard_round", event.id, {});
   revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
   revalidatePath(swordDuelsPath("nationals"));
@@ -627,6 +639,8 @@ export async function unpublishSdWildcardRoundForm(): Promise<void> {
 
   await unpublishWildcardRound(event.id);
 
+  await trySyncKnockoutBracket(event.id);
+
   await logAudit(email, "unpublish_sd_wildcard_round", event.id, {});
   revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
   revalidatePath(swordDuelsPath("nationals"));
@@ -638,6 +652,52 @@ export async function syncSdWildcardRoundForm(): Promise<void> {
   if (!event) throw new Error("Sword Duels event not found");
 
   await syncWildcardRound(event.id);
+  await trySyncKnockoutBracket(event.id);
+  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+  revalidatePath(swordDuelsPath("nationals"));
+}
+
+export type SdKnockoutScoreInput = {
+  branch_id: string;
+  points: number;
+};
+
+export async function saveSdKnockoutMatchScores(
+  matchId: string,
+  scores: SdKnockoutScoreInput[]
+): Promise<void> {
+  const { email } = await requireAdmin();
+  await saveKnockoutMatchScores(matchId, scores);
+  await logAudit(email, "save_sd_knockout_scores", matchId, {
+    count: scores.length,
+  });
+  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+  revalidatePath(swordDuelsPath("nationals"));
+}
+
+export async function publishSdKnockoutMatchForm(matchId: string): Promise<void> {
+  const { email } = await requireAdmin();
+  await publishKnockoutMatch(matchId);
+  await logAudit(email, "publish_sd_knockout_match", matchId, {});
+  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+  revalidatePath(swordDuelsPath("nationals"));
+}
+
+export async function unpublishSdKnockoutMatchForm(matchId: string): Promise<void> {
+  const { email } = await requireAdmin();
+  await unpublishKnockoutMatch(matchId);
+  await logAudit(email, "unpublish_sd_knockout_match", matchId, {});
+  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+  revalidatePath(swordDuelsPath("nationals"));
+}
+
+export async function syncSdKnockoutBracketForm(): Promise<void> {
+  await requireAdmin();
+  const event = await getSdEvent();
+  if (!event) throw new Error("Sword Duels event not found");
+
+  const ctx = await getSdNationalsContext(event.id);
+  await syncKnockoutBracket(event.id, ctx.model);
   revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
   revalidatePath(swordDuelsPath("nationals"));
 }
