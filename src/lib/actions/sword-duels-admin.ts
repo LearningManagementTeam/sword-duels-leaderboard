@@ -1,18 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
-import { buildAreaBrackets } from "@/lib/products/sword-duels/area-groups";
-import {
-  getSdAreaContext,
-  getSdEvent,
-  participantsForSetType,
-} from "@/lib/products/sword-duels/queries";
-import { computeSetResults } from "@/lib/products/sword-duels/scoring";
-import type { SdScoringMode, SdSetType } from "@/lib/products/sword-duels/types";
-import { SD_SET_ORDER } from "@/lib/products/sword-duels/types";
-import { requireAdminEmail } from "@/lib/admin-auth";
-import { createServiceClient } from "@/lib/supabase/server";
+import { SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC, swordDuelsPath } from "@/lib/admin-routes";
 
 async function requireAdmin() {
   const email = await requireAdminEmail();
@@ -41,11 +30,12 @@ async function logAudit(
 
 function revalidateSd(area?: string) {
   revalidatePath(SWORD_DUELS_ADMIN);
-  revalidatePath(`${SWORD_DUELS_ADMIN}/areas`);
+  revalidatePath(swordDuelsPath("representatives"));
+  revalidatePath(swordDuelsPath("areas"));
   revalidatePath(SWORD_DUELS_PUBLIC);
   if (area) {
     revalidatePath(`${SWORD_DUELS_PUBLIC}/${encodeURIComponent(area)}`);
-    revalidatePath(`${SWORD_DUELS_ADMIN}/areas/${encodeURIComponent(area)}`);
+    revalidatePath(swordDuelsPath("areas", encodeURIComponent(area)));
   }
 }
 
@@ -337,4 +327,142 @@ export async function unpublishSdSet(setId: string): Promise<void> {
     set_type: set.set_type,
   });
   revalidateSd(set.area);
+}
+
+export type SdRepresentativesPreviewRow = {
+  branch_code: string;
+  branch_name: string | null;
+  area: string | null;
+  representative_1: string;
+  representative_2: string;
+  status: "ready" | "unknown_code" | "missing_rep1";
+};
+
+export async function previewSdRepresentativesImport(csvText: string): Promise<{
+  rows: SdRepresentativesPreviewRow[];
+  errors: string[];
+  readyCount: number;
+}> {
+  await requireAdmin();
+
+  if (!csvText?.trim()) {
+    return { rows: [], errors: ["Paste or upload a CSV first."], readyCount: 0 };
+  }
+
+  const { rows: parsed, errors: parseErrors } = parseRepresentativesCsv(csvText);
+  if (parseErrors.length) {
+    return { rows: [], errors: parseErrors, readyCount: 0 };
+  }
+
+  const service = await createServiceClient();
+  const { data: branches } = await service
+    .from("branches")
+    .select("branch_code, branch_name, area");
+
+  const byCode = new Map(
+    (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b])
+  );
+
+  const previewRows: SdRepresentativesPreviewRow[] = parsed.map((row) => {
+    const match = byCode.get(row.branch_code.toLowerCase());
+    if (!match) {
+      return {
+        branch_code: row.branch_code,
+        branch_name: null,
+        area: null,
+        representative_1: row.representative_1,
+        representative_2: row.representative_2,
+        status: "unknown_code" as const,
+      };
+    }
+    return {
+      branch_code: row.branch_code,
+      branch_name: match.branch_name,
+      area: match.area,
+      representative_1: row.representative_1,
+      representative_2: row.representative_2,
+      status: "ready" as const,
+    };
+  });
+
+  const readyCount = previewRows.filter((r) => r.status === "ready").length;
+  return { rows: previewRows, errors: [], readyCount };
+}
+
+export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
+  ok: boolean;
+  count?: number;
+  message?: string;
+  warnings?: string[];
+  errors?: string[];
+}> {
+  const { email } = await requireAdmin();
+
+  if (!csvText?.trim()) {
+    return { ok: false, errors: ["CSV file is empty."] };
+  }
+
+  const { rows, errors: parseErrors } = parseRepresentativesCsv(csvText);
+  if (parseErrors.length) return { ok: false, errors: parseErrors };
+  if (!rows.length) {
+    return { ok: false, errors: ["No rows found in CSV."] };
+  }
+
+  const service = await createServiceClient();
+  const { data: branches } = await service
+    .from("branches")
+    .select("id, branch_code");
+
+  const codeToId = new Map(
+    (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b.id])
+  );
+
+  const notFound: string[] = [];
+  const now = new Date().toISOString();
+  let updated = 0;
+
+  for (const row of rows) {
+    const id = codeToId.get(row.branch_code.toLowerCase());
+    if (!id) {
+      notFound.push(row.branch_code);
+      continue;
+    }
+    const { error } = await service
+      .from("branches")
+      .update({
+        representative_1: row.representative_1,
+        representative_2: row.representative_2 || null,
+        representatives_updated_at: now,
+      })
+      .eq("id", id);
+
+    if (error) return { ok: false, errors: [error.message] };
+    updated++;
+  }
+
+  const warnings: string[] = [];
+  if (notFound.length) {
+    warnings.push(
+      `Unknown branch_code (import branches first): ${notFound.slice(0, 5).join(", ")}${notFound.length > 5 ? ` (+${notFound.length - 5} more)` : ""}`
+    );
+  }
+
+  await logAudit(email, "import_sd_representatives", null, {
+    updated,
+    row_count: rows.length,
+  });
+
+  revalidateSd();
+  revalidatePath(swordDuelsPath("brackets"));
+
+  if (updated === 0) {
+    return { ok: false, errors: warnings.length ? warnings : ["No rows imported."] };
+  }
+
+  return {
+    ok: true,
+    count: updated,
+    warnings: warnings.length ? warnings : undefined,
+    message: `Imported representatives for ${updated} branch${updated === 1 ? "" : "es"}.`,
+  };
 }

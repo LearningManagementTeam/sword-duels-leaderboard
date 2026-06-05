@@ -28,6 +28,8 @@ Example — **Area 1** with 10 branches:
 ## Representatives
 
 - Admin enters **two representatives per branch** before battles.
+- **Bulk import:** Admin → Sword Duels → Representatives → **Download CSV template**, fill names in Excel, upload or paste, then **Import**.
+- Required CSV columns: `branch_code`, `representative_1` (optional: `representative_2`, `branch_name`, `area`).
 - Representative names appear on the public tournament map and leaderboard.
 - Battles are scored **per branch**; the winning branch earns the spot.
 

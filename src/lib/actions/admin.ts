@@ -387,6 +387,8 @@ export async function saveBranchRepresentatives(
     count: updates.length,
   });
   revalidatePath("/admin/national-competitions/representatives");
+  revalidatePath("/admin/sword-duels/representatives");
+  revalidatePath("/sword-duels");
   return { ok: true as const, count: updates.length };
 }
 

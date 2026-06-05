@@ -92,3 +92,43 @@ export function parseRepresentativesCsv(text: string): {
 
   return { rows, errors };
 }
+
+function formatCsvField(value: string): string {
+  if (/[",\n\r]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+/** Prefilled template for Sword Duels rep import — includes area for verification. */
+export function buildRepresentativesCsvTemplate(
+  branches: Array<{
+    branch_code: string;
+    branch_name: string;
+    area: string;
+    representative_1?: string | null;
+    representative_2?: string | null;
+  }>
+): string {
+  const sorted = [...branches].sort((a, b) => {
+    const areaCmp = a.area.localeCompare(b.area, undefined, { numeric: true });
+    if (areaCmp !== 0) return areaCmp;
+    return a.branch_code.localeCompare(b.branch_code, undefined, { numeric: true });
+  });
+
+  const lines = [
+    "branch_code,branch_name,area,representative_1,representative_2",
+  ];
+  for (const b of sorted) {
+    lines.push(
+      [
+        formatCsvField(b.branch_code),
+        formatCsvField(b.branch_name),
+        formatCsvField(b.area),
+        formatCsvField(b.representative_1?.trim() ?? ""),
+        formatCsvField(b.representative_2?.trim() ?? ""),
+      ].join(",")
+    );
+  }
+  return lines.join("\n");
+}
