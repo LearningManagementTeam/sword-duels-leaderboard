@@ -57,6 +57,14 @@ export default async function SwordDuelsAreaPublicPage({
         </Link>
         <h1>{area}</h1>
         <p>Live tournament map — updates when the committee publishes each set.</p>
+        <p className="mt-2">
+          <Link
+            href={`${SWORD_DUELS_PUBLIC}/tv?area=${encodeURIComponent(area)}`}
+            className="sd-link text-sm"
+          >
+            Open TV bracket view →
+          </Link>
+        </p>
       </div>
 
       <AreaGroupSplitPanel bracket={bracket} />

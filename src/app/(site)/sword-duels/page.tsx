@@ -25,10 +25,15 @@ export default async function SwordDuelsHomePage() {
           Two group battles per area earn Spot 1 and Spot 2. Those spot holders
           fight for one area representative.
         </p>
-        <p className="mt-2">
+        <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
           <Link href={`${SWORD_DUELS_PUBLIC}/mechanics`} className="sd-link text-sm">
             How area tournaments work →
           </Link>
+          {data && data.brackets.length > 0 && (
+            <Link href={`${SWORD_DUELS_PUBLIC}/tv`} className="sd-link text-sm">
+              TV bracket view →
+            </Link>
+          )}
         </p>
       </div>
 
