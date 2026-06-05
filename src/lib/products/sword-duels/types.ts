@@ -56,3 +56,25 @@ export const SD_SET_LABELS: Record<SdSetType, string> = {
 };
 
 export const SD_SET_ORDER: SdSetType[] = ["group_a", "group_b", "area_final"];
+
+export type SdWildcardStatus =
+  | "pending"
+  | "auto_resolved"
+  | "tiebreak_draft"
+  | "tiebreak_published";
+
+export interface SdWildcardRound {
+  id: string;
+  event_id: string;
+  status: SdWildcardStatus;
+  tied_score: number | null;
+  winner_branch_id: string | null;
+  published_at: string | null;
+}
+
+export interface SdWildcardScore {
+  branch_id: string;
+  area: string;
+  area_final_score: number;
+  points: number;
+}

@@ -19,3 +19,29 @@ export function resolveActiveRepresentativeName(
   if (active === 2) return secondary || primary || null;
   return primary || secondary || null;
 }
+
+export interface ActiveRepresentativeProfile {
+  name: string | null;
+  employeeNo: string | null;
+  position: string | null;
+}
+
+/** Employee no. + position for the rep who competed in a set. */
+export function resolveActiveRepresentativeProfile(
+  fields: BranchRepresentativeFields,
+  slot: number | null | undefined
+): ActiveRepresentativeProfile {
+  const active = normalizeActiveRepresentative(slot);
+  if (active === 2) {
+    return {
+      name: fields.representative_2?.trim() || fields.representative_1?.trim() || null,
+      employeeNo: fields.representative_2_employee_no?.trim() || null,
+      position: fields.representative_2_position?.trim() || null,
+    };
+  }
+  return {
+    name: fields.representative_1?.trim() || fields.representative_2?.trim() || null,
+    employeeNo: fields.representative_1_employee_no?.trim() || null,
+    position: fields.representative_1_position?.trim() || null,
+  };
+}

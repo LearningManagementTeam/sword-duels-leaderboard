@@ -46,10 +46,10 @@ export default function PreviewHomePage() {
               One-day event · 3 rounds · 3 regional champions
             </p>
           </Link>
-          <Link href="/preview/sword-duels/nationals" className="sd-neon-panel block p-5 transition hover:shadow-lg hover:shadow-fuchsia-500/10 sm:col-span-2">
-            <h3 className="font-semibold text-fuchsia-300">Sword Duels Nationals preview</h3>
+          <Link href="/preview/sword-duels/nationals/knockout" className="sd-neon-panel block p-5 transition hover:shadow-lg hover:shadow-fuchsia-500/10 sm:col-span-2">
+            <h3 className="font-semibold text-fuchsia-300">Nationals knockout preview</h3>
             <p className="mt-1 text-sm text-sd-muted">
-              15 area reps locked · wildcard slot 16 · purple tiebreak arena
+              Area 1 vs 2, 3 vs 4 … 15 vs Wild card · full bracket placeholders
             </p>
           </Link>
         </div>

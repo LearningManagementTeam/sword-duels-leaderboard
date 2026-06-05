@@ -79,12 +79,12 @@ export default async function SwordDuelsDashboardPage() {
           </p>
         </Link>
         <Link
-          href={swordDuelsPath("preview", "nationals-wildcard")}
+          href={swordDuelsPath("nationals")}
           className="sd-neon-panel block p-5 transition hover:ring-1 hover:ring-fuchsia-400/30"
         >
-          <h2 className="font-semibold text-fuchsia-200">Nationals wildcard preview</h2>
+          <h2 className="font-semibold text-fuchsia-200">Nationals · Wild card</h2>
           <p className="mt-1 text-sm text-sd-muted">
-            Temporary map · 15 area reps + slot 16 tiebreak demo
+            Area reps + slot 16 wildcard map and tiebreak scoring
           </p>
         </Link>
       </div>

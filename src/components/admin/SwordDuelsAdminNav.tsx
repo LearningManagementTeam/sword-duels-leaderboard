@@ -9,6 +9,7 @@ const LINKS = [
   { href: swordDuelsPath("areas"), label: "Areas" },
   { href: swordDuelsPath("representatives"), label: "Representatives" },
   { href: swordDuelsPath("brackets"), label: "Brackets" },
+  { href: swordDuelsPath("nationals"), label: "Nationals" },
   { href: swordDuelsPath("mechanics"), label: "Mechanics" },
 ];
 

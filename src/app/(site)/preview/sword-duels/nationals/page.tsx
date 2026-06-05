@@ -1,11 +1,6 @@
-import { NationalsWildcardPreviewClient } from "@/components/sword-duels/NationalsWildcardPreviewClient";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Sword Duels Nationals — Wildcard preview",
-  description:
-    "Temporary preview: 15 area representatives plus wildcard slot 16.",
-};
-
-export default function SwordDuelsNationalsPreviewPage() {
-  return <NationalsWildcardPreviewClient />;
+/** Legacy preview URL → knockout placeholder bracket */
+export default function PreviewNationalsRedirect() {
+  redirect("/preview/sword-duels/nationals/knockout");
 }

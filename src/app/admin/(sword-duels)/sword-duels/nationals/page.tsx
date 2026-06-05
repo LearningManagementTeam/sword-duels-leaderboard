@@ -1,0 +1,70 @@
+import Link from "next/link";
+import { WildcardAdminForm } from "@/components/sword-duels/WildcardAdminForm";
+import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
+import { getSdEvent } from "@/lib/products/sword-duels/queries";
+import { SWORD_DUELS_PUBLIC, swordDuelsPath } from "@/lib/admin-routes";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Admin · Sword Duels Nationals",
+};
+
+export default async function AdminSwordDuelsNationalsPage() {
+  const event = await getSdEvent();
+  if (!event) {
+    return (
+      <p className="text-sd-muted">Sword Duels event not configured.</p>
+    );
+  }
+
+  let context: Awaited<ReturnType<typeof getSdNationalsContext>> | null = null;
+  let loadError: string | null = null;
+
+  try {
+    context = await getSdNationalsContext(event.id);
+  } catch (e) {
+    loadError =
+      e instanceof Error ? e.message : "Could not load nationals wildcard data";
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="sd-page-header">
+        <h1>Sword Duels Nationals</h1>
+        <p>
+          Wildcard slot opens after every area final is published. Auto-select
+          when one runner-up holds the sole 2nd-highest loser score; otherwise
+          score and publish the tiebreak round.
+        </p>
+        <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <Link
+            href={`${SWORD_DUELS_PUBLIC}/nationals`}
+            className="sd-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open public map →
+          </Link>
+          <Link href={swordDuelsPath("areas")} className="sd-link">
+            Area scoring
+          </Link>
+        </p>
+      </div>
+
+      {loadError ? (
+        <div className="sd-neon-panel space-y-2 p-4 text-sm text-amber-100">
+          <p>{loadError}</p>
+          <p>
+            Run{" "}
+            <code className="text-xs">019_sd_nationals_wildcard.sql</code> or{" "}
+            <code className="text-xs">016_sword_duels_repair.sql</code> in
+            Supabase SQL Editor, then use Sync from area finals.
+          </p>
+        </div>
+      ) : context ? (
+        <WildcardAdminForm model={context.model} />
+      ) : null}
+    </div>
+  );
+}

@@ -36,10 +36,16 @@ export default async function SwordDuelsHomePage() {
             </Link>
           )}
           <Link
-            href="/preview/sword-duels/nationals"
+            href={`${SWORD_DUELS_PUBLIC}/nationals`}
             className="sd-link text-sm"
           >
-            Nationals wildcard preview →
+            Nationals · wild card →
+          </Link>
+          <Link
+            href="/preview/sword-duels/nationals/knockout"
+            className="sd-link text-sm"
+          >
+            Knockout bracket preview →
           </Link>
         </p>
       </div>

@@ -13,6 +13,11 @@ import {
 import { computeSetResults } from "@/lib/products/sword-duels/scoring";
 import type { SdScoringMode, SdSetType } from "@/lib/products/sword-duels/types";
 import { SD_SET_ORDER } from "@/lib/products/sword-duels/types";
+import {
+  publishWildcardRound,
+  syncWildcardRound,
+  unpublishWildcardRound,
+} from "@/lib/products/sword-duels/wildcard-sync";
 import { parseRepresentativesCsv } from "@/lib/representatives-csv";
 import { representativeDbUpdate } from "@/lib/representative-fields";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -46,7 +51,9 @@ function revalidateSd(area?: string) {
   revalidatePath(SWORD_DUELS_ADMIN);
   revalidatePath(swordDuelsPath("representatives"));
   revalidatePath(swordDuelsPath("areas"));
+  revalidatePath(swordDuelsPath("nationals"));
   revalidatePath(SWORD_DUELS_PUBLIC);
+  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
   if (area) {
     revalidatePath(`${SWORD_DUELS_PUBLIC}/${encodeURIComponent(area)}`);
     revalidatePath(swordDuelsPath("areas", encodeURIComponent(area)));
@@ -300,6 +307,17 @@ export async function publishSdSet(setId: string): Promise<{ winnerId: string | 
     set_type: set.set_type,
     winner_branch_id: winnerId,
   });
+
+  if (set.set_type === "area_final") {
+    try {
+      await syncWildcardRound(set.event_id);
+    } catch {
+      /* wildcard tables may not exist until migration 019 */
+    }
+    revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+    revalidatePath(swordDuelsPath("nationals"));
+  }
+
   revalidateSd(set.area);
   return { winnerId };
 }
@@ -358,6 +376,17 @@ export async function unpublishSdSet(setId: string): Promise<void> {
     area: set.area,
     set_type: set.set_type,
   });
+
+  if (set.set_type === "area_final") {
+    try {
+      await syncWildcardRound(set.event_id);
+    } catch {
+      /* wildcard tables may not exist until migration 019 */
+    }
+    revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+    revalidatePath(swordDuelsPath("nationals"));
+  }
+
   revalidateSd(set.area);
 }
 
@@ -533,4 +562,82 @@ export async function updateSdGroupSortMode(
 
   await logAudit(email, "update_sd_group_sort", event.id, { group_sort_mode: mode });
   revalidateSd();
+}
+
+export type SdWildcardScoreInput = {
+  branch_id: string;
+  points: number;
+};
+
+export async function saveSdWildcardScores(
+  scores: SdWildcardScoreInput[]
+): Promise<void> {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const event = await getSdEvent();
+  if (!event) throw new Error("Sword Duels event not found");
+
+  const { data: round } = await service
+    .from("sd_wildcard_rounds")
+    .select("id, status")
+    .eq("event_id", event.id)
+    .single();
+
+  if (!round) throw new Error("Wildcard round not initialized — publish all area finals first");
+  if (round.status !== "tiebreak_draft") {
+    throw new Error("Unpublish the wildcard round before editing scores");
+  }
+
+  const now = new Date().toISOString();
+  for (const row of scores) {
+    const { error } = await service
+      .from("sd_wildcard_scores")
+      .update({
+        points: row.points,
+        updated_at: now,
+      })
+      .eq("wildcard_round_id", round.id)
+      .eq("branch_id", row.branch_id);
+    if (error) throw new Error(error.message);
+  }
+
+  await logAudit(email, "save_sd_wildcard_scores", round.id, {
+    count: scores.length,
+  });
+  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+  revalidatePath(swordDuelsPath("nationals"));
+}
+
+export async function publishSdWildcardRoundForm(): Promise<void> {
+  const { email } = await requireAdmin();
+  const event = await getSdEvent();
+  if (!event) throw new Error("Sword Duels event not found");
+
+  await publishWildcardRound(event.id);
+
+  await logAudit(email, "publish_sd_wildcard_round", event.id, {});
+  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+  revalidatePath(swordDuelsPath("nationals"));
+}
+
+export async function unpublishSdWildcardRoundForm(): Promise<void> {
+  const { email } = await requireAdmin();
+  const event = await getSdEvent();
+  if (!event) throw new Error("Sword Duels event not found");
+
+  await unpublishWildcardRound(event.id);
+
+  await logAudit(email, "unpublish_sd_wildcard_round", event.id, {});
+  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+  revalidatePath(swordDuelsPath("nationals"));
+}
+
+export async function syncSdWildcardRoundForm(): Promise<void> {
+  await requireAdmin();
+  const event = await getSdEvent();
+  if (!event) throw new Error("Sword Duels event not found");
+
+  await syncWildcardRound(event.id);
+  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+  revalidatePath(swordDuelsPath("nationals"));
 }
