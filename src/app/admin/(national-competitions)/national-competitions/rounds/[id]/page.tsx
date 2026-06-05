@@ -3,6 +3,7 @@ import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { RoundResultsForm } from "@/components/admin/RoundResultsForm";
 import { getRoundWithResults } from "@/lib/data/admin-queries";
 import { seasonPhaseLabel } from "@/lib/season-labels";
+import { nationalCompetitionsPath } from "@/lib/admin-routes";
 
 export default async function AdminRoundPage({
   params,
@@ -20,7 +21,7 @@ export default async function AdminRoundPage({
     <div className="space-y-4">
       <AdminBreadcrumb
         items={[
-          { label: "Rounds", href: "/admin/rounds" },
+          { label: "Rounds", href: nationalCompetitionsPath("rounds") },
           { label: roundLabel },
         ]}
       />

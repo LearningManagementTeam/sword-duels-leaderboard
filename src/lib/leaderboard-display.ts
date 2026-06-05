@@ -21,6 +21,7 @@ export interface RoundViewConfig {
 }
 
 export function participantDisplayName(row: StandingRow): string {
+  if (row.is_placeholder) return row.branch_name;
   const name = row.representative_1?.trim();
   return name || row.branch_name;
 }
@@ -35,6 +36,7 @@ export function participantInitials(row: StandingRow): string {
 }
 
 export function branchSubtext(row: StandingRow): string {
+  if (row.is_placeholder) return "Placeholder · awaiting participant";
   return `${row.branch_name} · ${row.branch_code}`;
 }
 

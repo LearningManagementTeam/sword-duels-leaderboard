@@ -5,6 +5,10 @@ import { usePathname } from "next/navigation";
 import { Fragment } from "react";
 import { InfoTip } from "@/components/admin/InfoTip";
 import { ADMIN_NAV_HINTS } from "@/lib/admin-action-hints";
+import {
+  NATIONAL_COMPETITIONS_ADMIN,
+  nationalCompetitionsPath,
+} from "@/lib/admin-routes";
 
 type NavLink = {
   href: string;
@@ -23,35 +27,42 @@ const NAV_GROUPS: NavGroup[] = [
     id: "operate",
     label: "Operate",
     links: [
-      { href: "/admin", label: "Dashboard", exact: true },
-      { href: "/admin/rounds", label: "Rounds" },
-      { href: "/admin/advancement", label: "Advancement" },
+      {
+        href: NATIONAL_COMPETITIONS_ADMIN,
+        label: "Dashboard",
+        exact: true,
+      },
+      { href: nationalCompetitionsPath("rounds"), label: "Rounds" },
+      { href: nationalCompetitionsPath("advancement"), label: "Advancement" },
     ],
   },
   {
     id: "roster",
     label: "Roster",
     links: [
-      { href: "/admin/branches", label: "Branches" },
-      { href: "/admin/representatives", label: "Representatives" },
+      { href: nationalCompetitionsPath("branches"), label: "Branches" },
+      {
+        href: nationalCompetitionsPath("representatives"),
+        label: "Representatives",
+      },
     ],
   },
   {
     id: "site",
     label: "Site",
     links: [
-      { href: "/admin/competition", label: "Competition map" },
-      { href: "/admin/mechanics", label: "Mechanics" },
-      { href: "/admin/branding", label: "Branding" },
+      { href: nationalCompetitionsPath("competition"), label: "Competition map" },
+      { href: nationalCompetitionsPath("mechanics"), label: "Mechanics" },
+      { href: nationalCompetitionsPath("branding"), label: "Branding" },
     ],
   },
   {
     id: "tools",
     label: "Tools",
     links: [
-      { href: "/admin/preview", label: "Preview" },
-      { href: "/admin/audit", label: "Audit log" },
-      { href: "/admin/export", label: "Export" },
+      { href: nationalCompetitionsPath("preview"), label: "Preview" },
+      { href: nationalCompetitionsPath("audit"), label: "Audit log" },
+      { href: nationalCompetitionsPath("export"), label: "Export" },
     ],
   },
 ];
@@ -156,7 +167,7 @@ function DesktopNav({ pathname }: { pathname: string }) {
 }
 
 export function AdminNav() {
-  const pathname = usePathname() ?? "/admin";
+  const pathname = usePathname() ?? NATIONAL_COMPETITIONS_ADMIN;
 
   return (
     <nav aria-label="Admin sections" className="text-sm">

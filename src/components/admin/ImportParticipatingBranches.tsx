@@ -193,7 +193,7 @@ export function ImportParticipatingBranches() {
         </AdminActionRow>
         <AdminActionRow hint={ADMIN_ROSTER_HINTS.editRepresentatives}>
           <Link
-            href="/admin/representatives"
+            href="/admin/national-competitions/representatives"
             className="sd-btn-ghost inline-flex rounded-lg px-4 py-2 text-sm text-sd-muted hover:bg-emerald-500/10"
           >
             Edit representatives
@@ -201,7 +201,7 @@ export function ImportParticipatingBranches() {
         </AdminActionRow>
         <AdminActionRow hint={ADMIN_ROSTER_HINTS.goToRounds}>
           <Link
-            href="/admin/rounds"
+            href="/admin/national-competitions/rounds"
             className="sd-btn-ghost inline-flex rounded-lg px-4 py-2 text-sm text-sd-muted hover:bg-emerald-500/10"
           >
             Go to Rounds

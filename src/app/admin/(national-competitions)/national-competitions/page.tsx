@@ -24,8 +24,11 @@ export default async function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="sd-page-header">
-        <h1>Dashboard</h1>
-        <p>Score rounds, track phase locks, and keep the public site in sync.</p>
+        <h1>National Competitions</h1>
+        <p>
+          June area-wide → July regional → The Nationals. Score rounds, track
+          phase locks, and keep the public site in sync.
+        </p>
       </div>
       {!configured && <SetupBanner />}
 

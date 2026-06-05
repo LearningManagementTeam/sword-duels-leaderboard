@@ -69,6 +69,8 @@ export interface StandingRow {
   manually_advanced_after_round?: number | null;
   /** R3 qualification sequence (1 = first to 5 correct). */
   round3_finish_order?: number | null;
+  /** Layout preview row — not a real branch. */
+  is_placeholder?: boolean;
 }
 
 export interface AuditEntry {

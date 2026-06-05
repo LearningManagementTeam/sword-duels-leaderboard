@@ -39,7 +39,7 @@ export function AdminPostPublishChecklist({
     },
     {
       label: "Update competition map on home",
-      href: "/admin/competition",
+      href: "/admin/national-competitions/competition",
       hint: "Move the journey milestone if this was a major beat",
     },
   ];
@@ -47,7 +47,7 @@ export function AdminPostPublishChecklist({
   if (supportsManualAdvances) {
     items.push({
       label: "Review advancement picks",
-      href: `/admin/rounds/${roundId}/advances`,
+      href: `/admin/national-competitions/rounds/${roundId}/advances`,
       hint: "Add committee picks if many branches tied at the cut",
     });
   }

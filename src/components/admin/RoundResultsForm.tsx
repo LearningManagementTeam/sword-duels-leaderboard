@@ -3,7 +3,11 @@
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { saveRoundResults, publishRound } from "@/lib/actions/admin";
+import {
+  saveRoundResults,
+  publishRound,
+  clearRoundResults,
+} from "@/lib/actions/admin";
 import { DraftStandingsPreview } from "@/components/admin/DraftStandingsPreview";
 import { RoundScoringToolbar } from "@/components/admin/RoundScoringToolbar";
 import { ScorePastePanel } from "@/components/admin/ScorePastePanel";
@@ -123,6 +127,8 @@ export function RoundResultsForm({
   const [operationError, setOperationError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  const [clearAcknowledged, setClearAcknowledged] = useState(false);
   const [values, setValues] = useState<RowValue[]>(() =>
     branches.map((b) => {
       const init = initial.get(b.id);
@@ -305,6 +311,62 @@ export function RoundResultsForm({
     setPublishConfirmOpen(true);
   }
 
+  function resetValuesToEmpty() {
+    setValues((prev) =>
+      prev.map((row) => {
+        if (kind === "last_man_standing") {
+          return { ...row, survived: false, points: 0 };
+        }
+        if (kind === "hearts_survival") {
+          return { ...row, points: 0, survived: false };
+        }
+        return { ...row, points: 0, finish_order: null, survived: false };
+      })
+    );
+  }
+
+  async function executeClear() {
+    setClearConfirmOpen(false);
+    setClearAcknowledged(false);
+    clearOperation();
+    setBusy(true);
+    setMessage("");
+    setOperationTitle("Clearing round scores");
+    setOperationSteps([
+      { id: "clear", label: "Resetting scores in database", status: "active" },
+    ]);
+
+    try {
+      const result = await clearRoundResults(roundId);
+      resetValuesToEmpty();
+      setOperationSteps([
+        {
+          id: "clear",
+          label: "Resetting scores in database",
+          status: "done",
+          detail: result.revertedToDraft
+            ? "Round reverted to draft — public board updated"
+            : undefined,
+        },
+      ]);
+      setSuccessMessage(
+        result.revertedToDraft
+          ? `${roundName} scores cleared and round is draft again on the public site.`
+          : `${roundName} scores cleared (draft only).`
+      );
+      router.refresh();
+    } catch (e) {
+      const err = e instanceof Error ? e.message : "Clear failed";
+      setOperationSteps([
+        { id: "clear", label: "Resetting scores in database", status: "error" },
+      ]);
+      setOperationError(err);
+      setMessage(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function executePublish() {
     setPublishConfirmOpen(false);
     clearOperation();
@@ -434,7 +496,7 @@ export function RoundResultsForm({
           <p className="font-medium">Roster not ready</p>
           <p className="mt-1">{participantGateMessage}</p>
           <Link
-            href="/admin/advancement"
+            href="/admin/national-competitions/advancement"
             className="mt-2 inline-block text-xs font-medium text-amber-200 underline hover:text-white"
           >
             Go to Advancement → Lock &amp; advance
@@ -511,7 +573,7 @@ export function RoundResultsForm({
       {supportsManualAdvances && (
         <AdminActionRow hint={ADMIN_ROUND_HINTS.advancementPicks}>
           <SdButtonLink
-            href={`/admin/rounds/${roundId}/advances`}
+            href={`/admin/national-competitions/rounds/${roundId}/advances`}
             variant="fuchsia"
             className="inline-flex px-3 py-1.5 text-sm"
           >
@@ -566,11 +628,19 @@ export function RoundResultsForm({
             }
             action={
               participantGateMessage ? (
-                <SdButtonLink href="/admin/advancement" variant="ghost" className="px-3 py-1.5 text-sm">
+                <SdButtonLink
+                  href="/admin/national-competitions/advancement"
+                  variant="ghost"
+                  className="px-3 py-1.5 text-sm"
+                >
                   Go to Advancement
                 </SdButtonLink>
               ) : (
-                <SdButtonLink href="/admin/branches" variant="ghost" className="px-3 py-1.5 text-sm">
+                <SdButtonLink
+                  href="/admin/national-competitions/branches"
+                  variant="ghost"
+                  className="px-3 py-1.5 text-sm"
+                >
                   Load roster
                 </SdButtonLink>
               )
@@ -794,6 +864,50 @@ export function RoundResultsForm({
           </div>
         )}
 
+      {clearConfirmOpen && (
+        <AdminConfirmPanel
+          title={`Clear all scores for ${roundName}?`}
+          confirmLabel="Clear scores"
+          tone="danger"
+          confirmDisabled={isPublished && !clearAcknowledged}
+          onConfirm={executeClear}
+          onCancel={() => {
+            setClearConfirmOpen(false);
+            setClearAcknowledged(false);
+          }}
+          busy={busy}
+        >
+          <p>
+            Every branch in this round will be set to zero
+            {isPublished
+              ? ", the round will revert to draft, and public leaderboards will update."
+              : ". The public site is unchanged until you publish."}
+          </p>
+          <AdminActionHint
+            hint={ADMIN_ROUND_HINTS.clearRoundScores}
+            className="mt-2 text-sd-muted/90"
+          />
+          <AdminActionHint
+            hint={ADMIN_CONFIRM_HINTS.clearRound}
+            className="mt-2 text-sd-muted/90"
+          />
+          {isPublished && (
+            <label className="mt-3 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={clearAcknowledged}
+                onChange={(e) => setClearAcknowledged(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-fuchsia-400/50"
+              />
+              <span>
+                I understand this removes live scores for this round from the
+                public site.
+              </span>
+            </label>
+          )}
+        </AdminConfirmPanel>
+      )}
+
       {publishConfirmOpen && (
         <AdminConfirmPanel
           title={
@@ -866,7 +980,10 @@ export function RoundResultsForm({
             <button
               type="button"
               disabled={
-                busy || publishReadiness.blockers.length > 0 || publishConfirmOpen
+                busy ||
+                publishReadiness.blockers.length > 0 ||
+                publishConfirmOpen ||
+                clearConfirmOpen
               }
               onClick={requestPublish}
               className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
@@ -876,6 +993,21 @@ export function RoundResultsForm({
                 : isPublished
                   ? "Update live board"
                   : "Save & publish"}
+            </button>
+          </AdminActionRow>
+          <AdminActionRow hint={ADMIN_ROUND_HINTS.clearRoundScores}>
+            <button
+              type="button"
+              disabled={busy || clearConfirmOpen || publishConfirmOpen}
+              onClick={() => {
+                setClearAcknowledged(false);
+                setClearConfirmOpen(true);
+              }}
+              className="sd-btn-ghost rounded-lg px-4 py-2 text-sm text-amber-200/90 hover:text-amber-100 disabled:opacity-50"
+            >
+              {busy && operationTitle === "Clearing round scores"
+                ? "Clearing…"
+                : "Clear all scores"}
             </button>
           </AdminActionRow>
         </div>

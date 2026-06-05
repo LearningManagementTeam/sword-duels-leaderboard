@@ -67,7 +67,9 @@ export function AuditLogFilters() {
     else params.delete("limit");
 
     const q = params.toString();
-    router.push(q ? `/admin/audit?${q}` : "/admin/audit");
+    router.push(
+      q ? `/admin/national-competitions/audit?${q}` : "/admin/national-competitions/audit"
+    );
   }
 
   function applyQuick(actionFilter: string) {
@@ -75,7 +77,9 @@ export function AuditLogFilters() {
     if (actionFilter) next.set("action", actionFilter);
     if (limit && limit !== "100") next.set("limit", limit);
     const q = next.toString();
-    router.push(q ? `/admin/audit?${q}` : "/admin/audit");
+    router.push(
+      q ? `/admin/national-competitions/audit?${q}` : "/admin/national-competitions/audit"
+    );
   }
 
   return (

@@ -108,16 +108,15 @@ export function GamifiedRankList({
                   {cutLineLabel}
                 </div>
               )}
-              <BranchHighlightBlock
-                branchId={row.branch_id}
-                branchCode={row.branch_code}
-                highlightCode={highlightCode ?? null}
-              >
+              {(() => {
+                const rowShell = (
               <div
                 className={`sd-row-hover flex flex-wrap items-center gap-2 rounded-2xl border px-3 py-2 sm:flex-nowrap sm:gap-3 ${
                   tvMode ? "px-4 py-3" : ""
                 } ${
-                  row.status === "tie_breaker"
+                  row.is_placeholder
+                    ? "border border-dashed border-emerald-500/25 bg-sd-deep/40 opacity-60"
+                    : row.status === "tie_breaker"
                     ? "sd-glass border-fuchsia-400/50 ring-2 ring-fuchsia-400/40"
                     : inZone
                       ? "sd-glass border-emerald-400/40 ring-1 ring-emerald-400/30"
@@ -201,7 +200,19 @@ export function GamifiedRankList({
                   />
                 </div>
               </div>
-              </BranchHighlightBlock>
+                );
+                return row.is_placeholder ? (
+                  rowShell
+                ) : (
+                  <BranchHighlightBlock
+                    branchId={row.branch_id}
+                    branchCode={row.branch_code}
+                    highlightCode={highlightCode ?? null}
+                  >
+                    {rowShell}
+                  </BranchHighlightBlock>
+                );
+              })()}
             </li>
           );
         })}

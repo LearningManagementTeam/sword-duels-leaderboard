@@ -71,7 +71,7 @@ export function AdminPhaseStatusStrip({ phases }: Props) {
                     "Published"
                   ) : phase.round3Round ? (
                     <Link
-                      href={`/admin/rounds/${phase.round3Round.id}`}
+                      href={`/admin/national-competitions/rounds/${phase.round3Round.id}`}
                       className="sd-link text-amber-200"
                     >
                       Score →
@@ -86,7 +86,7 @@ export function AdminPhaseStatusStrip({ phases }: Props) {
                 <dd className="text-right text-sd-muted">
                   {phase.latestPublishedRound ? (
                     <Link
-                      href={`/admin/rounds/${phase.latestPublishedRound.id}`}
+                      href={`/admin/national-competitions/rounds/${phase.latestPublishedRound.id}`}
                       className="sd-link"
                     >
                       {phase.latestPublishedRound.name}

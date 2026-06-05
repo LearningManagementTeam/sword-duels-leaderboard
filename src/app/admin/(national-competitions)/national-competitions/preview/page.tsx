@@ -4,6 +4,17 @@ import { REGION_LABELS } from "@/lib/scoring-config";
 
 const previewLinks = [
   {
+    href: "/admin/national-competitions/preview/capacity",
+    label: "Full roster capacity (compiled)",
+    description:
+      "All regional slots in one page — real branches plus placeholders for empty seats",
+  },
+  {
+    href: "/preview/capacity",
+    label: "Public capacity preview",
+    description: "Same compiled layout at /preview/capacity (share with stakeholders)",
+  },
+  {
     href: "/preview",
     label: "Preview hub",
     description: "Overview of all sample leaderboards (demo data only)",

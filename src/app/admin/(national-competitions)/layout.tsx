@@ -1,34 +1,18 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
 import { signOut } from "@/lib/actions/admin";
-import { AdminAuthError, requireAdminEmail } from "@/lib/admin-auth";
+import { requireAdminLayoutAccess } from "@/lib/admin-layout-auth";
+import { ADMIN_HUB, NATIONAL_COMPETITIONS_ADMIN } from "@/lib/admin-routes";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLayout({
+export default async function NationalCompetitionsAdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  try {
-    await requireAdminEmail();
-  } catch (err) {
-    if (err instanceof AdminAuthError) {
-      if (err.status === 503) {
-        redirect("/admin/login?setup=1");
-      }
-      if (err.status === 403) {
-        redirect(
-          "/admin/login?error=" +
-            encodeURIComponent("Not authorized for admin access")
-        );
-      }
-      redirect("/admin/login");
-    }
-    throw err;
-  }
+  await requireAdminLayoutAccess();
 
   return (
     <div className="relative min-h-screen text-emerald-50">
@@ -40,12 +24,23 @@ export default async function AdminLayout({
         />
         <div className="mx-auto max-w-6xl space-y-3 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <Link href="/admin" className="font-semibold text-sd-glow">
-              Admin · Sword Duels
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={NATIONAL_COMPETITIONS_ADMIN}
+                className="font-semibold text-sd-glow"
+              >
+                Admin · National Competitions
+              </Link>
+              <Link
+                href={ADMIN_HUB}
+                className="rounded-lg bg-sd-panel/80 px-2.5 py-1 text-xs text-sd-muted ring-1 ring-emerald-500/20 hover:text-white"
+              >
+                Main menu
+              </Link>
+            </div>
             <div className="flex items-center gap-3">
               <Link
-                href="/admin/system"
+                href={`${NATIONAL_COMPETITIONS_ADMIN}/system`}
                 className="text-sm text-sd-muted/80 hover:text-sd-glow"
               >
                 System & stack

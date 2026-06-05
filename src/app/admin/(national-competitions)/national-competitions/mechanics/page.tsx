@@ -3,6 +3,7 @@ import { InfoTip } from "@/components/admin/InfoTip";
 import { MechanicsEditor } from "@/components/admin/MechanicsEditor";
 import { getMechanicsContent } from "@/lib/data/content-queries";
 import { ADMIN_NAV_HINTS } from "@/lib/admin-action-hints";
+import { nationalCompetitionsPath } from "@/lib/admin-routes";
 
 export default async function AdminMechanicsPage() {
   const content = await getMechanicsContent();
@@ -18,7 +19,7 @@ export default async function AdminMechanicsPage() {
           </a>
           . Phase tables and caps are auto-generated from scoring rules.{" "}
           <InfoTip label="About mechanics editor">
-            {ADMIN_NAV_HINTS["/admin/mechanics"]}
+            {ADMIN_NAV_HINTS[nationalCompetitionsPath("mechanics")]}
           </InfoTip>
         </p>
       </div>

@@ -17,7 +17,7 @@ export default async function RepresentativesPage() {
         <p>
           Edit names in the table below anytime. For bulk setup, use the{" "}
           <strong>combined CSV</strong> on{" "}
-          <Link href="/admin/branches" className="sd-link">
+          <Link href="/admin/national-competitions/branches" className="sd-link">
             Admin → Branches
           </Link>{" "}
           (same file includes branch_code, branch_name, area, region, and

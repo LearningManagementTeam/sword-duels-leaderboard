@@ -3,6 +3,7 @@ import { PhaseLockPanel } from "@/components/admin/PhaseLockPanel";
 import { InfoTip } from "@/components/admin/InfoTip";
 import { getPhaseLockOverview } from "@/lib/data/admin-queries";
 import { ADMIN_NAV_HINTS } from "@/lib/admin-action-hints";
+import { nationalCompetitionsPath } from "@/lib/admin-routes";
 import { SetupBanner } from "@/components/SetupBanner";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -18,7 +19,7 @@ export default async function AdvancementPage() {
           Run after publishing final standings for a phase. This records a phase
           lock and copies advancing branches to the next season.{" "}
           <InfoTip label="About phase lock">
-            {ADMIN_NAV_HINTS["/admin/advancement"]}
+            {ADMIN_NAV_HINTS[nationalCompetitionsPath("advancement")]}
           </InfoTip>
         </p>
       </div>

@@ -184,45 +184,45 @@ async function buildDashboardPhaseStatuses(
       if (branchCount > 0 && branchCount < TARGET_BRANCH_COUNT) {
         needsAttention = true;
         attentionMessage = `${branchCount} of ${TARGET_BRANCH_COUNT} branches loaded`;
-        attentionHref = "/admin/branches";
+        attentionHref = "/admin/national-competitions/branches";
       } else if (!round3Published && round3Round) {
         needsAttention = true;
         attentionMessage = "Publish June Round 3 before locking the phase";
-        attentionHref = `/admin/rounds/${round3Round.id}`;
+        attentionHref = `/admin/national-competitions/rounds/${round3Round.id}`;
       } else if (round3Published && !lockedAt) {
         needsAttention = true;
         attentionMessage = "June Round 3 is live — lock & advance to July";
-        attentionHref = "/admin/advancement";
+        attentionHref = "/admin/national-competitions/advancement";
       }
     } else if (seasonSlug === "july_region") {
       const gate = participantGateMessage(seasonSlug);
       if (rosterCount === 0 && gate) {
         needsAttention = true;
         attentionMessage = "No July roster yet — lock June first";
-        attentionHref = "/admin/advancement";
+        attentionHref = "/admin/national-competitions/advancement";
       } else if (!round3Published && round3Round) {
         needsAttention = true;
         attentionMessage = "Publish July Round 3 before locking the phase";
-        attentionHref = `/admin/rounds/${round3Round.id}`;
+        attentionHref = `/admin/national-competitions/rounds/${round3Round.id}`;
       } else if (round3Published && !lockedAt) {
         needsAttention = true;
         attentionMessage = "July Round 3 is live — lock & advance to The Nationals";
-        attentionHref = "/admin/advancement";
+        attentionHref = "/admin/national-competitions/advancement";
       } else if (lockedAt && rosterCount > 0 && rosterCount !== rosterTarget) {
         needsAttention = true;
         attentionMessage = `${rosterCount} participants seeded (expect ${rosterTarget})`;
-        attentionHref = "/admin/advancement";
+        attentionHref = "/admin/national-competitions/advancement";
       }
     } else {
       const gate = participantGateMessage(seasonSlug);
       if (rosterCount === 0 && gate) {
         needsAttention = true;
         attentionMessage = "No Nationals roster yet — lock July first";
-        attentionHref = "/admin/advancement";
+        attentionHref = "/admin/national-competitions/advancement";
       } else if (rosterCount > 0 && rosterCount !== rosterTarget) {
         needsAttention = true;
         attentionMessage = `${rosterCount} champions seeded (expect ${rosterTarget})`;
-        attentionHref = "/admin/advancement";
+        attentionHref = "/admin/national-competitions/advancement";
       }
     }
 

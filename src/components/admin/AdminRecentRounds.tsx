@@ -45,7 +45,10 @@ export function AdminRecentRounds({ rounds }: Props) {
     <section className="sd-neon-panel p-5">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
         <h2 className="font-semibold text-sd-glow">Recent activity</h2>
-        <Link href="/admin/rounds" className="text-xs text-sd-muted hover:text-sd-glow">
+        <Link
+          href="/admin/national-competitions/rounds"
+          className="text-xs text-sd-muted hover:text-sd-glow"
+        >
           All rounds →
         </Link>
       </div>
@@ -55,7 +58,10 @@ export function AdminRecentRounds({ rounds }: Props) {
           title="The arena opens soon"
           detail="Load the branch roster, then score June Round 1 — fans will see ranks as soon as you publish."
           action={
-            <SdButtonLink href="/admin/branches" className="px-3 py-1.5 text-sm">
+            <SdButtonLink
+              href="/admin/national-competitions/branches"
+              className="px-3 py-1.5 text-sm"
+            >
               Load roster
             </SdButtonLink>
           }
@@ -72,7 +78,10 @@ export function AdminRecentRounds({ rounds }: Props) {
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-500/10 bg-sd-deep/30 px-3 py-2"
               >
                 <div className="min-w-0">
-                  <Link href={`/admin/rounds/${r.id}`} className="sd-link font-medium">
+                  <Link
+                    href={`/admin/national-competitions/rounds/${r.id}`}
+                    className="sd-link font-medium"
+                  >
                     {phaseLabel} — {r.name}
                   </Link>
                   {when && (

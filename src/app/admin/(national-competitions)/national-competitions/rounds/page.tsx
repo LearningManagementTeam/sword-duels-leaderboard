@@ -3,6 +3,7 @@ import { AdminCallout } from "@/components/admin/AdminCallout";
 import { InfoTip } from "@/components/admin/InfoTip";
 import { getAdminDashboard } from "@/lib/data/admin-queries";
 import { ADMIN_NAV_HINTS, ADMIN_ROUND_HINTS } from "@/lib/admin-action-hints";
+import { nationalCompetitionsPath } from "@/lib/admin-routes";
 import { seasonPhaseLabel } from "@/lib/season-labels";
 import {
   usesPerRoundElimination,
@@ -62,7 +63,8 @@ export default async function AdminRoundsPage() {
         <p>
           Enter results per round. Save as draft, then publish when ready.{" "}
           <InfoTip label="About scoring rounds">
-            {ADMIN_NAV_HINTS["/admin/rounds"]} {ADMIN_ROUND_HINTS.advancementPicks}
+            {ADMIN_NAV_HINTS[nationalCompetitionsPath("rounds")]}{" "}
+            {ADMIN_ROUND_HINTS.advancementPicks}
           </InfoTip>
         </p>
       </div>
@@ -85,7 +87,10 @@ export default async function AdminRoundsPage() {
                   key={r.id}
                   className="flex flex-wrap items-center gap-x-2 gap-y-1"
                 >
-                  <Link href={`/admin/rounds/${r.id}`} className="sd-link">
+                  <Link
+                    href={nationalCompetitionsPath("rounds", r.id)}
+                    className="sd-link"
+                  >
                     {r.name}
                   </Link>
                   {r.round_number === 3 && r.status !== "published" && (
@@ -98,7 +103,7 @@ export default async function AdminRoundsPage() {
                     seasonSlug &&
                     usesPerRoundElimination(seasonSlug) && (
                       <Link
-                        href={`/admin/rounds/${r.id}/advances`}
+                        href={nationalCompetitionsPath("rounds", r.id, "advances")}
                         className="text-xs text-fuchsia-300/90 hover:text-fuchsia-200"
                       >
                         · advancement picks

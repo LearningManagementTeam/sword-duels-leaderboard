@@ -386,7 +386,7 @@ export async function saveBranchRepresentatives(
   await logAudit(email, "save_representatives", "branches", null, {
     count: updates.length,
   });
-  revalidatePath("/admin/representatives");
+  revalidatePath("/admin/national-competitions/representatives");
   return { ok: true as const, count: updates.length };
 }
 
@@ -446,7 +446,7 @@ export async function importRepresentativesFromCsv(csvText: string) {
     updated,
     row_count: rows.length,
   });
-  revalidatePath("/admin/representatives");
+  revalidatePath("/admin/national-competitions/representatives");
 
   if (updated === 0) {
     return { ok: false as const, errors: resultErrors };
@@ -511,8 +511,67 @@ export async function saveRoundResults(
   await logAudit(email, "save_round_results", "round", roundId, {
     count: results.length,
   });
+  revalidatePath("/admin/national-competitions");
   revalidatePath("/admin");
   return { ok: true };
+}
+
+/** Zero all scores for a round; unpublished rounds stay draft-only on the public site. */
+export async function clearRoundResults(roundId: string) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+
+  const { data: round, error: roundErr } = await service
+    .from("rounds")
+    .select("id, season_id, round_number, status, seasons(slug)")
+    .eq("id", roundId)
+    .single();
+  if (roundErr || !round) throw new Error("Round not found");
+
+  const seasonRaw = round.seasons as { slug: SeasonSlug } | { slug: SeasonSlug }[];
+  const seasonSlug = (Array.isArray(seasonRaw) ? seasonRaw[0] : seasonRaw).slug;
+
+  const now = new Date().toISOString();
+  const { error: zeroErr } = await service
+    .from("round_results")
+    .update({
+      points: 0,
+      wins: 0,
+      losses: 0,
+      finish_order: null,
+      updated_at: now,
+    })
+    .eq("round_id", roundId);
+  if (zeroErr) throw new Error(zeroErr.message);
+
+  const wasPublished = round.status === "published";
+
+  if (wasPublished) {
+    const { error: draftErr } = await service
+      .from("rounds")
+      .update({ status: "draft", published_at: null })
+      .eq("id", roundId);
+    if (draftErr) throw new Error(draftErr.message);
+
+    await service
+      .from("manual_round_advances")
+      .delete()
+      .eq("season_id", round.season_id)
+      .eq("round_number", round.round_number);
+
+    await recomputeAndPublishStandings(service, seasonSlug, round.season_id);
+  }
+
+  await logAudit(email, "clear_round_results", "round", roundId, {
+    seasonSlug,
+    roundNumber: round.round_number,
+    revertedToDraft: wasPublished,
+  });
+
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/national-competitions");
+  revalidatePath("/admin");
+  return { ok: true, revertedToDraft: wasPublished };
 }
 
 export async function publishRound(roundId: string) {
@@ -1101,6 +1160,7 @@ async function finalizeManualAdvances(
   await logAudit(ctx.email, "save_manual_advances", "round", roundId, auditDetail);
 
   revalidatePath("/", "layout");
+  revalidatePath("/admin/national-competitions");
   revalidatePath("/admin");
 }
 
@@ -1167,7 +1227,7 @@ export async function saveMechanicsContent(body: MechanicsPublicBody) {
   });
 
   revalidatePath("/mechanics");
-  revalidatePath("/admin/mechanics");
+  revalidatePath("/admin/national-competitions/mechanics");
   return { ok: true };
 }
 
@@ -1203,7 +1263,7 @@ export async function saveCompetitionMap(config: CompetitionMapConfig) {
   );
 
   revalidatePath("/");
-  revalidatePath("/admin/competition");
+  revalidatePath("/admin/national-competitions/competition");
   return { ok: true };
 }
 

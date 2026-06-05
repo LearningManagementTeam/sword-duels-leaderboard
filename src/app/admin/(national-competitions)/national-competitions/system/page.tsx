@@ -162,7 +162,10 @@ export default function AdminSystemPage() {
             <h3 className="font-medium text-white">Public mechanics</h3>
             <p className="mt-1 text-sd-muted">
               Edit intro and announcements under{" "}
-              <Link href="/admin/mechanics" className="sd-link">
+              <Link
+                href="/admin/national-competitions/mechanics"
+                className="sd-link"
+              >
                 Admin → Mechanics
               </Link>
               . Rule tables on{" "}
@@ -185,7 +188,10 @@ export default function AdminSystemPage() {
       </section>
 
       <p className="text-xs text-sd-muted/60">
-        <Link href="/admin" className="hover:text-sd-muted">
+        <Link
+          href="/admin/national-competitions"
+          className="hover:text-sd-muted"
+        >
           ← Back to dashboard
         </Link>
       </p>

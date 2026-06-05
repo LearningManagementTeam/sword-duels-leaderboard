@@ -1,27 +1,34 @@
+import {
+  ADMIN_HUB,
+  nationalCompetitionsPath,
+} from "@/lib/admin-routes";
+
 /** Operator-facing hints for admin buttons and nav — plain language, when-to-use. */
 
 export const ADMIN_NAV_HINTS: Record<string, string> = {
-  "/admin":
+  [ADMIN_HUB]:
+    "Pick a program: Quiz Day, Sword Duels, National Competitions, or General Quiz.",
+  [nationalCompetitionsPath()]:
     "Start here each week: see phase status (June / July / Nationals), shortcuts to score or lock, and what published last.",
-  "/admin/rounds":
+  [nationalCompetitionsPath("rounds")]:
     "Enter branch scores for the current round. Save draft while checking; Save & publish when fans should see new ranks.",
-  "/admin/advancement":
+  [nationalCompetitionsPath("advancement")]:
     "End of June or July: after Round 3 is live everywhere, lock the phase to seed survivors into the next stage (24 → July, 3 → Nationals).",
-  "/admin/branches":
+  [nationalCompetitionsPath("branches")]:
     "One-time (or refresh): upload the 130+ branch CSV before June Round 1. Creates the full competition roster.",
-  "/admin/representatives":
+  [nationalCompetitionsPath("representatives")]:
     "Add or fix branch champion names anytime — for the public board and TV display.",
-  "/admin/competition":
+  [nationalCompetitionsPath("competition")]:
     "Update the home page journey map (“you are here”) after major beats — not needed for every score change.",
-  "/admin/mechanics":
+  [nationalCompetitionsPath("mechanics")]:
     "Edit the public How to win intro and announcements. Rule tables update automatically from scoring rules.",
-  "/admin/branding":
+  [nationalCompetitionsPath("branding")]:
     "Hero logo, home photo carousel, and partner logo strip above Live ranks.",
-  "/admin/preview":
+  [nationalCompetitionsPath("preview")]:
     "Open sample leaderboards with demo data — safe to show stakeholders before go-live.",
-  "/admin/audit":
+  [nationalCompetitionsPath("audit")]:
     "See who changed what (imports, publishes, locks). Useful for troubleshooting.",
-  "/admin/export":
+  [nationalCompetitionsPath("export")]:
     "Download published standings CSV for reports — same data fans see, not draft scores.",
 };
 
@@ -49,6 +56,8 @@ export const ADMIN_ROUND_HINTS = {
     "Sets exactly the required survivor count for this region. Hearts rounds keep the highest heart counts; survival rounds pick alphabetically.",
   pasteScores:
     "Paste branch_code and score columns from Excel (comma or tab). Only codes in this round's roster are applied.",
+  clearRoundScores:
+    "Resets every score in this round to zero. If the round was published, it reverts to draft and updates public boards — use when scores were entered in the wrong phase (e.g. July R1 during June).",
   advancementPicks:
     "Only if ties at the cut need extra survivors beyond the automatic top N per region.",
   previewDraft:
@@ -110,6 +119,11 @@ export const ADMIN_SITE_HINTS = {
   brandingSectionLogo: "Large hero title treatment on home and leaderboard headers.",
 };
 
+export const ADMIN_PREVIEW_HINTS = {
+  rosterCapacity:
+    "See every slot on each regional board — real branches plus dashed placeholders for seats not seeded yet. No scores.",
+};
+
 export const ADMIN_TOOLS_HINTS = {
   exportRegional:
     "CSV of published standings for that phase and region — for spreadsheets and reports.",
@@ -125,6 +139,8 @@ export const ADMIN_CONFIRM_HINTS = {
     "Confirm only when every eligible branch has scores and survivor counts match the round rules.",
   republish:
     "Check the box to confirm you mean to overwrite the live board with these scores.",
+  clearRound:
+    "Confirm only if this round should have no scores. Published rounds become draft again on the public site.",
   lockPhase:
     "Confirm only after public boards show the correct survivors (8 per region after June R3, 1 champion per region after July R3).",
   removeAsset: "This removes the file from the public site immediately.",

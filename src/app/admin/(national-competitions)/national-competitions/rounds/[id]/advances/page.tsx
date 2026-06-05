@@ -4,6 +4,7 @@ import { ManualAdvancementPicks } from "@/components/admin/ManualAdvancementPick
 import { getAdvancementPickContext } from "@/lib/data/admin-queries";
 import { seasonPhaseLabel } from "@/lib/season-labels";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { nationalCompetitionsPath } from "@/lib/admin-routes";
 
 export default async function RoundAdvancesPage({
   params,
@@ -23,8 +24,11 @@ export default async function RoundAdvancesPage({
     <div className="space-y-4">
       <AdminBreadcrumb
         items={[
-          { label: "Rounds", href: "/admin/rounds" },
-          { label: roundLabel, href: `/admin/rounds/${ctx.round.id}` },
+          { label: "Rounds", href: nationalCompetitionsPath("rounds") },
+          {
+            label: roundLabel,
+            href: nationalCompetitionsPath("rounds", ctx.round.id),
+          },
           { label: "Advancement picks" },
         ]}
       />

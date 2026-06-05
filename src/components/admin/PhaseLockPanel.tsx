@@ -96,7 +96,7 @@ export function PhaseLockPanel({ phases }: Props) {
                     {" "}
                     ·{" "}
                     <Link
-                      href={`/admin/rounds/${phase.round3Round.id}`}
+                      href={`/admin/national-competitions/rounds/${phase.round3Round.id}`}
                       className="sd-link font-medium"
                     >
                       Score {phase.round3Round.name}

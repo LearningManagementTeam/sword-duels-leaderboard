@@ -2,6 +2,7 @@ import type { NextDraftRoundRef, PublishedRoundRef } from "@/lib/data/admin-quer
 import { AdminActionHint } from "@/components/admin/AdminActionHint";
 import { SdButtonLink } from "@/components/ui/SdButtonLink";
 import { ADMIN_WORKFLOW_HINTS } from "@/lib/admin-action-hints";
+import { nationalCompetitionsPath } from "@/lib/admin-routes";
 
 interface Props {
   advanceRound?: PublishedRoundRef | null;
@@ -28,7 +29,7 @@ export function AdminWorkflowCards({
           {showContinueScoring && nextDraftRound ? (
             <>
               <SdButtonLink
-                href={`/admin/rounds/${nextDraftRound.id}`}
+                href={nationalCompetitionsPath("rounds", nextDraftRound.id)}
                 className={ctaSize}
               >
                 Continue scoring → {nextDraftRound.name}
@@ -37,7 +38,10 @@ export function AdminWorkflowCards({
             </>
           ) : (
             <>
-              <SdButtonLink href="/admin/rounds" className={ctaSize}>
+              <SdButtonLink
+                href={nationalCompetitionsPath("rounds")}
+                className={ctaSize}
+              >
                 Open rounds
               </SdButtonLink>
               <AdminActionHint hint={ADMIN_WORKFLOW_HINTS.openRounds} />
@@ -56,7 +60,11 @@ export function AdminWorkflowCards({
           {showAdvances && latestPublished ? (
             <>
               <SdButtonLink
-                href={`/admin/rounds/${latestPublished.id}/advances`}
+                href={nationalCompetitionsPath(
+                  "rounds",
+                  latestPublished.id,
+                  "advances"
+                )}
                 variant="fuchsia"
                 className={ctaSize}
               >
@@ -81,7 +89,11 @@ export function AdminWorkflowCards({
           Move the milestone on the home map when the competition hits a big beat.
         </p>
         <div className="mt-3 space-y-1.5">
-          <SdButtonLink href="/admin/competition" variant="ghost" className={ctaSize}>
+          <SdButtonLink
+            href={nationalCompetitionsPath("competition")}
+            variant="ghost"
+            className={ctaSize}
+          >
             Update journey map
           </SdButtonLink>
           <AdminActionHint hint={ADMIN_WORKFLOW_HINTS.competitionMap} />
@@ -95,7 +107,11 @@ export function AdminWorkflowCards({
           forward to July or The Nationals.
         </p>
         <div className="mt-3 space-y-1.5">
-          <SdButtonLink href="/admin/advancement" variant="ghost" className={ctaSize}>
+          <SdButtonLink
+            href={nationalCompetitionsPath("advancement")}
+            variant="ghost"
+            className={ctaSize}
+          >
             Crown survivors
           </SdButtonLink>
           <AdminActionHint hint={ADMIN_WORKFLOW_HINTS.phaseLock} />
