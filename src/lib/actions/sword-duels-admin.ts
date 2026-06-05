@@ -2,6 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC, swordDuelsPath } from "@/lib/admin-routes";
+import { requireAdminEmail } from "@/lib/admin-auth";
+import { buildAreaBrackets } from "@/lib/products/sword-duels/area-groups";
+import {
+  getSdAreaContext,
+  getSdEvent,
+  participantsForSetType,
+} from "@/lib/products/sword-duels/queries";
+import { computeSetResults } from "@/lib/products/sword-duels/scoring";
+import type { SdScoringMode, SdSetType } from "@/lib/products/sword-duels/types";
+import { SD_SET_ORDER } from "@/lib/products/sword-duels/types";
+import { parseRepresentativesCsv } from "@/lib/representatives-csv";
+import { createServiceClient } from "@/lib/supabase/server";
 
 async function requireAdmin() {
   const email = await requireAdminEmail();
