@@ -1,3 +1,5 @@
+import type { BranchRepresentativeFields } from "@/lib/representative-fields";
+
 export type SdSetType = "group_a" | "group_b" | "area_final";
 export type SdSetStatus = "draft" | "published";
 export type SdScoringMode = "high_score" | "survival";
@@ -8,7 +10,7 @@ export interface SdEvent {
   name: string;
 }
 
-export interface SdAreaGroupBranch {
+export interface SdAreaGroupBranch extends BranchRepresentativeFields {
   branch_id: string;
   branch_code: string;
   branch_name: string;
@@ -16,8 +18,6 @@ export interface SdAreaGroupBranch {
   region: string;
   group_label: "a" | "b";
   sort_order: number;
-  representative_1?: string | null;
-  representative_2?: string | null;
 }
 
 export interface SdSet {

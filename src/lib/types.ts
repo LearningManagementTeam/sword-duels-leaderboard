@@ -1,4 +1,5 @@
 import type { Region, SeasonSlug } from "./scoring-config";
+import type { BranchRepresentativeFields } from "./representative-fields";
 
 export type BranchStatus =
   | "active"
@@ -10,14 +11,12 @@ export type BranchStatus =
 
 export type RoundStatus = "draft" | "published";
 
-export interface Branch {
+export interface Branch extends BranchRepresentativeFields {
   id: string;
   branch_code: string;
   branch_name: string;
   area: string;
   region: Region;
-  representative_1?: string | null;
-  representative_2?: string | null;
 }
 
 export interface Season {
@@ -45,7 +44,7 @@ export interface RoundResult {
   losses: number;
 }
 
-export interface StandingRow {
+export interface StandingRow extends BranchRepresentativeFields {
   branch_id: string;
   branch_code: string;
   branch_name: string;
@@ -60,8 +59,6 @@ export interface StandingRow {
   status: BranchStatus;
   /** Set when tied at the cut line and must play a tie-breaker for remaining slots. */
   tie_breaker_in_round?: number | null;
-  representative_1?: string | null;
-  representative_2?: string | null;
   eliminated_in_round?: number | null;
   last_active_round?: number | null;
   advancing_to_round?: number | null;

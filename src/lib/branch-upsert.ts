@@ -1,5 +1,15 @@
 import type { BranchCsvRow } from "./branches-csv";
 
+function setIfDefined(
+  payload: Record<string, string | null>,
+  key: string,
+  value: string | null | undefined
+) {
+  if (value !== undefined) {
+    payload[key] = (value ?? "").trim() || null;
+  }
+}
+
 /** Build Supabase upsert payload; only sets rep fields when CSV provides them. */
 export function branchUpsertPayload(
   row: BranchCsvRow,
@@ -12,15 +22,21 @@ export function branchUpsertPayload(
     region: row.region,
   };
 
-  const rep1 = row.representative_1?.trim();
-  const rep2 = row.representative_2?.trim();
+  const touchesReps =
+    row.representative_1 !== undefined ||
+    row.representative_2 !== undefined ||
+    row.representative_1_employee_no !== undefined ||
+    row.representative_1_position !== undefined ||
+    row.representative_2_employee_no !== undefined ||
+    row.representative_2_position !== undefined;
 
-  if (rep1 || rep2) {
-    if (rep1) payload.representative_1 = rep1;
-    if (rep2) payload.representative_2 = rep2;
-    else if (rep1 && row.representative_2 !== undefined) {
-      payload.representative_2 = null;
-    }
+  if (touchesReps) {
+    setIfDefined(payload, "representative_1", row.representative_1);
+    setIfDefined(payload, "representative_2", row.representative_2);
+    setIfDefined(payload, "representative_1_employee_no", row.representative_1_employee_no);
+    setIfDefined(payload, "representative_1_position", row.representative_1_position);
+    setIfDefined(payload, "representative_2_employee_no", row.representative_2_employee_no);
+    setIfDefined(payload, "representative_2_position", row.representative_2_position);
     payload.representatives_updated_at =
       updatedAt ?? new Date().toISOString();
   }

@@ -1,13 +1,11 @@
 import type { Region } from "./scoring-config";
+import type { BranchRepresentativeFields } from "./representative-fields";
 
-export interface BranchCsvRow {
+export interface BranchCsvRow extends BranchRepresentativeFields {
   branch_code: string;
   branch_name: string;
   area: string;
   region: Region;
-  /** Optional — included in combined participants template */
-  representative_1?: string;
-  representative_2?: string;
 }
 
 const REGION_SET = new Set<string>(["luzon", "ncr", "vismin"]);
@@ -113,6 +111,26 @@ export function parseBranchesCsv(text: string): {
     "representative2",
     "rep2",
   ]);
+  const rep1EmpIdx = resolveHeaderIndex(header, [
+    "representative_1_employee_no",
+    "representative 1 employee no",
+    "rep1_employee_no",
+  ]);
+  const rep1PosIdx = resolveHeaderIndex(header, [
+    "representative_1_position",
+    "representative 1 position",
+    "rep1_position",
+  ]);
+  const rep2EmpIdx = resolveHeaderIndex(header, [
+    "representative_2_employee_no",
+    "representative 2 employee no",
+    "rep2_employee_no",
+  ]);
+  const rep2PosIdx = resolveHeaderIndex(header, [
+    "representative_2_position",
+    "representative 2 position",
+    "rep2_position",
+  ]);
 
   if (
     codeIdx === undefined ||
@@ -158,6 +176,14 @@ export function parseBranchesCsv(text: string): {
         rep1Idx !== undefined ? cols[rep1Idx]?.trim() || undefined : undefined,
       representative_2:
         rep2Idx !== undefined ? cols[rep2Idx]?.trim() || undefined : undefined,
+      representative_1_employee_no:
+        rep1EmpIdx !== undefined ? cols[rep1EmpIdx]?.trim() || undefined : undefined,
+      representative_1_position:
+        rep1PosIdx !== undefined ? cols[rep1PosIdx]?.trim() || undefined : undefined,
+      representative_2_employee_no:
+        rep2EmpIdx !== undefined ? cols[rep2EmpIdx]?.trim() || undefined : undefined,
+      representative_2_position:
+        rep2PosIdx !== undefined ? cols[rep2PosIdx]?.trim() || undefined : undefined,
     });
   }
 

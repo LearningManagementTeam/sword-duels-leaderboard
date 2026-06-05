@@ -16,6 +16,10 @@ function toGroupBranch(
     sort_order,
     representative_1: branch.representative_1,
     representative_2: branch.representative_2,
+    representative_1_employee_no: branch.representative_1_employee_no,
+    representative_1_position: branch.representative_1_position,
+    representative_2_employee_no: branch.representative_2_employee_no,
+    representative_2_position: branch.representative_2_position,
   };
 }
 

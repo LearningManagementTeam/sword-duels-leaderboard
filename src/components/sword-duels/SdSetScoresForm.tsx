@@ -38,6 +38,10 @@ type RowState = {
   branch_name: string;
   representative_1?: string | null;
   representative_2?: string | null;
+  representative_1_employee_no?: string | null;
+  representative_1_position?: string | null;
+  representative_2_employee_no?: string | null;
+  representative_2_position?: string | null;
   points: string;
   hearts: string;
   is_eliminated: boolean;
@@ -65,6 +69,10 @@ export function SdSetScoresForm({
         branch_name: p.branch_name,
         representative_1: p.representative_1,
         representative_2: p.representative_2,
+        representative_1_employee_no: p.representative_1_employee_no,
+        representative_1_position: p.representative_1_position,
+        representative_2_employee_no: p.representative_2_employee_no,
+        representative_2_position: p.representative_2_position,
         points: s ? String(s.points) : "0",
         hearts: s?.hearts_remaining != null ? String(s.hearts_remaining) : "3",
         is_eliminated: s?.is_eliminated ?? false,
@@ -252,9 +260,22 @@ export function SdSetScoresForm({
                     </span>
                   </td>
                   <td className="px-2 py-2 text-xs text-sd-muted">
-                    <span className="block">{row.representative_1?.trim() || "—"}</span>
-                    {row.representative_2?.trim() && (
+                    <span className="block font-medium text-white/90">
+                      {row.representative_1?.trim() || "—"}
+                    </span>
+                    {(row.representative_1_employee_no?.trim() ||
+                      row.representative_1_position?.trim()) && (
                       <span className="block text-[10px] text-sd-muted/60">
+                        {row.representative_1_employee_no?.trim() &&
+                          `#${row.representative_1_employee_no.trim()}`}
+                        {row.representative_1_employee_no?.trim() &&
+                          row.representative_1_position?.trim() &&
+                          " · "}
+                        {row.representative_1_position?.trim()}
+                      </span>
+                    )}
+                    {row.representative_2?.trim() && (
+                      <span className="mt-1 block text-sd-muted/70">
                         {row.representative_2.trim()}
                       </span>
                     )}

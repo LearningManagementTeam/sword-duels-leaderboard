@@ -4,18 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
 import { saveBranchRepresentatives } from "@/lib/actions/admin";
 import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
+import { repSnapshot, type RepresentativeSavePayload } from "@/lib/representative-fields";
 import type { Branch } from "@/lib/types";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { Region } from "@/lib/scoring-config";
 
-type RowState = {
-  branch_id: string;
+type RowState = RepresentativeSavePayload & {
   branch_code: string;
   branch_name: string;
   area: string;
   region: Region;
-  representative_1: string;
-  representative_2: string;
 };
 
 interface Props {
@@ -23,63 +21,85 @@ interface Props {
   initialWithReps: number;
 }
 
-function RepRowFields({
+type RepField =
+  | "representative_1"
+  | "representative_1_employee_no"
+  | "representative_1_position"
+  | "representative_2"
+  | "representative_2_employee_no"
+  | "representative_2_position";
+
+function branchToRow(b: Branch): RowState {
+  return {
+    branch_id: b.id,
+    branch_code: b.branch_code,
+    branch_name: b.branch_name,
+    area: b.area,
+    region: b.region,
+    representative_1: b.representative_1 ?? "",
+    representative_2: b.representative_2 ?? "",
+    representative_1_employee_no: b.representative_1_employee_no ?? "",
+    representative_1_position: b.representative_1_position ?? "",
+    representative_2_employee_no: b.representative_2_employee_no ?? "",
+    representative_2_position: b.representative_2_position ?? "",
+  };
+}
+
+function RepBlock({
+  title,
+  nameField,
+  empField,
+  posField,
   row,
   onUpdate,
 }: {
+  title: string;
+  nameField: "representative_1" | "representative_2";
+  empField: "representative_1_employee_no" | "representative_2_employee_no";
+  posField: "representative_1_position" | "representative_2_position";
   row: RowState;
-  onUpdate: (
-    branch_id: string,
-    field: "representative_1" | "representative_2",
-    value: string
-  ) => void;
+  onUpdate: (branch_id: string, field: RepField, value: string) => void;
 }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div className="space-y-2 rounded-lg border border-emerald-500/15 bg-sd-deep/20 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-sd-muted/80">
+        {title}
+      </p>
       <label className="block text-xs">
-        <span className="text-sd-muted/70">Representative 1</span>
+        <span className="text-sd-muted/70">Name</span>
         <input
-          value={row.representative_1}
-          onChange={(e) =>
-            onUpdate(row.branch_id, "representative_1", e.target.value)
-          }
-          placeholder="Primary name"
+          value={row[nameField]}
+          onChange={(e) => onUpdate(row.branch_id, nameField, e.target.value)}
+          placeholder="Full name"
           className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
         />
       </label>
-      <label className="block text-xs">
-        <span className="text-sd-muted/70">Representative 2</span>
-        <input
-          value={row.representative_2}
-          onChange={(e) =>
-            onUpdate(row.branch_id, "representative_2", e.target.value)
-          }
-          placeholder="Optional"
-          className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
-        />
-      </label>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="block text-xs">
+          <span className="text-sd-muted/70">Employee no.</span>
+          <input
+            value={row[empField]}
+            onChange={(e) => onUpdate(row.branch_id, empField, e.target.value)}
+            placeholder="e.g. 102345"
+            className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
+          />
+        </label>
+        <label className="block text-xs">
+          <span className="text-sd-muted/70">Position</span>
+          <input
+            value={row[posField]}
+            onChange={(e) => onUpdate(row.branch_id, posField, e.target.value)}
+            placeholder="Job title"
+            className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
+          />
+        </label>
+      </div>
     </div>
   );
 }
 
-function rowSnapshot(row: RowState) {
-  return `${row.representative_1}\0${row.representative_2}`;
-}
-
 export function RepresentativesEditor({ branches, initialWithReps }: Props) {
-  const initialRows = useMemo(
-    () =>
-      branches.map((b) => ({
-        branch_id: b.id,
-        branch_code: b.branch_code,
-        branch_name: b.branch_name,
-        area: b.area,
-        region: b.region,
-        representative_1: b.representative_1 ?? "",
-        representative_2: b.representative_2 ?? "",
-      })),
-    [branches]
-  );
+  const initialRows = useMemo(() => branches.map(branchToRow), [branches]);
 
   const [rows, setRows] = useState<RowState[]>(initialRows);
   const [baseline, setBaseline] = useState<RowState[]>(initialRows);
@@ -108,7 +128,9 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
         return (
           r.branch_name.toLowerCase().includes(q) ||
           r.branch_code.toLowerCase().includes(q) ||
-          r.representative_1.toLowerCase().includes(q)
+          r.representative_1.toLowerCase().includes(q) ||
+          r.representative_1_employee_no.toLowerCase().includes(q) ||
+          r.representative_1_position.toLowerCase().includes(q)
         );
       }
       return true;
@@ -120,14 +142,13 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
   const baselineById = useMemo(() => {
     const map = new Map<string, string>();
     for (const row of baseline) {
-      map.set(row.branch_id, rowSnapshot(row));
+      map.set(row.branch_id, repSnapshot(row));
     }
     return map;
   }, [baseline]);
 
   const dirtyRows = useMemo(
-    () =>
-      rows.filter((r) => rowSnapshot(r) !== baselineById.get(r.branch_id)),
+    () => rows.filter((r) => repSnapshot(r) !== baselineById.get(r.branch_id)),
     [rows, baselineById]
   );
 
@@ -142,15 +163,9 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  function updateRow(
-    branch_id: string,
-    field: "representative_1" | "representative_2",
-    value: string
-  ) {
+  function updateRow(branch_id: string, field: RepField, value: string) {
     setRows((prev) =>
-      prev.map((r) =>
-        r.branch_id === branch_id ? { ...r, [field]: value } : r
-      )
+      prev.map((r) => (r.branch_id === branch_id ? { ...r, [field]: value } : r))
     );
   }
 
@@ -170,6 +185,10 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
           branch_id: r.branch_id,
           representative_1: r.representative_1,
           representative_2: r.representative_2,
+          representative_1_employee_no: r.representative_1_employee_no,
+          representative_1_position: r.representative_1_position,
+          representative_2_employee_no: r.representative_2_employee_no,
+          representative_2_position: r.representative_2_position,
         }))
       );
       if (result.ok) {
@@ -200,17 +219,14 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
       <div>
         <h2 className="text-lg font-semibold text-white">Edit representatives</h2>
         <p className="mt-1 text-sm text-sd-muted">
-          Update names anytime. Leave blank to clear a representative. Cards on
-          mobile, full table on larger screens.
+          Name, employee number, and position for each rep. Stored on the branch
+          roster for future LMS use.
         </p>
       </div>
 
       <div className="sd-alert-info text-sm">
         <span className="font-medium text-emerald-300">{filledCount}</span>
-        <span>
-          {" "}
-          of {rows.length} branches have a primary representative
-        </span>
+        <span> of {rows.length} branches have a primary representative</span>
         {hasUnsavedChanges && (
           <span className="text-amber-200/90">
             {" "}
@@ -223,7 +239,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <input
           type="search"
-          placeholder="Search branch or representative…"
+          placeholder="Search branch, name, employee no., position…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="min-w-[200px] flex-1 rounded-lg sd-input px-3 py-2 text-sm"
@@ -242,7 +258,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
         </select>
       </div>
 
-      <ul className="space-y-3 md:hidden">
+      <ul className="space-y-4 md:hidden">
         {filtered.map((row) => (
           <li key={row.branch_id} className="sd-neon-panel space-y-3 p-4">
             <div>
@@ -251,20 +267,47 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
                 {row.branch_code} · {row.area} · {REGION_LABELS[row.region]}
               </p>
             </div>
-            <RepRowFields row={row} onUpdate={updateRow} />
+            <RepBlock
+              title="Representative 1"
+              nameField="representative_1"
+              empField="representative_1_employee_no"
+              posField="representative_1_position"
+              row={row}
+              onUpdate={updateRow}
+            />
+            <RepBlock
+              title="Representative 2"
+              nameField="representative_2"
+              empField="representative_2_employee_no"
+              posField="representative_2_position"
+              row={row}
+              onUpdate={updateRow}
+            />
           </li>
         ))}
       </ul>
 
-      <div className="sd-table-wrap sd-inset hidden max-h-[50vh] md:block">
-        <table className="sd-table min-w-[720px]">
+      <div className="sd-table-wrap sd-inset hidden max-h-[55vh] md:block">
+        <table className="sd-table min-w-[960px]">
           <thead className="sticky top-0 z-10 bg-sd-deep/95 shadow-[0_1px_0_rgb(74_222_128/0.25)] backdrop-blur-md">
             <tr>
               <th className="px-2 py-2 text-left">Branch</th>
               <th className="px-2 py-2 text-left">Area</th>
-              <th className="px-2 py-2 text-left">Region</th>
-              <th className="px-2 py-2 text-left">Representative 1</th>
-              <th className="px-2 py-2 text-left">Representative 2</th>
+              <th className="px-2 py-2 text-left" colSpan={3}>
+                Representative 1
+              </th>
+              <th className="px-2 py-2 text-left" colSpan={3}>
+                Representative 2
+              </th>
+            </tr>
+            <tr className="text-[10px] uppercase text-sd-muted/60">
+              <th colSpan={2} />
+              <th className="px-2 py-1 font-normal">Name</th>
+              <th className="px-2 py-1 font-normal">Emp. no.</th>
+              <th className="px-2 py-1 font-normal">Position</th>
+              <th className="px-2 py-1 font-normal">Name</th>
+              <th className="px-2 py-1 font-normal">Emp. no.</th>
+              <th className="px-2 py-1 font-normal">Position</th>
             </tr>
           </thead>
           <tbody>
@@ -275,29 +318,27 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
                   <div className="text-xs text-sd-muted/60">{row.branch_code}</div>
                 </td>
                 <td className="px-2 py-1 text-sd-muted">{row.area}</td>
-                <td className="px-2 py-1 text-sd-muted">
-                  {REGION_LABELS[row.region]}
-                </td>
-                <td className="px-2 py-1">
-                  <input
-                    value={row.representative_1}
-                    onChange={(e) =>
-                      updateRow(row.branch_id, "representative_1", e.target.value)
-                    }
-                    placeholder="Primary name"
-                    className="w-full min-w-[140px] rounded sd-input px-2 py-1"
-                  />
-                </td>
-                <td className="px-2 py-1">
-                  <input
-                    value={row.representative_2}
-                    onChange={(e) =>
-                      updateRow(row.branch_id, "representative_2", e.target.value)
-                    }
-                    placeholder="Optional"
-                    className="w-full min-w-[140px] rounded sd-input px-2 py-1"
-                  />
-                </td>
+                {(
+                  [
+                    ["representative_1", "Primary name"],
+                    ["representative_1_employee_no", "Emp no."],
+                    ["representative_1_position", "Position"],
+                    ["representative_2", "Optional"],
+                    ["representative_2_employee_no", "Emp no."],
+                    ["representative_2_position", "Position"],
+                  ] as const
+                ).map(([field, placeholder]) => (
+                  <td key={field} className="px-2 py-1">
+                    <input
+                      value={row[field]}
+                      onChange={(e) =>
+                        updateRow(row.branch_id, field, e.target.value)
+                      }
+                      placeholder={placeholder}
+                      className="w-full min-w-[100px] rounded sd-input px-2 py-1 text-sm"
+                    />
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>

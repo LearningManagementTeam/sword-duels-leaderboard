@@ -2,6 +2,7 @@ import {
   createServiceClient,
   isSupabaseServiceConfigured,
 } from "@/lib/supabase/server";
+import { BRANCH_WITH_REPS_SELECT } from "@/lib/representative-fields";
 import {
   aggregatePublishedResults,
   computeStandings,
@@ -780,9 +781,7 @@ export async function getBranchesForRepresentatives() {
   const service = await createServiceClient();
   const { data, error } = await service
     .from("branches")
-    .select(
-      "id, branch_code, branch_name, area, region, representative_1, representative_2"
-    )
+    .select(BRANCH_WITH_REPS_SELECT)
     .order("area")
     .order("branch_name");
 

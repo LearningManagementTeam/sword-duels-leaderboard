@@ -56,6 +56,10 @@ export function computeSetResults(
       is_eliminated: s?.is_eliminated ?? false,
       representative_1: p.representative_1,
       representative_2: p.representative_2,
+      representative_1_employee_no: p.representative_1_employee_no,
+      representative_1_position: p.representative_1_position,
+      representative_2_employee_no: p.representative_2_employee_no,
+      representative_2_position: p.representative_2_position,
     };
   });
 

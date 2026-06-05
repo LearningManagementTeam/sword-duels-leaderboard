@@ -24,6 +24,10 @@ CREATE TABLE branches (
   region region_type NOT NULL,
   representative_1 TEXT,
   representative_2 TEXT,
+  representative_1_employee_no TEXT,
+  representative_1_position TEXT,
+  representative_2_employee_no TEXT,
+  representative_2_position TEXT,
   representatives_updated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

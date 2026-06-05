@@ -215,12 +215,13 @@ export function ImportParticipatingBranches() {
         </p>
         <code className="sd-inset block rounded-lg px-3 py-2 text-sm text-sd-muted">
           branch_code, branch_name, area, region, representative_1,
-          representative_2
+          representative_1_employee_no, representative_1_position,
+          representative_2, representative_2_employee_no, representative_2_position
         </code>
         <p className="text-xs text-sd-muted/60">
           <strong>Required:</strong> first four columns.{" "}
-          <strong>Optional:</strong> representative_1, representative_2 (can be
-          empty). Region: <code>luzon</code>, <code>ncr</code>, or{" "}
+          <strong>Optional:</strong> representative fields (name, employee no.,
+          position). Region: <code>luzon</code>, <code>ncr</code>, or{" "}
           <code>vismin</code>.
         </p>
       </div>

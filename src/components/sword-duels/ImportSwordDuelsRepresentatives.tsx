@@ -13,13 +13,13 @@ import type { Branch } from "@/lib/types";
 
 const SD_REP_HINTS = {
   downloadTemplate:
-    "Downloads every branch with area column — fill representative_1 and representative_2 in Excel, then Save As → CSV UTF-8.",
+    "Downloads every branch with area column — fill representative names, employee no., and position in Excel, then Save As → CSV UTF-8.",
   preview:
     "Check row counts and unknown branch codes before writing to the database.",
   import:
     "Updates representative names on existing branches. Does not add or remove branches.",
   paste:
-    "Paste from Excel (comma or tab). Required columns: branch_code and representative_1.",
+    "Paste from Excel (comma or tab). Required: branch_code and representative_1. Optional: employee no. and position columns.",
 };
 
 function downloadTextFile(filename: string, content: string) {
@@ -158,12 +158,14 @@ export function ImportSwordDuelsRepresentatives({ branches }: Props) {
       <div className="sd-inset rounded-lg p-3 text-xs text-sd-muted">
         <p className="font-medium text-white">CSV columns</p>
         <p className="mt-1 font-mono text-[11px] text-emerald-200/80">
-          branch_code, branch_name, area, representative_1, representative_2
+          branch_code, branch_name, area, representative_1, representative_1_employee_no,
+          representative_1_position, representative_2, representative_2_employee_no,
+          representative_2_position
         </p>
         <p className="mt-2">
           Required: <strong className="text-white">branch_code</strong> and{" "}
-          <strong className="text-white">representative_1</strong>. Area and
-          branch_name are for your reference when editing in Excel.
+          <strong className="text-white">representative_1</strong>. Employee no.
+          and position are optional but recommended for LMS records.
         </p>
       </div>
 
@@ -188,7 +190,7 @@ export function ImportSwordDuelsRepresentatives({ branches }: Props) {
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
             rows={6}
-            placeholder={`branch_code,representative_1,representative_2\nBR001,Juan Dela Cruz,Maria Santos`}
+            placeholder={`branch_code,representative_1,representative_1_employee_no,representative_1_position,representative_2\nBR001,Juan Dela Cruz,102345,Quiz Master`}
             className="mt-1 w-full rounded-lg sd-input px-3 py-2 font-mono text-xs"
           />
         </label>
@@ -238,13 +240,13 @@ export function ImportSwordDuelsRepresentatives({ branches }: Props) {
             )}
           </p>
           <div className="sd-table-wrap sd-inset max-h-48 overflow-auto">
-            <table className="sd-table min-w-[520px] text-xs">
+            <table className="sd-table min-w-[640px] text-xs">
               <thead>
                 <tr>
                   <th className="px-2 py-1 text-left">Code</th>
                   <th className="px-2 py-1 text-left">Area</th>
                   <th className="px-2 py-1 text-left">Rep 1</th>
-                  <th className="px-2 py-1 text-left">Rep 2</th>
+                  <th className="px-2 py-1 text-left">Emp / position</th>
                   <th className="px-2 py-1 text-left">Status</th>
                 </tr>
               </thead>
@@ -255,7 +257,10 @@ export function ImportSwordDuelsRepresentatives({ branches }: Props) {
                     <td className="px-2 py-1 text-sd-muted">{row.area ?? "—"}</td>
                     <td className="px-2 py-1">{row.representative_1}</td>
                     <td className="px-2 py-1 text-sd-muted">
-                      {row.representative_2 || "—"}
+                      {row.representative_1_employee_no || "—"}
+                      {row.representative_1_position
+                        ? ` · ${row.representative_1_position}`
+                        : ""}
                     </td>
                     <td className="px-2 py-1">
                       {row.status === "ready" ? (

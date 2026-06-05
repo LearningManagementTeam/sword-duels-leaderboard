@@ -98,7 +98,11 @@ export const getPublishedStandings = cache(async function getPublishedStandings(
         area,
         region,
         representative_1,
-        representative_2
+        representative_2,
+        representative_1_employee_no,
+        representative_1_position,
+        representative_2_employee_no,
+        representative_2_position
       )
     `
     )
@@ -145,6 +149,10 @@ export const getPublishedStandings = cache(async function getPublishedStandings(
       status: row.status,
       representative_1: b.representative_1 ?? null,
       representative_2: b.representative_2 ?? null,
+      representative_1_employee_no: b.representative_1_employee_no ?? null,
+      representative_1_position: b.representative_1_position ?? null,
+      representative_2_employee_no: b.representative_2_employee_no ?? null,
+      representative_2_position: b.representative_2_position ?? null,
       eliminated_in_round: row.eliminated_in_round ?? null,
       tie_breaker_in_round: row.tie_breaker_in_round ?? null,
       last_active_round: row.last_active_round ?? null,

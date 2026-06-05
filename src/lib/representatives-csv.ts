@@ -4,6 +4,10 @@ export interface RepresentativeCsvRow {
   branch_code: string;
   representative_1: string;
   representative_2: string;
+  representative_1_employee_no: string;
+  representative_1_position: string;
+  representative_2_employee_no: string;
+  representative_2_position: string;
 }
 
 function resolveHeaderIndex(
@@ -15,6 +19,11 @@ function resolveHeaderIndex(
     if (i !== -1) return i;
   }
   return undefined;
+}
+
+function col(cols: string[], idx: number | undefined): string {
+  if (idx === undefined) return "";
+  return (cols[idx] ?? "").trim();
 }
 
 export function parseRepresentativesCsv(text: string): {
@@ -54,6 +63,34 @@ export function parseRepresentativesCsv(text: string): {
     "representative2",
     "rep2",
   ]);
+  const rep1EmpIdx = resolveHeaderIndex(header, [
+    "representative_1_employee_no",
+    "representative 1 employee no",
+    "rep1_employee_no",
+    "employee_no_1",
+    "employee no 1",
+  ]);
+  const rep1PosIdx = resolveHeaderIndex(header, [
+    "representative_1_position",
+    "representative 1 position",
+    "rep1_position",
+    "position_1",
+    "position 1",
+  ]);
+  const rep2EmpIdx = resolveHeaderIndex(header, [
+    "representative_2_employee_no",
+    "representative 2 employee no",
+    "rep2_employee_no",
+    "employee_no_2",
+    "employee no 2",
+  ]);
+  const rep2PosIdx = resolveHeaderIndex(header, [
+    "representative_2_position",
+    "representative 2 position",
+    "rep2_position",
+    "position_2",
+    "position 2",
+  ]);
 
   if (codeIdx === undefined || rep1Idx === undefined) {
     return {
@@ -71,8 +108,6 @@ export function parseRepresentativesCsv(text: string): {
     const cols = parseCsvLine(line);
     const branch_code = cols[codeIdx];
     const representative_1 = cols[rep1Idx] ?? "";
-    const representative_2 =
-      rep2Idx !== undefined ? (cols[rep2Idx] ?? "") : "";
 
     if (!branch_code) {
       errors.push(`Line ${i + 1}: missing branch_code`);
@@ -86,7 +121,11 @@ export function parseRepresentativesCsv(text: string): {
     rows.push({
       branch_code,
       representative_1: representative_1.trim(),
-      representative_2: representative_2.trim(),
+      representative_2: col(cols, rep2Idx),
+      representative_1_employee_no: col(cols, rep1EmpIdx),
+      representative_1_position: col(cols, rep1PosIdx),
+      representative_2_employee_no: col(cols, rep2EmpIdx),
+      representative_2_position: col(cols, rep2PosIdx),
     });
   }
 
@@ -100,7 +139,10 @@ function formatCsvField(value: string): string {
   return value;
 }
 
-/** Prefilled template for Sword Duels rep import — includes area for verification. */
+const TEMPLATE_HEADER =
+  "branch_code,branch_name,area,representative_1,representative_1_employee_no,representative_1_position,representative_2,representative_2_employee_no,representative_2_position";
+
+/** Prefilled template for rep import — includes area and employee metadata. */
 export function buildRepresentativesCsvTemplate(
   branches: Array<{
     branch_code: string;
@@ -108,6 +150,10 @@ export function buildRepresentativesCsvTemplate(
     area: string;
     representative_1?: string | null;
     representative_2?: string | null;
+    representative_1_employee_no?: string | null;
+    representative_1_position?: string | null;
+    representative_2_employee_no?: string | null;
+    representative_2_position?: string | null;
   }>
 ): string {
   const sorted = [...branches].sort((a, b) => {
@@ -116,9 +162,7 @@ export function buildRepresentativesCsvTemplate(
     return a.branch_code.localeCompare(b.branch_code, undefined, { numeric: true });
   });
 
-  const lines = [
-    "branch_code,branch_name,area,representative_1,representative_2",
-  ];
+  const lines = [TEMPLATE_HEADER];
   for (const b of sorted) {
     lines.push(
       [
@@ -126,7 +170,11 @@ export function buildRepresentativesCsvTemplate(
         formatCsvField(b.branch_name),
         formatCsvField(b.area),
         formatCsvField(b.representative_1?.trim() ?? ""),
+        formatCsvField(b.representative_1_employee_no?.trim() ?? ""),
+        formatCsvField(b.representative_1_position?.trim() ?? ""),
         formatCsvField(b.representative_2?.trim() ?? ""),
+        formatCsvField(b.representative_2_employee_no?.trim() ?? ""),
+        formatCsvField(b.representative_2_position?.trim() ?? ""),
       ].join(",")
     );
   }

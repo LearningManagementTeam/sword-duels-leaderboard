@@ -4,9 +4,17 @@ import { SD_GROUP_SPLIT_RULE } from "@/lib/products/sword-duels/scoring-config";
 function RepLine({
   rep1,
   rep2,
+  emp1,
+  pos1,
+  emp2,
+  pos2,
 }: {
   rep1?: string | null;
   rep2?: string | null;
+  emp1?: string | null;
+  pos1?: string | null;
+  emp2?: string | null;
+  pos2?: string | null;
 }) {
   const primary = rep1?.trim();
   const secondary = rep2?.trim();
@@ -14,10 +22,28 @@ function RepLine({
     return <span className="text-sd-muted/50">No reps yet</span>;
   }
   return (
-    <span>
-      {primary || "—"}
+    <span className="block text-right sm:text-left">
+      {primary && (
+        <span className="block">
+          {primary}
+          {emp1?.trim() && (
+            <span className="text-sd-muted/55"> · #{emp1.trim()}</span>
+          )}
+          {pos1?.trim() && (
+            <span className="block text-[10px] text-sd-muted/55">{pos1.trim()}</span>
+          )}
+        </span>
+      )}
       {secondary && (
-        <span className="text-sd-muted/60"> · {secondary}</span>
+        <span className="mt-0.5 block text-sd-muted/70">
+          {secondary}
+          {emp2?.trim() && (
+            <span className="text-sd-muted/55"> · #{emp2.trim()}</span>
+          )}
+          {pos2?.trim() && (
+            <span className="block text-[10px] text-sd-muted/55">{pos2.trim()}</span>
+          )}
+        </span>
       )}
     </span>
   );
@@ -61,7 +87,14 @@ function GroupColumn({
               <span className="ml-1 text-sd-muted/55">({b.branch_code})</span>
             </span>
             <span className="text-[10px]">
-              <RepLine rep1={b.representative_1} rep2={b.representative_2} />
+              <RepLine
+                rep1={b.representative_1}
+                rep2={b.representative_2}
+                emp1={b.representative_1_employee_no}
+                pos1={b.representative_1_position}
+                emp2={b.representative_2_employee_no}
+                pos2={b.representative_2_position}
+              />
             </span>
           </li>
         ))}

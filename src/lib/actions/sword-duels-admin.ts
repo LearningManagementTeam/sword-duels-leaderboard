@@ -13,6 +13,7 @@ import { computeSetResults } from "@/lib/products/sword-duels/scoring";
 import type { SdScoringMode, SdSetType } from "@/lib/products/sword-duels/types";
 import { SD_SET_ORDER } from "@/lib/products/sword-duels/types";
 import { parseRepresentativesCsv } from "@/lib/representatives-csv";
+import { representativeDbUpdate } from "@/lib/representative-fields";
 import { createServiceClient } from "@/lib/supabase/server";
 
 async function requireAdmin() {
@@ -347,6 +348,10 @@ export type SdRepresentativesPreviewRow = {
   area: string | null;
   representative_1: string;
   representative_2: string;
+  representative_1_employee_no: string;
+  representative_1_position: string;
+  representative_2_employee_no: string;
+  representative_2_position: string;
   status: "ready" | "unknown_code" | "missing_rep1";
 };
 
@@ -384,6 +389,10 @@ export async function previewSdRepresentativesImport(csvText: string): Promise<{
         area: null,
         representative_1: row.representative_1,
         representative_2: row.representative_2,
+        representative_1_employee_no: row.representative_1_employee_no,
+        representative_1_position: row.representative_1_position,
+        representative_2_employee_no: row.representative_2_employee_no,
+        representative_2_position: row.representative_2_position,
         status: "unknown_code" as const,
       };
     }
@@ -393,6 +402,10 @@ export async function previewSdRepresentativesImport(csvText: string): Promise<{
       area: match.area,
       representative_1: row.representative_1,
       representative_2: row.representative_2,
+      representative_1_employee_no: row.representative_1_employee_no,
+      representative_1_position: row.representative_1_position,
+      representative_2_employee_no: row.representative_2_employee_no,
+      representative_2_position: row.representative_2_position,
       status: "ready" as const,
     };
   });
@@ -442,8 +455,14 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
     const { error } = await service
       .from("branches")
       .update({
-        representative_1: row.representative_1,
-        representative_2: row.representative_2 || null,
+        ...representativeDbUpdate({
+          representative_1: row.representative_1,
+          representative_2: row.representative_2,
+          representative_1_employee_no: row.representative_1_employee_no,
+          representative_1_position: row.representative_1_position,
+          representative_2_employee_no: row.representative_2_employee_no,
+          representative_2_position: row.representative_2_position,
+        }),
         representatives_updated_at: now,
       })
       .eq("id", id);

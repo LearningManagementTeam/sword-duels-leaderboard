@@ -7,6 +7,10 @@ import { join } from "path";
 import { parseBranchesCsv } from "@/lib/branches-csv";
 import { branchUpsertPayload, countRowsWithRepresentatives } from "@/lib/branch-upsert";
 import { parseRepresentativesCsv } from "@/lib/representatives-csv";
+import {
+  representativeDbUpdate,
+  type RepresentativeSavePayload,
+} from "@/lib/representative-fields";
 import { resolveParticipantBranchIds, assertSeasonParticipantsReady } from "@/lib/season-participants";
 import {
   aggregatePublishedResults,
@@ -360,11 +364,7 @@ export async function importParticipatingBranchesForJuneArea(
 }
 
 export async function saveBranchRepresentatives(
-  updates: Array<{
-    branch_id: string;
-    representative_1: string;
-    representative_2: string;
-  }>
+  updates: RepresentativeSavePayload[]
 ) {
   const { email } = await requireAdmin();
   const service = await createServiceClient();
@@ -374,8 +374,7 @@ export async function saveBranchRepresentatives(
     const { error } = await service
       .from("branches")
       .update({
-        representative_1: row.representative_1.trim() || null,
-        representative_2: row.representative_2.trim() || null,
+        ...representativeDbUpdate(row),
         representatives_updated_at: now,
       })
       .eq("id", row.branch_id);
@@ -427,8 +426,14 @@ export async function importRepresentativesFromCsv(csvText: string) {
     const { error } = await service
       .from("branches")
       .update({
-        representative_1: row.representative_1,
-        representative_2: row.representative_2 || null,
+        ...representativeDbUpdate({
+          representative_1: row.representative_1,
+          representative_2: row.representative_2,
+          representative_1_employee_no: row.representative_1_employee_no,
+          representative_1_position: row.representative_1_position,
+          representative_2_employee_no: row.representative_2_employee_no,
+          representative_2_position: row.representative_2_position,
+        }),
         representatives_updated_at: now,
       })
       .eq("id", id);
@@ -875,7 +880,7 @@ export async function previewDraftStandings(
   let branchQuery = service
     .from("branches")
     .select(
-      "id, branch_code, branch_name, area, region, representative_1, representative_2"
+      "id, branch_code, branch_name, area, region, representative_1, representative_2, representative_1_employee_no, representative_1_position, representative_2_employee_no, representative_2_position"
     );
   if (participantIds.length > 0) {
     branchQuery = branchQuery.in("id", participantIds);
@@ -945,6 +950,10 @@ export async function previewDraftStandings(
         ...row,
         representative_1: b?.representative_1 ?? null,
         representative_2: b?.representative_2 ?? null,
+        representative_1_employee_no: b?.representative_1_employee_no ?? null,
+        representative_1_position: b?.representative_1_position ?? null,
+        representative_2_employee_no: b?.representative_2_employee_no ?? null,
+        representative_2_position: b?.representative_2_position ?? null,
       };
     });
   };

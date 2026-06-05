@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { BRANCH_WITH_REPS_SELECT } from "@/lib/representative-fields";
 import type { Branch } from "@/lib/types";
 import { buildAreaBrackets } from "./area-groups";
 import type {
@@ -25,9 +26,7 @@ export async function getAllBranches(): Promise<Branch[]> {
   const service = await createServiceClient();
   const { data } = await service
     .from("branches")
-    .select(
-      "id, branch_code, branch_name, area, region, representative_1, representative_2"
-    )
+    .select(BRANCH_WITH_REPS_SELECT)
     .order("area")
     .order("branch_code");
   return (data ?? []) as Branch[];
