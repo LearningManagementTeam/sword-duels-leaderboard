@@ -109,14 +109,14 @@ summary:focus-visible {
   0%,
   100% {
     box-shadow:
-      0 0 24px rgb(251 191 36 / 0.45),
-      0 0 48px rgb(251 191 36 / 0.2),
+      0 0 24px rgb(74 222 128 / 0.45),
+      0 0 48px rgb(163 230 53 / 0.25),
       inset 0 1px 0 rgb(255 255 255 / 0.35);
   }
   50% {
     box-shadow:
-      0 0 40px rgb(251 191 36 / 0.7),
-      0 0 72px rgb(163 230 53 / 0.35),
+      0 0 40px rgb(74 222 128 / 0.7),
+      0 0 72px rgb(163 230 53 / 0.4),
       inset 0 1px 0 rgb(255 255 255 / 0.5);
   }
 }
@@ -125,19 +125,65 @@ summary:focus-visible {
   animation: sd-champion-glow 2.2s ease-in-out infinite;
 }
 
+@keyframes sd-bracket-winner-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px rgb(74 222 128 / 0.28),
+      inset 0 0 0 1px rgb(163 230 53 / 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgb(74 222 128 / 0.5),
+      0 0 32px rgb(163 230 53 / 0.18),
+      inset 0 0 0 1px rgb(163 230 53 / 0.5);
+  }
+}
+
+.sd-bracket-winner-live {
+  animation: sd-bracket-winner-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes sd-bracket-winner-shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.sd-bracket-winner-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 40%,
+    rgb(163 230 53 / 0.16) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sd-bracket-winner-shimmer 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
 @keyframes sd-vs-pulse {
   0%,
   100% {
     transform: scale(1);
     text-shadow:
-      0 0 16px rgb(251 191 36 / 0.55),
-      0 0 32px rgb(74 222 128 / 0.25);
+      0 0 16px rgb(74 222 128 / 0.55),
+      0 0 32px rgb(163 230 53 / 0.25);
   }
   50% {
     transform: scale(1.1);
     text-shadow:
-      0 0 28px rgb(251 191 36 / 0.85),
-      0 0 48px rgb(74 222 128 / 0.45);
+      0 0 28px rgb(74 222 128 / 0.85),
+      0 0 48px rgb(163 230 53 / 0.45);
   }
 }
 
@@ -149,11 +195,11 @@ summary:focus-visible {
   0%,
   100% {
     transform: translateY(0) rotate(-2deg);
-    filter: drop-shadow(0 0 12px rgb(251 191 36 / 0.55));
+    filter: drop-shadow(0 0 12px rgb(74 222 128 / 0.55));
   }
   50% {
     transform: translateY(-5px) rotate(2deg);
-    filter: drop-shadow(0 0 22px rgb(251 191 36 / 0.85));
+    filter: drop-shadow(0 0 22px rgb(163 230 53 / 0.75));
   }
 }
 

@@ -33,10 +33,15 @@ const ROLE_SHELL: Record<SdBracketSlotRole, string> = {
   final:
     "bg-gradient-to-r from-emerald-400/20 via-sd-glow/15 to-lime-400/20 ring-1 ring-sd-glow/50",
   champion:
-    "bg-gradient-to-r from-sd-gold/90 via-amber-300/90 to-sd-gold/90 ring-2 ring-sd-gold/70 text-sd-deep",
+    "bg-gradient-to-r from-emerald-400/95 via-lime-300/95 to-emerald-400/95 ring-2 ring-lime-400/70 text-sd-deep",
   placeholder:
     "border border-dashed border-emerald-500/25 bg-sd-deep/40 text-sd-muted/55",
 };
+
+const SET_WINNER_SHELL =
+  "bg-gradient-to-r from-emerald-900/90 via-emerald-800/75 to-lime-900/55 ring-1 ring-lime-400/50";
+
+const LOSER_SHELL = "bg-sd-deep/50 ring-1 ring-emerald-900/20";
 
 export function SdBracketSlot({
   slot,
@@ -45,62 +50,82 @@ export function SdBracketSlot({
   side,
   highlighted = false,
 }: Props) {
-  const eliminated =
-    slot.status === "eliminated" ||
-    (slot.eliminatedInRound != null && !slot.isChampion);
   const isPlaceholder = slot.isPlaceholder || role === "placeholder";
-  const isWinner =
-    slot.isChampion ||
-    slot.status === "advanced" ||
-    (role === "spot" && highlighted);
+  const isAreaChampion = !!slot.isChampion;
+  const eliminated =
+    !isPlaceholder &&
+    (slot.status === "eliminated" ||
+      (slot.eliminatedInRound != null && !isAreaChampion));
+  const isSetWinner =
+    !isAreaChampion &&
+    !eliminated &&
+    (slot.status === "advanced" || (role === "spot" && highlighted));
+  const isWinner = isAreaChampion || isSetWinner;
+
   const display = displayName(slot);
-  const shell = slot.isChampion ? ROLE_SHELL.champion : ROLE_SHELL[role];
+  const shell = isAreaChampion
+    ? ROLE_SHELL.champion
+    : isSetWinner && role === "field"
+      ? SET_WINNER_SHELL
+      : eliminated
+        ? LOSER_SHELL
+        : ROLE_SHELL[role];
+
+  const winnerFx =
+    isWinner && !isPlaceholder
+      ? isAreaChampion
+        ? "sd-bracket-champion-glow overflow-hidden"
+        : "sd-bracket-winner-live sd-bracket-winner-shimmer overflow-hidden"
+      : "";
 
   return (
     <div
       data-bracket-slot
-      className={`relative flex min-h-[2.5rem] items-center gap-2 rounded-md px-2.5 py-1.5 transition ${shell} ${
+      className={`relative flex min-h-[2.5rem] items-center gap-2 rounded-md px-2.5 py-1.5 transition duration-300 ${shell} ${winnerFx} ${
         tvMode ? "min-h-[3rem] px-3 py-2" : ""
-      } ${eliminated && !isPlaceholder ? "opacity-55" : ""} ${
-        side === "b" ? "flex-row-reverse text-right" : ""
-      } ${highlighted && role === "spot" ? "sd-bracket-spot-ready" : ""} ${
-        isWinner && role === "field" ? "ring-1 ring-lime-400/40" : ""
-      }`}
+      } ${side === "b" ? "flex-row-reverse text-right" : ""} ${
+        highlighted && role === "spot" ? "sd-bracket-spot-ready" : ""
+      } ${isWinner && !isPlaceholder ? "hover:scale-[1.015]" : ""}`}
     >
-      {isWinner && role === "spot" && (
-        <span
-          className={`absolute -top-2 rounded bg-sd-gold px-1.5 py-px text-[8px] font-black uppercase tracking-wider text-sd-deep ${
-            side === "b" ? "right-1" : "left-1"
-          }`}
-        >
-          Winner
-        </span>
-      )}
       <span
         className={`flex shrink-0 items-center justify-center rounded font-bold tabular-nums ${
-          slot.isChampion
+          isAreaChampion
             ? "h-7 w-7 bg-sd-deep/20 text-sd-deep text-xs"
             : role === "spot" || role === "final"
               ? "h-6 w-6 bg-emerald-950/40 text-lime-200 text-[10px]"
-              : "h-6 w-6 bg-emerald-950/50 text-emerald-200/90 text-[10px]"
+              : eliminated
+                ? "h-6 w-6 bg-zinc-800/60 text-zinc-500 text-[10px]"
+                : "h-6 w-6 bg-emerald-950/50 text-emerald-200/90 text-[10px]"
         } ${tvMode ? "h-8 w-8 text-xs" : ""} ${
-          isWinner && !slot.isChampion ? "ring-1 ring-lime-300/50" : ""
+          isSetWinner ? "ring-1 ring-lime-300/50" : ""
         }`}
       >
-        {slot.isChampion ? "★" : initials(slot)}
+        {isAreaChampion ? "★" : initials(slot)}
       </span>
       <div className={`min-w-0 flex-1 ${side === "b" ? "items-end" : ""}`}>
         <p
           className={`truncate font-semibold leading-tight ${
             tvMode ? "text-sm" : "text-xs"
-          } ${slot.isChampion ? "text-sd-deep" : "text-white"} ${
-            eliminated && !isPlaceholder ? "line-through" : ""
-          } ${isWinner && role === "spot" ? "text-lime-100" : ""}`}
+          } ${
+            isAreaChampion
+              ? "text-sd-deep"
+              : eliminated
+                ? "text-zinc-500"
+                : isSetWinner && role === "spot"
+                  ? "text-lime-100"
+                  : isSetWinner
+                    ? "text-lime-50"
+                    : "text-white"
+          }`}
         >
           {display}
         </p>
         {!isPlaceholder && role === "field" && (
-          <p className="truncate text-[9px] text-emerald-200/55">
+          <p
+            className={`truncate text-[9px] ${
+              eliminated ? "text-zinc-600" : "text-emerald-200/55"
+            }`}
+          >
             {slot.branch_name}
             {slot.branch_code ? ` · ${slot.branch_code}` : ""}
           </p>
@@ -110,7 +135,13 @@ export function SdBracketSlot({
         <span
           className={`shrink-0 tabular-nums font-bold ${
             tvMode ? "text-sm" : "text-xs"
-          } ${slot.isChampion ? "text-sd-deep" : "text-lime-300"}`}
+          } ${
+            isAreaChampion
+              ? "text-sd-deep"
+              : eliminated
+                ? "text-zinc-600"
+                : "text-lime-300"
+          }`}
         >
           {slot.roundScore}
         </span>

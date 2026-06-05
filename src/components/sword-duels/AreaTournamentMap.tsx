@@ -3,11 +3,11 @@ import Link from "next/link";
 import { buildAreaTournamentMap } from "@/lib/products/sword-duels/tournament-map";
 import type { SdAreaBracket, SdSet, SdSetScore } from "@/lib/products/sword-duels/types";
 import { REGION_LABELS } from "@/lib/scoring-config";
-import type { PlayoffSlot } from "@/lib/playoff-map";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { SdMobileBracketJourney } from "./SdMobileBracketJourney";
-import { SdBracketFanConnectors } from "./SdBracketConnectors";
+import { SdBracketFanConnectors, bracketTrackHeight } from "./SdBracketConnectors";
 import { SdBracketCenterStage } from "./SdBracketCenterStage";
+import { SdSpotPedestal } from "./SdSpotPedestal";
 import { SdBracketSlot } from "./SdBracketSlot";
 
 interface Props {
@@ -46,58 +46,6 @@ function WingHeader({
   );
 }
 
-function SpotBlock({
-  label,
-  slot,
-  ready,
-  placeholder,
-  side,
-  tvMode,
-}: {
-  label: string;
-  slot: PlayoffSlot | null;
-  ready: boolean;
-  placeholder: string;
-  side: "a" | "b";
-  tvMode?: boolean;
-}) {
-  return (
-    <div className={`flex min-w-[8.5rem] flex-col gap-1 ${ready ? "sd-bracket-reveal" : ""}`}>
-      <p
-        className={`font-bold uppercase tracking-wider text-lime-300/80 ${
-          side === "b" ? "text-right" : "text-left"
-        } ${tvMode ? "text-[10px]" : "text-[9px]"}`}
-      >
-        {label}
-      </p>
-      {ready && slot ? (
-        <SdBracketSlot
-          slot={slot}
-          role="spot"
-          side={side}
-          tvMode={tvMode}
-          highlighted
-        />
-      ) : (
-        <SdBracketSlot
-          slot={{
-            branch_id: null,
-            branch_name: placeholder,
-            branch_code: "",
-            rank: 1,
-            status: "placeholder",
-            roundScore: null,
-            isPlaceholder: true,
-          }}
-          role="placeholder"
-          side={side}
-          tvMode={tvMode}
-        />
-      )}
-    </div>
-  );
-}
-
 function BracketGrid({
   model,
   bracket,
@@ -121,6 +69,12 @@ function BracketGrid({
   const spot2Slot = groupBWinner.slots[0] ?? null;
   const champion = model.areaChampion;
 
+  const maxFieldCount = Math.max(
+    groupAField.slots.length,
+    groupBField.slots.length
+  );
+  const wingTrackHeight = bracketTrackHeight(maxFieldCount);
+
   return (
     <div className="sd-bracket-arena relative overflow-hidden rounded-xl">
       <div className="sd-bracket-arena-glow" aria-hidden />
@@ -141,20 +95,23 @@ function BracketGrid({
       </div>
 
       <div
-        className={`relative grid grid-cols-1 items-stretch gap-6 pt-16 lg:grid-cols-[1fr_auto_1fr] lg:gap-4 xl:gap-6 ${
+        className={`relative grid grid-cols-1 items-center gap-6 pt-16 lg:grid-cols-[1fr_auto_1fr] lg:gap-4 xl:gap-6 ${
           tvMode ? "px-2 pb-4 pt-20" : "p-3 pb-4"
         }`}
       >
         {/* Group A wing */}
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col justify-center">
           <WingHeader
             label="Set 1 · Group A"
             subtitle={`${bracket.groupA.length} branches → Spot 1`}
             align="left"
             tvMode={tvMode}
           />
-          <div className="flex items-center gap-0">
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div
+            className="flex items-center gap-0"
+            style={{ minHeight: wingTrackHeight }}
+          >
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
               {groupAField.slots.map((slot) => (
                 <SdBracketSlot
                   key={slot.branch_id ?? slot.rank}
@@ -168,15 +125,15 @@ function BracketGrid({
             </div>
             <SdBracketFanConnectors
               slotCount={groupAField.slots.length}
+              trackCount={maxFieldCount}
               side="left"
               accent="a"
               active={spot1Ready}
             />
-            <SpotBlock
-              label="Spot 1"
+            <SdSpotPedestal
+              spot={1}
               slot={spot1Slot}
               ready={spot1Ready}
-              placeholder="Group A winner"
               side="a"
               tvMode={tvMode}
             />
@@ -194,29 +151,32 @@ function BracketGrid({
         />
 
         {/* Group B wing (mirrored) */}
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col justify-center">
           <WingHeader
             label="Set 2 · Group B"
             subtitle={`${bracket.groupB.length} branches → Spot 2`}
             align="right"
             tvMode={tvMode}
           />
-          <div className="flex items-center gap-0">
-            <SpotBlock
-              label="Spot 2"
+          <div
+            className="flex items-center gap-0"
+            style={{ minHeight: wingTrackHeight }}
+          >
+            <SdSpotPedestal
+              spot={2}
               slot={spot2Slot}
               ready={spot2Ready}
-              placeholder="Group B winner"
               side="b"
               tvMode={tvMode}
             />
             <SdBracketFanConnectors
               slotCount={groupBField.slots.length}
+              trackCount={maxFieldCount}
               side="right"
               accent="b"
               active={spot2Ready}
             />
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
               {groupBField.slots.map((slot) => (
                 <SdBracketSlot
                   key={slot.branch_id ?? slot.rank}

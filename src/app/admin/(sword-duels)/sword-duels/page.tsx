@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
 import { SdGroupSortSettings } from "@/components/sword-duels/SdGroupSortSettings";
+import { SdAreaStatusBadge } from "@/components/sword-duels/SdAreaStatusBadge";
 import { swordDuelsPath, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { getSdDashboard, getSdEvent } from "@/lib/products/sword-duels/queries";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
@@ -101,36 +102,7 @@ export default async function SwordDuelsDashboardPage() {
                     branches (A:{a.groupACount} / B:{a.groupBCount})
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-wide">
-                  <span
-                    className={
-                      a.groupAPublished
-                        ? "text-emerald-300"
-                        : "text-sd-muted/60"
-                    }
-                  >
-                    Grp A {a.groupAPublished ? "✓" : "—"}
-                  </span>
-                  <span
-                    className={
-                      a.groupBPublished
-                        ? "text-emerald-300"
-                        : "text-sd-muted/60"
-                    }
-                  >
-                    Grp B {a.groupBPublished ? "✓" : "—"}
-                  </span>
-                  <span
-                    className={
-                      a.finalPublished ? "text-amber-300" : "text-sd-muted/60"
-                    }
-                  >
-                    Final {a.finalPublished ? "✓" : "—"}
-                  </span>
-                  {a.areaChampionName && (
-                    <span className="text-sd-gold">Rep: {a.areaChampionName}</span>
-                  )}
-                </div>
+                <SdAreaStatusBadge area={a} />
               </Link>
             ))}
           </div>

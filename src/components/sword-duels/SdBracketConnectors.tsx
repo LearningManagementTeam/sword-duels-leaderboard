@@ -1,12 +1,25 @@
 const SLOT_HEIGHT = 40;
 const SLOT_GAP = 6;
 
-function slotCenterY(index: number, count: number): number {
-  return index * (SLOT_HEIGHT + SLOT_GAP) + SLOT_HEIGHT / 2;
+export function bracketTrackHeight(slotCount: number): number {
+  return slotCount * SLOT_HEIGHT + Math.max(0, slotCount - 1) * SLOT_GAP;
+}
+
+function slotCenterY(
+  index: number,
+  count: number,
+  trackCount?: number
+): number {
+  const blockHeight = bracketTrackHeight(count);
+  const totalHeight = trackCount ? bracketTrackHeight(trackCount) : blockHeight;
+  const offset = (totalHeight - blockHeight) / 2;
+  return offset + index * (SLOT_HEIGHT + SLOT_GAP) + SLOT_HEIGHT / 2;
 }
 
 interface FanProps {
   slotCount: number;
+  /** Align fan lines when wing lists differ in length */
+  trackCount?: number;
   /** Which side the slots sit on */
   side: "left" | "right";
   accent?: "a" | "b" | "final";
@@ -17,6 +30,7 @@ interface FanProps {
 /** Lines from a column of branch slots inward toward a single spot node. */
 export function SdBracketFanConnectors({
   slotCount,
+  trackCount,
   side,
   accent = "a",
   active = false,
@@ -24,8 +38,7 @@ export function SdBracketFanConnectors({
 }: FanProps) {
   if (slotCount === 0) return null;
 
-  const height =
-    slotCount * SLOT_HEIGHT + Math.max(0, slotCount - 1) * SLOT_GAP;
+  const height = bracketTrackHeight(trackCount ?? slotCount);
   const targetY = height / 2;
   const stroke =
     accent === "b"
@@ -45,7 +58,7 @@ export function SdBracketFanConnectors({
       preserveAspectRatio="none"
     >
       {Array.from({ length: slotCount }, (_, i) => {
-        const y1 = slotCenterY(i, slotCount);
+        const y1 = slotCenterY(i, slotCount, trackCount);
         const c1x = side === "left" ? 18 : 30;
         const c2x = side === "left" ? 30 : 18;
         return (
@@ -100,7 +113,7 @@ export function SdBracketConvergeConnectors({
       <path
         d="M 60 52 L 60 72"
         fill="none"
-        stroke="rgb(251 191 36 / 0.55)"
+        stroke="rgb(74 222 128 / 0.55)"
         strokeWidth={active ? "2.5" : "2"}
         className={flow}
       />

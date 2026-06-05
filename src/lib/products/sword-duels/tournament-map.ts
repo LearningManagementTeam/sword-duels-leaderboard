@@ -31,24 +31,28 @@ export interface AreaTournamentMapModel {
 
 function toSlot(
   row: ScoredBranch,
-  opts?: { isChampion?: boolean; eliminated?: boolean }
+  opts?: {
+    isAreaChampion?: boolean;
+    isSetWinner?: boolean;
+    eliminated?: boolean;
+  }
 ): PlayoffSlot {
   return {
     branch_id: row.branch_id,
     branch_name: row.branch_name,
     branch_code: row.branch_code,
     rank: row.rank,
-    status: opts?.isChampion
+    status: opts?.isAreaChampion
       ? "champion"
       : opts?.eliminated
         ? "eliminated"
-        : row.is_winner
+        : opts?.isSetWinner || row.is_winner
           ? "advanced"
           : "active",
     representative_1:
       row.active_representative_name ?? row.representative_1,
     roundScore: row.points,
-    isChampion: opts?.isChampion,
+    isChampion: opts?.isAreaChampion,
     eliminatedInRound: opts?.eliminated ? 1 : null,
   };
 }
@@ -161,7 +165,7 @@ export function buildAreaTournamentMap(input: {
   const groupAFieldSlots: PlayoffSlot[] = isPublished(groupASet)
     ? groupAResults.ranked.map((r) =>
         toSlot(r, {
-          isChampion: r.branch_id === groupAWinnerId,
+          isSetWinner: r.branch_id === groupAWinnerId,
           eliminated: r.branch_id !== groupAWinnerId,
         })
       )
@@ -176,7 +180,7 @@ export function buildAreaTournamentMap(input: {
   const groupBFieldSlots: PlayoffSlot[] = isPublished(groupBSet)
     ? groupBResults.ranked.map((r) =>
         toSlot(r, {
-          isChampion: r.branch_id === groupBWinnerId,
+          isSetWinner: r.branch_id === groupBWinnerId,
           eliminated: r.branch_id !== groupBWinnerId,
         })
       )
@@ -194,7 +198,7 @@ export function buildAreaTournamentMap(input: {
     pool: SdAreaGroupBranch[]
   ): PlayoffSlot {
     const row = ranked.find((r) => r.branch_id === winnerId);
-    if (row) return toSlot(row, { isChampion: !areaChampionId });
+    if (row) return toSlot(row, { isSetWinner: true });
     const b = pool.find((x) => x.branch_id === winnerId);
     return {
       branch_id: winnerId,
@@ -220,7 +224,7 @@ export function buildAreaTournamentMap(input: {
       ? isPublished(finalSet)
         ? finalResults.ranked.map((r) =>
             toSlot(r, {
-              isChampion: r.branch_id === areaChampionId,
+              isAreaChampion: r.branch_id === areaChampionId,
               eliminated: r.branch_id !== areaChampionId,
             })
           )
@@ -241,7 +245,7 @@ export function buildAreaTournamentMap(input: {
   const areaChampion: PlayoffSlot | null = areaChampionId
     ? (() => {
         const row = finalResults.ranked.find((r) => r.branch_id === areaChampionId);
-        if (row) return toSlot(row, { isChampion: true });
+        if (row) return toSlot(row, { isAreaChampion: true });
         const b = finalParticipants.find((x) => x.branch_id === areaChampionId);
         if (!b) return null;
         return {

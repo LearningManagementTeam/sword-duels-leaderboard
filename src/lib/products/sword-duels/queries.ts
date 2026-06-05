@@ -272,7 +272,9 @@ export async function getSdDashboard(eventId: string): Promise<{
       groupAPublished: ga?.status === "published",
       groupBPublished: gb?.status === "published",
       finalPublished: fin?.status === "published",
-      areaChampionName: champ?.branch_name ?? null,
+      areaChampionName: champ
+        ? champ.representative_1?.trim() || champ.branch_name
+        : null,
     };
   });
 

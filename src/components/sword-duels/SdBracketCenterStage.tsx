@@ -1,6 +1,8 @@
 import type { PlayoffSlot } from "@/lib/playoff-map";
+import { SD_BRACKET_COPY } from "@/lib/products/sword-duels/bracket-copy";
 import { SdBracketConvergeConnectors } from "./SdBracketConnectors";
 import { SdBracketSlot } from "./SdBracketSlot";
+import { SdFinalDuelFaceoff } from "./SdFinalDuelFaceoff";
 import { SdTrophyIcon } from "./SdTrophyIcon";
 
 interface Props {
@@ -26,13 +28,12 @@ export function SdBracketCenterStage({
   const vsSize = tvMode ? "text-4xl" : "text-3xl";
 
   return (
-    <div className="flex min-w-[9rem] flex-col items-center justify-center gap-2 px-1">
+    <div className="flex min-w-[10rem] flex-col items-center justify-center gap-2 self-center px-1">
       <div
         className={`flex w-full flex-col items-center gap-2 ${
           finalReady ? "" : "opacity-65"
         }`}
       >
-        {/* Trophy + VS battle stage */}
         <div className="relative flex flex-col items-center">
           <SdTrophyIcon
             size={trophySize}
@@ -41,15 +42,15 @@ export function SdBracketCenterStage({
             }`}
           />
           <span
-            className={`${vsSize} sd-bracket-vs-pulse mt-1 font-black tracking-tighter text-sd-gold ${
-              finalReady ? "" : "!animate-none text-sd-gold/30"
+            className={`${vsSize} sd-bracket-vs-pulse mt-1 font-black tracking-tighter text-lime-300 ${
+              finalReady && !hasChampion ? "" : "!animate-none text-lime-300/30"
             }`}
           >
             VS
           </span>
           {finalReady && !hasChampion && (
-            <span className="mt-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-100 ring-1 ring-emerald-400/35 ring-inset">
-              Battle live
+            <span className="mt-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-100/90 ring-1 ring-emerald-400/35 ring-inset">
+              {SD_BRACKET_COPY.battleLive}
             </span>
           )}
         </div>
@@ -61,51 +62,43 @@ export function SdBracketCenterStage({
               <div className="sd-bracket-reveal w-full max-w-[12rem]">
                 <div className="relative">
                   <div
-                    className="pointer-events-none absolute -inset-2 rounded-xl bg-sd-gold/25 blur-lg"
+                    className="pointer-events-none absolute -inset-2 rounded-xl bg-lime-400/20 blur-lg"
                     aria-hidden
                   />
                   <div className="relative overflow-hidden rounded-xl">
-                    <div className="bg-gradient-to-r from-sd-gold via-amber-300 to-sd-gold px-3 py-1 text-center">
+                    <div className="bg-gradient-to-r from-emerald-400 via-lime-300 to-emerald-400 px-3 py-1 text-center">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sd-deep">
-                        Area champion
+                        {SD_BRACKET_COPY.areaChampion}
                       </p>
                     </div>
                     <div className="sd-bracket-champion-glow rounded-b-xl p-1">
                       <SdBracketSlot slot={champion} role="champion" tvMode={tvMode} />
                     </div>
                     <p className="mt-1.5 text-center text-[9px] text-sd-muted/70">
-                      {areaName} representative
+                      {SD_BRACKET_COPY.areaRep(areaName)}
                     </p>
                   </div>
                 </div>
               </div>
             ) : finalRevealed ? (
-              <div className="w-full max-w-[12rem] space-y-1.5">
-                <p className="text-center text-[9px] font-bold uppercase tracking-wider text-sd-glow">
-                  Area final
-                </p>
-                {finalSlots.map((slot) => (
-                  <SdBracketSlot
-                    key={slot.branch_id ?? "final"}
-                    slot={slot}
-                    role="final"
-                    tvMode={tvMode}
-                  />
-                ))}
-              </div>
+              <SdFinalDuelFaceoff
+                slots={finalSlots}
+                tvMode={tvMode}
+                live
+              />
             ) : (
               <div className="sd-inset w-full max-w-[12rem] rounded-lg px-3 py-4 text-center text-[10px] text-sd-muted/60">
-                Awaiting area final scores…
+                {SD_BRACKET_COPY.areaFinalPending}
               </div>
             )}
           </>
         ) : (
           <div className="sd-inset w-full max-w-[12rem] rounded-xl px-4 py-6 text-center">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-sd-muted/70">
-              Final locked
+              {SD_BRACKET_COPY.finalLocked}
             </p>
             <p className="mt-2 text-[10px] text-sd-muted/55">
-              Publish both group battles to unlock Spot 1 vs Spot 2
+              {SD_BRACKET_COPY.finalLockedHint}
             </p>
           </div>
         )}

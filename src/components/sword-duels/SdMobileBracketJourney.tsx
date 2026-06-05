@@ -4,6 +4,7 @@ import type { AreaTournamentMapModel } from "@/lib/products/sword-duels/tourname
 import type { SdAreaBracket } from "@/lib/products/sword-duels/types";
 import { SdBracketCenterStage } from "./SdBracketCenterStage";
 import { SdBracketSlot } from "./SdBracketSlot";
+import { SdSpotPedestal } from "./SdSpotPedestal";
 import { SdTrophyIcon } from "./SdTrophyIcon";
 
 interface Props {
@@ -96,29 +97,12 @@ export function SdMobileBracketJourney({ model, bracket }: Props) {
       >
         <FieldList slots={groupAField.slots} />
         <div className="mt-4 border-t border-cyan-500/20 pt-3">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-cyan-200/80">
-            → Spot 1
-          </p>
-          {spot1Ready && groupAWinner.slots[0] ? (
-            <SdBracketSlot
-              slot={groupAWinner.slots[0]}
-              role="spot"
-              highlighted
-            />
-          ) : (
-            <SdBracketSlot
-              slot={{
-                branch_id: null,
-                branch_name: "Awaiting Group A winner",
-                branch_code: "",
-                rank: 1,
-                status: "placeholder",
-                roundScore: null,
-                isPlaceholder: true,
-              }}
-              role="placeholder"
-            />
-          )}
+          <SdSpotPedestal
+            spot={1}
+            slot={spot1Ready ? groupAWinner.slots[0] ?? null : null}
+            ready={spot1Ready}
+            side="a"
+          />
         </div>
       </StageCard>
 
@@ -130,29 +114,12 @@ export function SdMobileBracketJourney({ model, bracket }: Props) {
       >
         <FieldList slots={groupBField.slots} />
         <div className="mt-4 border-t border-lime-500/20 pt-3">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-lime-200/80">
-            → Spot 2
-          </p>
-          {spot2Ready && groupBWinner.slots[0] ? (
-            <SdBracketSlot
-              slot={groupBWinner.slots[0]}
-              role="spot"
-              highlighted
-            />
-          ) : (
-            <SdBracketSlot
-              slot={{
-                branch_id: null,
-                branch_name: "Awaiting Group B winner",
-                branch_code: "",
-                rank: 1,
-                status: "placeholder",
-                roundScore: null,
-                isPlaceholder: true,
-              }}
-              role="placeholder"
-            />
-          )}
+          <SdSpotPedestal
+            spot={2}
+            slot={spot2Ready ? groupBWinner.slots[0] ?? null : null}
+            ready={spot2Ready}
+            side="b"
+          />
         </div>
       </StageCard>
 

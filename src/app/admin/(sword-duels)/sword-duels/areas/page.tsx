@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SdAreaStatusBadge } from "@/components/sword-duels/SdAreaStatusBadge";
 import { getSdDashboard, getSdEvent } from "@/lib/products/sword-duels/queries";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
 import { swordDuelsPath } from "@/lib/admin-routes";
@@ -28,13 +29,16 @@ export default async function SwordDuelsAreasPage() {
           <Link
             key={a.area}
             href={swordDuelsPath("areas", areaSlug(a.area))}
-            className="sd-neon-panel block p-4 transition hover:ring-1 hover:ring-cyan-400/25"
+            className="sd-neon-panel flex items-start justify-between gap-3 p-4 transition hover:ring-1 hover:ring-cyan-400/25"
           >
-            <h2 className="font-semibold text-white">{a.area}</h2>
-            <p className="mt-1 text-xs text-sd-muted">
-              {REGION_LABELS[a.region as Region]} · Group A ({a.groupACount}) ·
-              Group B ({a.groupBCount})
-            </p>
+            <div className="min-w-0">
+              <h2 className="font-semibold text-white">{a.area}</h2>
+              <p className="mt-1 text-xs text-sd-muted">
+                {REGION_LABELS[a.region as Region]} · Group A ({a.groupACount})
+                · Group B ({a.groupBCount})
+              </p>
+            </div>
+            <SdAreaStatusBadge area={a} />
           </Link>
         ))}
       </div>
