@@ -102,7 +102,6 @@ export function prunePastScheduleEntries(
 
 export function formatScheduleDateTime(iso: string): string {
   return new Date(iso).toLocaleString("en-PH", {
-    weekday: "short",
     dateStyle: "medium",
     timeStyle: "short",
   });
