@@ -85,6 +85,7 @@ Build fails if URL invalid. Admin routes `force-dynamic`.
 
 ## Docs for humans
 
+- `docs/SYSTEM-BUILD-JOURNAL.md` — day-by-day plain-language log of what was built
 - `docs/SETUP-FOR-BEGINNERS.md`
 - `docs/DAILY-OPERATIONS.md`
 - `docs/DEFAULT-ADMIN.md`

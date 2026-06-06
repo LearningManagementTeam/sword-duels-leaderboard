@@ -17,6 +17,8 @@ export interface Branch extends BranchRepresentativeFields {
   branch_name: string;
   area: string;
   region: Region;
+  /** False = hidden from imports and new brackets; historical scores kept. */
+  is_active?: boolean;
 }
 
 export interface Season {

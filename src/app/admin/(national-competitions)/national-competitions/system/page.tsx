@@ -32,6 +32,10 @@ const migrations = [
     note: "NC round dates per phase (site_content nc_phase_schedules)",
   },
   {
+    file: "025_branch_active.sql",
+    note: "is_active flag on branches (soft deactivate without deleting scores)",
+  },
+  {
     file: "011_branding_bucket_public.sql",
     note: "Public read for branding carousel photos",
   },

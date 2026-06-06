@@ -92,7 +92,8 @@ export async function syncSdBrackets(
 
   const { data: branches } = await service
     .from("branches")
-    .select("id, branch_code, branch_name, area, region");
+    .select("id, branch_code, branch_name, area, region")
+    .eq("is_active", true);
   const brackets = buildAreaBrackets(
     (branches ?? []) as Parameters<typeof buildAreaBrackets>[0],
     sortMode
@@ -432,7 +433,8 @@ export async function previewSdRepresentativesImport(csvText: string): Promise<{
   const service = await createServiceClient();
   const { data: branches } = await service
     .from("branches")
-    .select("branch_code, branch_name, area");
+    .select("branch_code, branch_name, area")
+    .eq("is_active", true);
 
   const byCode = new Map(
     (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b])
@@ -494,7 +496,8 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
   const service = await createServiceClient();
   const { data: branches } = await service
     .from("branches")
-    .select("id, branch_code");
+    .select("id, branch_code")
+    .eq("is_active", true);
 
   const codeToId = new Map(
     (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b.id])

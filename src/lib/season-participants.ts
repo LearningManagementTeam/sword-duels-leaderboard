@@ -24,7 +24,10 @@ export async function resolveParticipantBranchIds(
   if (ids.length > 0) return ids;
 
   if (seasonSlug === "june_area") {
-    const { data: all } = await service.from("branches").select("id");
+    const { data: all } = await service
+      .from("branches")
+      .select("id")
+      .eq("is_active", true);
     return (all ?? []).map((b) => b.id);
   }
 

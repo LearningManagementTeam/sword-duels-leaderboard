@@ -5,6 +5,12 @@ import { after } from "next/server";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { parseBranchesCsv } from "@/lib/branches-csv";
+import {
+  branchRosterDbRow,
+  type BranchRosterFields,
+  normalizeBranchCode,
+  validateBranchRosterFields,
+} from "@/lib/branch-roster";
 import { branchUpsertPayload, countRowsWithRepresentatives } from "@/lib/branch-upsert";
 import { parseRepresentativesCsv } from "@/lib/representatives-csv";
 import {
@@ -389,6 +395,167 @@ export async function saveBranchRepresentatives(
   revalidatePath("/admin/sword-duels/representatives");
   revalidatePath("/sword-duels");
   return { ok: true as const, count: updates.length };
+}
+
+function revalidateBranchRosterPaths() {
+  revalidatePath("/admin/national-competitions/branches");
+  revalidatePath("/admin/national-competitions/representatives");
+  revalidatePath("/admin/sword-duels/representatives");
+  revalidatePath("/admin/sword-duels");
+  revalidatePath("/sword-duels");
+  revalidatePath("/", "layout");
+}
+
+async function seedJuneRoundOneForBranch(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  branchId: string
+) {
+  const { data: season } = await service
+    .from("seasons")
+    .select("id")
+    .eq("slug", "june_area")
+    .maybeSingle();
+  if (!season) return;
+
+  const { data: round } = await service
+    .from("rounds")
+    .select("id")
+    .eq("season_id", season.id)
+    .eq("round_number", 1)
+    .maybeSingle();
+  if (!round) return;
+
+  await service.from("round_results").upsert(
+    {
+      round_id: round.id,
+      branch_id: branchId,
+      points: 0,
+      wins: 0,
+      losses: 0,
+    },
+    { onConflict: "round_id,branch_id" }
+  );
+}
+
+async function assertUniqueBranchCode(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  branchCode: string,
+  excludeId?: string
+): Promise<string | null> {
+  let query = service
+    .from("branches")
+    .select("id")
+    .eq("branch_code", branchCode);
+  if (excludeId) {
+    query = query.neq("id", excludeId);
+  }
+  const { data } = await query.maybeSingle();
+  if (data) {
+    return `Branch code "${branchCode}" is already in use.`;
+  }
+  return null;
+}
+
+export async function createBranchRecord(fields: BranchRosterFields) {
+  const { email } = await requireAdmin();
+  const validationError = validateBranchRosterFields(fields);
+  if (validationError) {
+    return { ok: false as const, errors: [validationError] };
+  }
+
+  const row = branchRosterDbRow(fields);
+  const service = await createServiceClient();
+  const clash = await assertUniqueBranchCode(service, row.branch_code);
+  if (clash) return { ok: false as const, errors: [clash] };
+
+  const { data, error } = await service
+    .from("branches")
+    .insert({ ...row, is_active: true })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return {
+      ok: false as const,
+      errors: [error?.message ?? "Could not create branch."],
+    };
+  }
+
+  await seedJuneRoundOneForBranch(service, data.id as string);
+
+  await logAudit(email, "create_branch", "branches", data.id as string, {
+    branch_code: row.branch_code,
+  });
+  revalidateBranchRosterPaths();
+  return { ok: true as const, id: data.id as string };
+}
+
+export type BranchRosterUpdate = BranchRosterFields & { id: string };
+
+export async function saveBranchRosterUpdates(updates: BranchRosterUpdate[]) {
+  const { email } = await requireAdmin();
+  if (updates.length === 0) {
+    return { ok: false as const, errors: ["No changes to save."] };
+  }
+
+  const service = await createServiceClient();
+
+  for (const item of updates) {
+    const validationError = validateBranchRosterFields(item);
+    if (validationError) {
+      return { ok: false as const, errors: [validationError] };
+    }
+    const row = branchRosterDbRow(item);
+    const clash = await assertUniqueBranchCode(service, row.branch_code, item.id);
+    if (clash) return { ok: false as const, errors: [clash] };
+
+    const { error } = await service
+      .from("branches")
+      .update(row)
+      .eq("id", item.id);
+
+    if (error) return { ok: false as const, errors: [error.message] };
+  }
+
+  await logAudit(email, "update_branch", "branches", null, {
+    count: updates.length,
+    codes: updates.map((u) => normalizeBranchCode(u.branch_code)),
+  });
+  revalidateBranchRosterPaths();
+  return { ok: true as const, count: updates.length };
+}
+
+export async function setBranchActive(branchId: string, is_active: boolean) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+
+  const { data: existing, error: loadError } = await service
+    .from("branches")
+    .select("id, branch_code, branch_name, is_active")
+    .eq("id", branchId)
+    .maybeSingle();
+
+  if (loadError) return { ok: false as const, errors: [loadError.message] };
+  if (!existing) {
+    return { ok: false as const, errors: ["Branch not found."] };
+  }
+
+  const { error } = await service
+    .from("branches")
+    .update({ is_active })
+    .eq("id", branchId);
+
+  if (error) return { ok: false as const, errors: [error.message] };
+
+  await logAudit(
+    email,
+    is_active ? "activate_branch" : "deactivate_branch",
+    "branches",
+    branchId,
+    { branch_code: existing.branch_code }
+  );
+  revalidateBranchRosterPaths();
+  return { ok: true as const };
 }
 
 export async function importRepresentativesFromCsv(csvText: string) {

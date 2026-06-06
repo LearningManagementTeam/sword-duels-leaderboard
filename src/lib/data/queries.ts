@@ -40,6 +40,7 @@ export async function getBranches(): Promise<Branch[]> {
   const { data, error } = await supabase
     .from("branches")
     .select("id, branch_code, branch_name, area, region")
+    .eq("is_active", true)
     .order("branch_name");
   if (error) throw error;
   return (data ?? []) as Branch[];
@@ -50,7 +51,8 @@ export const getBranchCount = cache(async function getBranchCount(): Promise<num
   const supabase = await createClient();
   const { count, error } = await supabase
     .from("branches")
-    .select("*", { count: "exact", head: true });
+    .select("*", { count: "exact", head: true })
+    .eq("is_active", true);
   if (error) throw error;
   return count ?? 0;
 });

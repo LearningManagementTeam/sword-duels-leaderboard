@@ -48,6 +48,7 @@ export async function getAllBranches(): Promise<Branch[]> {
   const { data } = await service
     .from("branches")
     .select(BRANCH_WITH_REPS_SELECT)
+    .eq("is_active", true)
     .order("area")
     .order("branch_code");
   return (data ?? []) as Branch[];

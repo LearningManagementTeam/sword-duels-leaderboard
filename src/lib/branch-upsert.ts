@@ -1,7 +1,7 @@
 import type { BranchCsvRow } from "./branches-csv";
 
 function setIfDefined(
-  payload: Record<string, string | null>,
+  payload: Record<string, string | boolean | null>,
   key: string,
   value: string | null | undefined
 ) {
@@ -14,12 +14,13 @@ function setIfDefined(
 export function branchUpsertPayload(
   row: BranchCsvRow,
   updatedAt?: string
-): Record<string, string | null> {
-  const payload: Record<string, string | null> = {
+): Record<string, string | boolean | null> {
+  const payload: Record<string, string | boolean | null> = {
     branch_code: row.branch_code,
     branch_name: row.branch_name,
     area: row.area,
     region: row.region,
+    is_active: true,
   };
 
   const touchesReps =

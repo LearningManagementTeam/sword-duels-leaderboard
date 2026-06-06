@@ -15,7 +15,7 @@ export const ADMIN_NAV_HINTS: Record<string, string> = {
   [nationalCompetitionsPath("advancement")]:
     "End of June or July: after Round 3 is live everywhere, lock the phase to seed survivors into the next stage (24 → July, 3 → Nationals).",
   [nationalCompetitionsPath("branches")]:
-    "One-time (or refresh): upload the 130+ branch CSV before June Round 1. Creates the full competition roster.",
+    "Master branch list: add or edit one branch, deactivate closed branches, or bulk-import CSV before June Round 1.",
   [nationalCompetitionsPath("representatives")]:
     "Add or fix branch champion names anytime — for the public board and TV display.",
   [nationalCompetitionsPath("competition")]:
@@ -77,6 +77,10 @@ export const ADMIN_ROSTER_HINTS = {
     "June scores are already live. Re-importing can overwrite branch data and Round 1 seed rows — only proceed if you intend to reset the roster.",
   importJunePreview:
     "Review row counts and regions before importing. Fix CSV errors here instead of discovering them after upload.",
+  createBranch:
+    "Adds one branch to the roster and seeds June Round 1 with zero points if that round exists.",
+  saveBranchRoster:
+    "Saves edited code, name, area, or region for changed rows. Does not remove branches — use Deactivate.",
   saveRepresentatives:
     "Writes changed rows only. Public boards show updated representatives after save.",
   unsavedRepresentatives:

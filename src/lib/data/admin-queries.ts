@@ -263,7 +263,10 @@ export async function getAdminDashboard() {
 
   const [{ data: seasons }, { count }, { data: rounds }] = await Promise.all([
     service.from("seasons").select("*").order("sort_order"),
-    service.from("branches").select("*", { count: "exact", head: true }),
+    service
+      .from("branches")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true),
     service
       .from("rounds")
       .select(
@@ -782,6 +785,7 @@ export async function getBranchesForRepresentatives() {
   const { data, error } = await service
     .from("branches")
     .select(BRANCH_WITH_REPS_SELECT)
+    .eq("is_active", true)
     .order("area")
     .order("branch_name");
 
@@ -793,6 +797,34 @@ export async function getBranchesForRepresentatives() {
   return {
     branches,
     withReps,
+    total: branches.length,
+  };
+}
+
+export async function getBranchesForRosterAdmin() {
+  if (!isSupabaseServiceConfigured()) {
+    return { branches: [], activeCount: 0, inactiveCount: 0, total: 0 };
+  }
+  const service = await createServiceClient();
+  const { data, error } = await service
+    .from("branches")
+    .select(`${BRANCH_WITH_REPS_SELECT}, is_active`)
+    .order("is_active", { ascending: false })
+    .order("area")
+    .order("branch_name");
+
+  if (error) throw error;
+
+  const branches = (data ?? []).map((row) => ({
+    ...row,
+    is_active: row.is_active !== false,
+  }));
+  const activeCount = branches.filter((b) => b.is_active).length;
+
+  return {
+    branches,
+    activeCount,
+    inactiveCount: branches.length - activeCount,
     total: branches.length,
   };
 }
