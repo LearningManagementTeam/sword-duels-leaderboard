@@ -1,6 +1,8 @@
 # Sword Duels ecosystem audit — June 2026
 
-Snapshot after: area green winner styling, area status badges, production wildcard, **production knockout** (migration 020), hub status chips, nationals phase strip.
+Snapshot after: area green winner styling, area status badges, production wildcard, **production knockout** (migration 020), hub status chips, nationals phase strip, **public sub-nav + journey bar**, admin breadcrumbs on area editor.
+
+See also: [journey-routing-2026-06.md](./journey-routing-2026-06.md) for customer-journey and routing audit.
 
 ## Executive summary
 

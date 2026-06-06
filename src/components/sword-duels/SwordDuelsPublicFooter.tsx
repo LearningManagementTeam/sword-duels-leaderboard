@@ -9,11 +9,13 @@ interface Props {
   /** Path after site origin, e.g. `/sword-duels` or `/sword-duels/Area%201` */
   sharePath?: string;
   shareTitle?: string;
+  shareDescription?: string;
 }
 
 export async function SwordDuelsPublicFooter({
   sharePath = SWORD_DUELS_PUBLIC,
   shareTitle = "Share Sword Duels standings",
+  shareDescription,
 }: Props) {
   const branding = await getBranding();
   const shareUrl = `${getPublicSiteUrl()}${sharePath.startsWith("/") ? sharePath : `/${sharePath}`}`;
@@ -22,7 +24,11 @@ export async function SwordDuelsPublicFooter({
     <div className="mx-auto max-w-3xl space-y-6 pt-8">
       <HomeSponsorLogoSection branding={branding} />
       <HomeCarouselSection branding={branding} />
-      <ShareCard url={shareUrl} title={shareTitle} />
+      <ShareCard
+        url={shareUrl}
+        title={shareTitle}
+        description={shareDescription}
+      />
     </div>
   );
 }

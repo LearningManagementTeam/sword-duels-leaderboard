@@ -1,14 +1,32 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PreviewBanner } from "@/components/PreviewBanner";
 import { NationalsKnockoutMap } from "@/components/sword-duels/NationalsKnockoutMap";
-import { buildPlaceholderKnockoutModel } from "@/lib/products/sword-duels/nationals-knockout-bracket";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
+import { buildPlaceholderKnockoutModel } from "@/lib/products/sword-duels/nationals-knockout-bracket";
+import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
+import { getSdEvent } from "@/lib/products/sword-duels/queries";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "Preview · Nationals knockout bracket",
 };
 
-export default function PreviewNationalsKnockoutPage() {
+export default async function PreviewNationalsKnockoutPage() {
+  if (isSupabaseConfigured()) {
+    const event = await getSdEvent();
+    if (event) {
+      try {
+        const ctx = await getSdNationalsContext(event.id);
+        if (ctx.model.allFieldLocked) {
+          redirect(`${SWORD_DUELS_PUBLIC}/nationals#knockout`);
+        }
+      } catch {
+        /* nationals tables optional — keep placeholder preview */
+      }
+    }
+  }
+
   const model = buildPlaceholderKnockoutModel();
 
   return (
@@ -17,8 +35,8 @@ export default function PreviewNationalsKnockoutPage() {
       <div className="sd-alert-warning border-emerald-500/30 bg-emerald-950/30 text-emerald-100">
         <p className="font-medium">Placeholder knockout bracket</p>
         <p className="mt-1 text-sm opacity-90">
-          Sample reps with branch, employee no., and position. Live data will
-          flow from published area finals + wildcard once scoring is wired.
+          Sample reps with branch, employee no., and position. Once the nationals
+          field is locked, this preview redirects to the live bracket.
         </p>
       </div>
 
@@ -37,7 +55,7 @@ export default function PreviewNationalsKnockoutPage() {
 
       <p className="text-center text-sm text-sd-muted">
         <Link href={`${SWORD_DUELS_PUBLIC}/nationals`} className="sd-link">
-          Live wildcard map →
+          Live nationals map →
         </Link>
         {" · "}
         <Link href={SWORD_DUELS_PUBLIC} className="sd-link">

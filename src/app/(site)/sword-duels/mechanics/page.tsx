@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProgramRulesCrossLink } from "@/components/ProgramRulesCrossLink";
 import {
   SD_MECHANICS_SUMMARY,
   SD_NATIONALS_PHASES,
@@ -25,6 +26,8 @@ export default function SwordDuelsMechanicsPage() {
           wild card and a knockout bracket to one champion.
         </p>
       </div>
+
+      <ProgramRulesCrossLink variant="sword-duels" />
 
       <section className="sd-neon-panel space-y-3 p-5">
         <ul className="list-disc space-y-2 pl-5 text-sm text-sd-muted">

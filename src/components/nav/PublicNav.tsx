@@ -3,16 +3,19 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 
-type NavId = "home" | "rules";
+type NavId = "home" | "swordDuels" | "rules";
 
-const ITEMS: { id: NavId; label: string }[] = [
+const ITEMS: { id: NavId; label: string; mobileLabel?: string }[] = [
   { id: "home", label: "Home" },
-  { id: "rules", label: "How to win" },
+  { id: "swordDuels", label: "Sword Duels", mobileLabel: "Duels" },
+  { id: "rules", label: "How to win", mobileLabel: "Rules" },
 ];
 
 function resolveHref(id: NavId, isPreview: boolean): string {
   if (id === "home") return isPreview ? "/preview" : "/";
+  if (id === "swordDuels") return SWORD_DUELS_PUBLIC;
   return "/mechanics";
 }
 
@@ -20,24 +23,34 @@ function isActive(pathname: string, id: NavId, isPreview: boolean): boolean {
   if (id === "home") {
     return isPreview ? pathname === "/preview" : pathname === "/";
   }
+  if (id === "swordDuels") {
+    return (
+      pathname.startsWith(SWORD_DUELS_PUBLIC) ||
+      pathname.startsWith("/preview/sword-duels")
+    );
+  }
   return pathname.startsWith("/mechanics");
 }
 
 function NavLink({
   id,
   label,
+  mobileLabel,
   pathname,
   variant,
   isPreview,
 }: {
   id: NavId;
   label: string;
+  mobileLabel?: string;
   pathname: string;
   variant: "mobile" | "desktop";
   isPreview: boolean;
 }) {
   const active = isActive(pathname, id, isPreview);
   const href = resolveHref(id, isPreview);
+  const displayLabel =
+    variant === "mobile" && mobileLabel ? mobileLabel : label;
 
   const base =
     variant === "mobile"
@@ -62,7 +75,7 @@ function NavLink({
     >
       {variant === "mobile" && <NavIcon id={id} active={active} />}
       <span className={variant === "mobile" ? "leading-none" : undefined}>
-        {label}
+        {displayLabel}
       </span>
     </Link>
   );
@@ -74,6 +87,11 @@ function NavIcon({ id, active }: { id: NavId; active: boolean }) {
     home: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" aria-hidden>
         <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" />
+      </svg>
+    ),
+    swordDuels: (
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" aria-hidden>
+        <path d="m14.5 17.5 3 3M8.5 6.5 5.5 3.5M3 21l7.5-7.5M21 3 12 12M6.5 17.5l-4 4M17.5 6.5l4-4" />
       </svg>
     ),
     rules: (
@@ -114,6 +132,7 @@ export function PublicNav() {
               key={item.id}
               id={item.id}
               label={item.label}
+              mobileLabel={item.mobileLabel}
               pathname={pathname}
               variant="desktop"
               isPreview={isPreview}
@@ -132,6 +151,7 @@ export function PublicNav() {
               key={item.id}
               id={item.id}
               label={item.label}
+              mobileLabel={item.mobileLabel}
               pathname={pathname}
               variant="mobile"
               isPreview={isPreview}

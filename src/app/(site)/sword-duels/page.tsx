@@ -1,28 +1,44 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
 import { SdPublicAreaStatus } from "@/components/sword-duels/SdPublicAreaStatus";
 import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
-import { getSdPublicAreaSummary } from "@/lib/products/sword-duels/public-area-summary";
+import {
+  getSdPublicAreaSummary,
+  resolveAreaChampionDisplayName,
+} from "@/lib/products/sword-duels/public-area-summary";
+import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
 import { getSdPublicOverview } from "@/lib/products/sword-duels/public-queries";
-import { getAllBranches } from "@/lib/products/sword-duels/queries";
+import {
+  buildSdPageMetadata,
+  journeyShareCopy,
+} from "@/lib/products/sword-duels/share-metadata";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { Region } from "@/lib/scoring-config";
 
 export const revalidate = 30;
 
-export const metadata = {
-  title: "Sword Duels — Area tournaments",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const journey = await loadPublicJourneyState().catch(() => null);
+  const copy = journeyShareCopy(journey);
+  return buildSdPageMetadata({
+    ...copy,
+    path: SWORD_DUELS_PUBLIC,
+  });
+}
 
 export default async function SwordDuelsHomePage() {
   const configured = isSupabaseConfigured();
-  const data = configured ? await getSdPublicOverview() : null;
-  const branches = configured ? await getAllBranches() : [];
-  const branchById = new Map(branches.map((b) => [b.id, b]));
-
+  const [data, journey] = await Promise.all([
+    configured ? getSdPublicOverview() : Promise.resolve(null),
+    configured
+      ? loadPublicJourneyState().catch(() => null)
+      : Promise.resolve(null),
+  ]);
+  const shareCopy = journeyShareCopy(journey);
   return (
     <div className="space-y-8">
       <div className="sd-page-header">
@@ -30,28 +46,6 @@ export default async function SwordDuelsHomePage() {
         <p>
           Two group battles per area earn Spot 1 and Spot 2. Those spot holders
           fight for one area representative.
-        </p>
-        <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <Link href={`${SWORD_DUELS_PUBLIC}/mechanics`} className="sd-link text-sm">
-            How area tournaments work →
-          </Link>
-          {data && data.brackets.length > 0 && (
-            <Link href={`${SWORD_DUELS_PUBLIC}/tv`} className="sd-link text-sm">
-              TV bracket view →
-            </Link>
-          )}
-          <Link
-            href={`${SWORD_DUELS_PUBLIC}/tv?mode=event&rotate=90`}
-            className="sd-link text-sm"
-          >
-            Full event TV →
-          </Link>
-          <Link
-            href={`${SWORD_DUELS_PUBLIC}/nationals`}
-            className="sd-link text-sm"
-          >
-            Nationals →
-          </Link>
         </p>
       </div>
 
@@ -66,12 +60,11 @@ export default async function SwordDuelsHomePage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {data.brackets.map((b) => {
             const areaSets = data.sets.filter((s) => s.area === b.area);
-            const final = areaSets.find((s) => s.set_type === "area_final");
-            const champId = final?.winner_branch_id;
-            const champ = champId ? branchById.get(champId) : null;
-            const championName = champ
-              ? champ.representative_1?.trim() || champ.branch_name
-              : null;
+            const championName = resolveAreaChampionDisplayName(
+              areaSets,
+              data.scoreMap,
+              b
+            );
             const summary = getSdPublicAreaSummary(areaSets, championName);
 
             return (
@@ -97,7 +90,8 @@ export default async function SwordDuelsHomePage() {
 
       <SwordDuelsPublicFooter
         sharePath={SWORD_DUELS_PUBLIC}
-        shareTitle="Share Sword Duels standings"
+        shareTitle={`Share — ${shareCopy.title}`}
+        shareDescription={shareCopy.description}
       />
     </div>
   );

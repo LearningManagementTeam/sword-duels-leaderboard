@@ -5,6 +5,7 @@ import { HomeStandingsPreview } from "@/components/home/HomeStandingsPreview";
 import { SetupBanner } from "@/components/SetupBanner";
 import { ShareCard } from "@/components/ShareCard";
 import { getBranding, getCompetitionMap } from "@/lib/data/content-queries";
+import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
 import { getPublicSiteUrl } from "@/lib/site-url";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -13,9 +14,12 @@ export const revalidate = 30;
 export default async function HomePage() {
   const configured = isSupabaseConfigured();
   const siteUrl = getPublicSiteUrl();
-  const [mapConfig, branding] = await Promise.all([
+  const [mapConfig, branding, sdJourney] = await Promise.all([
     getCompetitionMap(),
     getBranding(),
+    configured
+      ? loadPublicJourneyState().catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   return (
@@ -25,7 +29,7 @@ export default async function HomePage() {
       {!configured && <SetupBanner />}
 
       <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
-        <HomeProgramsStrip />
+        <HomeProgramsStrip sdJourney={sdJourney} />
         <HomeCarouselSection branding={branding} />
         <CollapsibleCompetitionMap mapConfig={mapConfig} />
         <ShareCard url={siteUrl} />

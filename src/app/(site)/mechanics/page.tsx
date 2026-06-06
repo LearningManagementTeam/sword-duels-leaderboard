@@ -1,4 +1,5 @@
 import { MechanicsPageContent } from "@/components/MechanicsPageContent";
+import { ProgramRulesCrossLink } from "@/components/ProgramRulesCrossLink";
 import { getMechanicsContent } from "@/lib/data/content-queries";
 import { getBranchCount } from "@/lib/data/queries";
 
@@ -21,6 +22,7 @@ export default async function MechanicsPage() {
           July regional, August finals.
         </p>
       </div>
+      <ProgramRulesCrossLink variant="national-competitions" />
       <MechanicsPageContent content={content} branchCount={branchCount} />
     </div>
   );

@@ -1,15 +1,12 @@
 import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
 import { SdGroupSortSettings } from "@/components/sword-duels/SdGroupSortSettings";
-import { SdAreaStatusBadge } from "@/components/sword-duels/SdAreaStatusBadge";
 import { SdNationalsPhaseStrip } from "@/components/sword-duels/SdNationalsPhaseStrip";
+import { getSdAreaStatus } from "@/lib/products/sword-duels/area-status";
 import { swordDuelsPath, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
 import { getSdDashboard, getSdEvent } from "@/lib/products/sword-duels/queries";
-import { areaSlug } from "@/lib/products/sword-duels/area-groups";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
-import { REGION_LABELS } from "@/lib/scoring-config";
-import type { Region } from "@/lib/scoring-config";
 
 export const dynamic = "force-dynamic";
 
@@ -117,33 +114,33 @@ export default async function SwordDuelsDashboardPage() {
         </Link>
       </div>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">Areas</h2>
-        {areas.length === 0 ? (
-          <p className="text-sm text-sd-muted">
-            Sync brackets after branches are imported from National Competitions →
-            Branches, or import branches there first.
-          </p>
-        ) : (
-          <div className="grid gap-3">
-            {areas.map((a) => (
-              <Link
-                key={a.area}
-                href={swordDuelsPath("areas", areaSlug(a.area))}
-                className="sd-neon-panel flex flex-wrap items-center justify-between gap-3 p-4 transition hover:ring-1 hover:ring-cyan-400/25"
-              >
-                <div>
-                  <p className="font-medium text-white">{a.area}</p>
-                  <p className="text-xs text-sd-muted">
-                    {REGION_LABELS[a.region as Region]} · {a.branchCount}{" "}
-                    branches (A:{a.groupACount} / B:{a.groupBCount})
-                  </p>
-                </div>
-                <SdAreaStatusBadge area={a} />
-              </Link>
-            ))}
+      <section className="sd-neon-panel p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="font-semibold text-white">Area scoring</h2>
+            {areas.length === 0 ? (
+              <p className="mt-1 text-sm text-sd-muted">
+                Sync brackets after branches are imported from National
+                Competitions → Branches.
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-sd-muted">
+                {areas.length} areas ·{" "}
+                {
+                  areas.filter((a) => getSdAreaStatus(a).phase === "area_champion")
+                    .length
+                }{" "}
+                champions crowned
+              </p>
+            )}
           </div>
-        )}
+          <Link
+            href={swordDuelsPath("areas")}
+            className="sd-link shrink-0 text-sm font-medium"
+          >
+            Open areas →
+          </Link>
+        </div>
       </section>
     </div>
   );

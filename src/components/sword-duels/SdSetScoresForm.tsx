@@ -17,6 +17,7 @@ import type {
   SdSetScore,
   SdSetType,
 } from "@/lib/products/sword-duels/types";
+import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { SdButton } from "@/components/ui/SdButton";
 
 function setMeta(setType: SdSetType) {
@@ -85,6 +86,7 @@ export function SdSetScoresForm({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
 
   const meta = setMeta(setType);
   const modeInfo = SD_SCORING_MODE_LABELS[mode];
@@ -156,18 +158,20 @@ export function SdSetScoresForm({
     }
   }
 
-  async function handleUnpublish() {
+  function requestUnpublish() {
     if (!set.id) return;
-    if (
-      setType === "area_final" &&
-      !window.confirm(
-        "Unpublishing the area final resets wildcard selection and knockout bracket progress. Continue?"
-      )
-    ) {
+    if (setType === "area_final") {
+      setShowUnpublishConfirm(true);
       return;
     }
+    void executeUnpublish();
+  }
+
+  async function executeUnpublish() {
+    if (!set.id) return;
     setBusy(true);
     setError(null);
+    setShowUnpublishConfirm(false);
     try {
       await unpublishSdSet(set.id);
       setMessage("Reverted to draft.");
@@ -375,6 +379,23 @@ export function SdSetScoresForm({
         </table>
       </div>
 
+      {showUnpublishConfirm && (
+        <AdminConfirmPanel
+          title="Unpublish area final?"
+          tone="danger"
+          confirmLabel="Unpublish area final"
+          busy={busy}
+          onConfirm={() => void executeUnpublish()}
+          onCancel={() => setShowUnpublishConfirm(false)}
+        >
+          <p>
+            This resets wildcard selection and knockout bracket progress for
+            nationals. Only unpublish if the area final result was entered in
+            error.
+          </p>
+        </AdminConfirmPanel>
+      )}
+
       <div className="flex flex-wrap gap-2">
         {!isPublished && (
           <>
@@ -395,12 +416,12 @@ export function SdSetScoresForm({
             </SdButton>
           </>
         )}
-        {isPublished && set.id && (
+        {isPublished && set.id && !showUnpublishConfirm && (
           <SdButton
             type="button"
             variant="danger"
             disabled={busy}
-            onClick={handleUnpublish}
+            onClick={requestUnpublish}
           >
             Unpublish
           </SdButton>

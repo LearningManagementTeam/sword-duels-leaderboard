@@ -1,6 +1,11 @@
 import Link from "next/link";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { AreaGroupSplitPanel } from "@/components/sword-duels/AreaGroupSplitPanel";
 import { AreaTournamentMap } from "@/components/sword-duels/AreaTournamentMap";
+import {
+  SdAreaScoreStickyNav,
+  type SdAreaScoreNavItem,
+} from "@/components/sword-duels/SdAreaScoreStickyNav";
 import { SdSetScoresForm } from "@/components/sword-duels/SdSetScoresForm";
 import { decodeAreaSlug } from "@/lib/products/sword-duels/area-groups";
 import { SD_SET_FLOW } from "@/lib/products/sword-duels/scoring-config";
@@ -9,7 +14,8 @@ import {
   getSdEvent,
   participantsForSetType,
 } from "@/lib/products/sword-duels/queries";
-import { swordDuelsPath, SWORD_DUELS_ADMIN } from "@/lib/admin-routes";
+import { swordDuelsPath, SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
+import { areaSlug } from "@/lib/products/sword-duels/area-groups";
 import type { SdSetType } from "@/lib/products/sword-duels/types";
 
 export const dynamic = "force-dynamic";
@@ -52,16 +58,44 @@ export default async function SwordDuelsAreaPage({
     return null;
   }
 
+  const scoreNavItems: SdAreaScoreNavItem[] = SD_SET_FLOW.map((step) => {
+    const set = sets.find((s) => s.set_type === step.key);
+    const lock = setLockReason(step.key);
+    let status: SdAreaScoreNavItem["status"] = "locked";
+    if (set?.id && !lock) {
+      status = set.status === "published" ? "published" : "draft";
+    }
+    return {
+      setType: step.key,
+      title: step.title,
+      status,
+    };
+  });
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-24">
+      <AdminBreadcrumb
+        items={[
+          { label: "Sword Duels", href: SWORD_DUELS_ADMIN },
+          { label: "Areas", href: swordDuelsPath("areas") },
+          { label: area },
+        ]}
+      />
       <div className="sd-page-header">
-        <Link href={swordDuelsPath("areas")} className="sd-link text-sm">
-          ← Areas
-        </Link>
         <h1>{area}</h1>
         <p>
           Two group battles produce Spot 1 and Spot 2; the area final crowns one
           area representative.
+        </p>
+        <p className="mt-2 text-sm">
+          <Link
+            href={`${SWORD_DUELS_PUBLIC}/${areaSlug(area)}`}
+            className="sd-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open public area map →
+          </Link>
         </p>
       </div>
 
@@ -97,7 +131,7 @@ export default async function SwordDuelsAreaPage({
             sets
           );
           return (
-            <div key={set.set_type} id={set.set_type}>
+            <div key={set.set_type} id={set.set_type} className="scroll-mt-24">
               <SdSetScoresForm
                 set={set}
                 setType={set.set_type}
@@ -122,6 +156,8 @@ export default async function SwordDuelsAreaPage({
           ))}
         </ol>
       </section>
+
+      {!missingSets && <SdAreaScoreStickyNav area={area} items={scoreNavItems} />}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AreaGroupSplitPanel } from "@/components/sword-duels/AreaGroupSplitPanel";
 import { AreaGroupStandingsPanel } from "@/components/sword-duels/AreaGroupStandingsPanel";
@@ -6,9 +7,17 @@ import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPubli
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { areaSlug, decodeAreaSlug } from "@/lib/products/sword-duels/area-groups";
 import {
+  getSdPublicAreaSummary,
+  resolveAreaChampionDisplayName,
+} from "@/lib/products/sword-duels/public-area-summary";
+import {
   filterPublicScores,
   getSdPublicArea,
 } from "@/lib/products/sword-duels/public-queries";
+import {
+  areaShareCopy,
+  buildSdPageMetadata,
+} from "@/lib/products/sword-duels/share-metadata";
 
 export const revalidate = 30;
 
@@ -16,10 +25,32 @@ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ area: string }>;
-}) {
+}): Promise<Metadata> {
   const { area: areaParam } = await params;
   const area = decodeAreaSlug(areaParam);
-  return { title: `${area} — Sword Duels` };
+  const sharePath = `${SWORD_DUELS_PUBLIC}/${areaSlug(area)}`;
+
+  try {
+    const ctx = await getSdPublicArea(area);
+    if (ctx) {
+      const championName = resolveAreaChampionDisplayName(
+        ctx.sets,
+        ctx.scoreMap,
+        ctx.bracket
+      );
+      const summary = getSdPublicAreaSummary(ctx.sets, championName);
+      const copy = areaShareCopy(area, summary.label, championName);
+      return buildSdPageMetadata({ ...copy, path: sharePath });
+    }
+  } catch {
+    /* fall through */
+  }
+
+  return buildSdPageMetadata({
+    title: `${area} — Sword Duels`,
+    description: `Live ${area} tournament bracket and standings.`,
+    path: sharePath,
+  });
 }
 
 export default async function SwordDuelsAreaPublicPage({
@@ -44,6 +75,13 @@ export default async function SwordDuelsAreaPublicPage({
 
   const { bracket, sets, scoreMap, event } = ctx;
   const publicScores = filterPublicScores(sets, scoreMap);
+  const championName = resolveAreaChampionDisplayName(
+    sets,
+    scoreMap,
+    bracket
+  );
+  const summary = getSdPublicAreaSummary(sets, championName);
+  const shareCopy = areaShareCopy(area, summary.label, championName);
 
   const groupSets = sets.filter(
     (s) => s.set_type === "group_a" || s.set_type === "group_b"
@@ -87,7 +125,8 @@ export default async function SwordDuelsAreaPublicPage({
 
       <SwordDuelsPublicFooter
         sharePath={`${SWORD_DUELS_PUBLIC}/${areaSlug(area)}`}
-        shareTitle={`Share ${area} — Sword Duels`}
+        shareTitle={`Share — ${shareCopy.title}`}
+        shareDescription={shareCopy.description}
       />
     </div>
   );

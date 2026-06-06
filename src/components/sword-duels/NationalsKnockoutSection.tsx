@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { NationalsKnockoutModel } from "@/lib/products/sword-duels/nationals-knockout-bracket";
 import { NationalsKnockoutMap } from "./NationalsKnockoutMap";
+import { SdAnchorOpener } from "./SdAnchorOpener";
 import { SdCollapsibleSection } from "./SdCollapsibleSection";
 
 interface Props {
@@ -21,7 +22,10 @@ export function NationalsKnockoutSection({
   previewLink,
 }: Props) {
   return (
-    <SdCollapsibleSection
+    <>
+      <SdAnchorOpener id="knockout" />
+      <SdCollapsibleSection
+      id="knockout"
       title="Area vs Area bracket"
       subtitle={subtitle}
       defaultOpen={defaultOpen}
@@ -36,5 +40,6 @@ export function NationalsKnockoutSection({
         <NationalsKnockoutMap model={model} preview={preview} />
       </div>
     </SdCollapsibleSection>
+    </>
   );
 }

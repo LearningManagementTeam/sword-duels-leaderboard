@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { SdAreaStatusBadge } from "@/components/sword-duels/SdAreaStatusBadge";
 import { getSdDashboard, getSdEvent } from "@/lib/products/sword-duels/queries";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
-import { swordDuelsPath } from "@/lib/admin-routes";
+import { SWORD_DUELS_ADMIN, swordDuelsPath } from "@/lib/admin-routes";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { Region } from "@/lib/scoring-config";
 
@@ -18,11 +19,27 @@ export default async function SwordDuelsAreasPage() {
 
   const { areas } = await getSdDashboard(event.id);
 
+  const champions = areas.filter((a) => a.finalPublished).length;
+
   return (
     <div className="space-y-6">
+      <AdminBreadcrumb
+        items={[
+          { label: "Sword Duels", href: SWORD_DUELS_ADMIN },
+          { label: "Areas" },
+        ]}
+      />
       <div className="sd-page-header">
         <h1>Areas</h1>
-        <p>Score group battles and area finals per area.</p>
+        <p>
+          Score group battles and area finals per area.
+          {areas.length > 0 && (
+            <>
+              {" "}
+              {champions} of {areas.length} area finals published.
+            </>
+          )}
+        </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {areas.map((a) => (

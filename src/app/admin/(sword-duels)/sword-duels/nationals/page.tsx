@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { KnockoutAdminForm } from "@/components/sword-duels/KnockoutAdminForm";
 import { WildcardAdminForm } from "@/components/sword-duels/WildcardAdminForm";
 import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
 import { getSdEvent } from "@/lib/products/sword-duels/queries";
-import { SWORD_DUELS_PUBLIC, swordDuelsPath } from "@/lib/admin-routes";
+import {
+  SWORD_DUELS_ADMIN,
+  SWORD_DUELS_PUBLIC,
+  swordDuelsPath,
+} from "@/lib/admin-routes";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +57,12 @@ export default async function AdminSwordDuelsNationalsPage() {
 
   return (
     <div className="space-y-6">
+      <AdminBreadcrumb
+        items={[
+          { label: "Sword Duels", href: SWORD_DUELS_ADMIN },
+          { label: "Nationals" },
+        ]}
+      />
       <div className="sd-page-header">
         <h1>Sword Duels Nationals</h1>
         <p>

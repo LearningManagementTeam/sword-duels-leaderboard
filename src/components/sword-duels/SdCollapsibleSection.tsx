@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 interface Props {
+  id?: string;
   title: string;
   subtitle?: string;
   defaultOpen?: boolean;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function SdCollapsibleSection({
+  id,
   title,
   subtitle,
   defaultOpen = false,
@@ -17,7 +19,8 @@ export function SdCollapsibleSection({
 }: Props) {
   return (
     <details
-      className="group sd-neon-panel overflow-hidden"
+      id={id}
+      className="group sd-neon-panel overflow-hidden scroll-mt-24"
       open={defaultOpen || undefined}
     >
       <summary className="cursor-pointer list-none px-5 py-4 marker:content-none [&::-webkit-details-marker]:hidden">

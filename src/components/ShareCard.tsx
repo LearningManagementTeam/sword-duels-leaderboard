@@ -6,6 +6,7 @@ import { PRODUCTION_SITE_URL } from "@/lib/site-url";
 interface Props {
   url: string;
   title?: string;
+  description?: string;
 }
 
 function normalizeShareUrl(url: string): string {
@@ -19,7 +20,11 @@ function normalizeShareUrl(url: string): string {
   return trimmed || PRODUCTION_SITE_URL;
 }
 
-export function ShareCard({ url, title = "Share this leaderboard" }: Props) {
+export function ShareCard({
+  url,
+  title = "Share this leaderboard",
+  description = "Scan the code or copy the link so branches can follow live standings.",
+}: Props) {
   const [copied, setCopied] = useState(false);
   const shareUrl = normalizeShareUrl(url);
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(shareUrl)}`;
@@ -40,9 +45,7 @@ export function ShareCard({ url, title = "Share this leaderboard" }: Props) {
         Spread the word
       </p>
       <h3 className="mt-1 text-lg font-semibold text-white">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-sd-muted">
-        Scan the code or copy the link so branches can follow live standings.
-      </p>
+      <p className="mt-2 text-sm leading-relaxed text-sd-muted">{description}</p>
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

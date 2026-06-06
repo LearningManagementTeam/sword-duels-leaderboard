@@ -1,18 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
 import { NationalsKnockoutSection } from "@/components/sword-duels/NationalsKnockoutSection";
 import { NationalsWildcardMap } from "@/components/sword-duels/NationalsWildcardMap";
 import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { loadNationalsPublicView } from "@/lib/products/sword-duels/load-nationals-public-view";
+import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
 import { getSdEvent } from "@/lib/products/sword-duels/queries";
+import {
+  buildSdPageMetadata,
+  journeyShareCopy,
+} from "@/lib/products/sword-duels/share-metadata";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Sword Duels Nationals",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const journey = await loadPublicJourneyState().catch(() => null);
+  const copy = journeyShareCopy(journey);
+  return buildSdPageMetadata({
+    ...copy,
+    path: `${SWORD_DUELS_PUBLIC}/nationals`,
+  });
+}
 
 export default async function SwordDuelsNationalsPage() {
   const configured = isSupabaseConfigured();
@@ -51,6 +62,8 @@ export default async function SwordDuelsNationalsPage() {
     );
   }
 
+  const journey = await loadPublicJourneyState().catch(() => null);
+  const shareCopy = journeyShareCopy(journey);
   const { model } = view;
   const knockoutSubtitle = view.knockoutIsLive
     ? "Live results — winners advance as the committee publishes each match."
@@ -68,31 +81,24 @@ export default async function SwordDuelsNationalsPage() {
         <p className="mt-1 text-sm text-sd-muted">
           Wild card slot 16, then area vs area knockout to one national champion.
         </p>
-        <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <p className="mt-2 text-sm">
           <Link
             href={`${SWORD_DUELS_PUBLIC}/tv?mode=nationals&view=wildcard&rotate=60`}
             className="sd-link"
           >
-            Nationals TV view →
-          </Link>
-          <Link
-            href={`${SWORD_DUELS_PUBLIC}/tv?mode=event&rotate=90`}
-            className="sd-link"
-          >
-            Full event TV rotate →
-          </Link>
-          <Link href={`${SWORD_DUELS_PUBLIC}/mechanics`} className="sd-link">
-            How it works →
+            Open nationals TV view →
           </Link>
         </p>
       </div>
 
-      <NationalsWildcardMap
-        model={view.model}
-        scores={view.wildcardScores}
-        confirmedWildcardId={view.confirmedWildcardId}
-        publicView
-      />
+      <section id="wildcard" className="scroll-mt-24">
+        <NationalsWildcardMap
+          model={view.model}
+          scores={view.wildcardScores}
+          confirmedWildcardId={view.confirmedWildcardId}
+          publicView
+        />
+      </section>
 
       <NationalsKnockoutSection
         model={view.knockoutModel}
@@ -113,7 +119,8 @@ export default async function SwordDuelsNationalsPage() {
 
       <SwordDuelsPublicFooter
         sharePath={`${SWORD_DUELS_PUBLIC}/nationals`}
-        shareTitle="Share Sword Duels Nationals"
+        shareTitle={`Share — ${shareCopy.title}`}
+        shareDescription={shareCopy.description}
       />
     </div>
   );
