@@ -173,7 +173,11 @@ export function SdSetScoresForm({
     setError(null);
     setShowUnpublishConfirm(false);
     try {
-      await unpublishSdSet(set.id);
+      const result = await unpublishSdSet(set.id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       setMessage("Reverted to draft.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unpublish failed");

@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC, swordDuelsPath } from "@/lib/admin-routes";
 import { requireAdminEmail } from "@/lib/admin-auth";
-import { buildAreaBrackets } from "@/lib/products/sword-duels/area-groups";
+import { areaSlug, buildAreaBrackets } from "@/lib/products/sword-duels/area-groups";
 import type { SdGroupSortMode } from "@/lib/products/sword-duels/area-groups";
 import {
   getSdAreaContext,
@@ -55,18 +56,53 @@ async function logAudit(
   }
 }
 
-function revalidateSd(area?: string) {
-  revalidatePath(SWORD_DUELS_ADMIN);
-  revalidatePath(swordDuelsPath("representatives"));
-  revalidatePath(swordDuelsPath("areas"));
-  revalidatePath(swordDuelsPath("nationals"));
-  revalidatePath(SWORD_DUELS_PUBLIC);
-  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-  if (area) {
-    revalidatePath(`${SWORD_DUELS_PUBLIC}/${encodeURIComponent(area)}`);
-    revalidatePath(swordDuelsPath("areas", encodeURIComponent(area)));
-  }
+/** Defer cache revalidation so score actions do not 500 when a stale page render fails. */
+function scheduleSdRevalidation(options?: {
+  area?: string;
+  brackets?: boolean;
+  home?: boolean;
+}) {
+  after(() => {
+    try {
+      revalidatePath(SWORD_DUELS_ADMIN);
+      revalidatePath(swordDuelsPath("representatives"));
+      revalidatePath(swordDuelsPath("areas"));
+      revalidatePath(swordDuelsPath("nationals"));
+      revalidatePath(SWORD_DUELS_PUBLIC);
+      revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+      if (options?.area) {
+        const slug = areaSlug(options.area);
+        revalidatePath(`${SWORD_DUELS_PUBLIC}/${slug}`);
+        revalidatePath(swordDuelsPath("areas", slug));
+      }
+      if (options?.brackets) {
+        revalidatePath(swordDuelsPath("brackets"));
+      }
+      if (options?.home) {
+        revalidatePath("/");
+        revalidatePath(swordDuelsPath("schedules"));
+      }
+    } catch {
+      /* non-fatal */
+    }
+  });
 }
+
+function scheduleSdNationalsRevalidation() {
+  after(() => {
+    try {
+      revalidatePath(SWORD_DUELS_ADMIN);
+      revalidatePath(swordDuelsPath("nationals"));
+      revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+    } catch {
+      /* non-fatal */
+    }
+  });
+}
+
+export type SdActionResult =
+  | { ok: true }
+  | { ok: false; error: string };
 
 export async function syncSdBracketsForm(sortMode: SdGroupSortMode): Promise<void> {
   await syncSdBrackets(sortMode);
@@ -143,7 +179,7 @@ export async function syncSdBrackets(
     branchCount: rows.length,
     group_sort_mode: sortMode,
   });
-  revalidateSd();
+  scheduleSdRevalidation();
   return { areaCount: brackets.length, group_sort_mode: sortMode };
 }
 
@@ -201,7 +237,7 @@ export async function updateSdSetScoringMode(
     .update({ scoring_mode: scoringMode })
     .eq("id", setId);
   if (error) throw new Error(error.message);
-  revalidateSd();
+  scheduleSdRevalidation();
 }
 
 export type SdScoreInput = {
@@ -250,7 +286,7 @@ export async function saveSdSetScores(
     set_type: set.set_type,
     count: scores.length,
   });
-  revalidateSd(set.area);
+  scheduleSdRevalidation({ area: set.area });
 }
 
 export async function publishSdSet(setId: string): Promise<{ winnerId: string | null }> {
@@ -324,81 +360,85 @@ export async function publishSdSet(setId: string): Promise<{ winnerId: string | 
     } catch {
       /* wildcard/knockout tables may not exist until migrations 019/020 */
     }
-    revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-    revalidatePath(swordDuelsPath("nationals"));
   }
 
-  revalidateSd(set.area);
+  scheduleSdRevalidation({ area: set.area });
   return { winnerId };
 }
 
-export async function unpublishSdSet(setId: string): Promise<void> {
-  const { email } = await requireAdmin();
-  const service = await createServiceClient();
+export async function unpublishSdSet(setId: string): Promise<SdActionResult> {
+  try {
+    const { email } = await requireAdmin();
+    const service = await createServiceClient();
 
-  const { data: set } = await service
-    .from("sd_sets")
-    .select("id, area, set_type, event_id, status")
-    .eq("id", setId)
-    .single();
-  if (!set) throw new Error("Set not found");
-
-  if (set.set_type === "group_a" || set.set_type === "group_b") {
-    const { data: finalSet } = await service
+    const { data: set } = await service
       .from("sd_sets")
-      .select("status")
-      .eq("event_id", set.event_id)
-      .eq("area", set.area)
-      .eq("set_type", "area_final")
-      .maybeSingle();
-    if (finalSet?.status === "published") {
-      throw new Error("Unpublish the area final before reverting group battles");
-    }
-  }
+      .select("id, area, set_type, event_id, status")
+      .eq("id", setId)
+      .single();
+    if (!set) throw new Error("Set not found");
 
-  const { error } = await service
-    .from("sd_sets")
-    .update({
-      status: "draft",
-      winner_branch_id: null,
-      published_at: null,
-    })
-    .eq("id", setId);
-  if (error) throw new Error(error.message);
-
-  if (set.set_type === "group_a" || set.set_type === "group_b") {
-    const { data: finalSet } = await service
-      .from("sd_sets")
-      .select("id, status")
-      .eq("event_id", set.event_id)
-      .eq("area", set.area)
-      .eq("set_type", "area_final")
-      .maybeSingle();
-    if (finalSet && finalSet.status !== "draft") {
-      await service
+    if (set.set_type === "group_a" || set.set_type === "group_b") {
+      const { data: finalSet } = await service
         .from("sd_sets")
-        .update({ status: "draft", winner_branch_id: null, published_at: null })
-        .eq("id", finalSet.id);
+        .select("status")
+        .eq("event_id", set.event_id)
+        .eq("area", set.area)
+        .eq("set_type", "area_final")
+        .maybeSingle();
+      if (finalSet?.status === "published") {
+        throw new Error("Unpublish the area final before reverting group battles");
+      }
     }
-  }
 
-  await logAudit(email, "unpublish_sd_set", setId, {
-    area: set.area,
-    set_type: set.set_type,
-  });
+    const { error } = await service
+      .from("sd_sets")
+      .update({
+        status: "draft",
+        winner_branch_id: null,
+        published_at: null,
+      })
+      .eq("id", setId);
+    if (error) throw new Error(error.message);
 
-  if (set.set_type === "area_final") {
-    try {
-      await syncWildcardRound(set.event_id);
-      await trySyncKnockoutBracket(set.event_id);
-    } catch {
-      /* wildcard/knockout tables may not exist until migrations 019/020 */
+    if (set.set_type === "group_a" || set.set_type === "group_b") {
+      const { data: finalSet } = await service
+        .from("sd_sets")
+        .select("id, status")
+        .eq("event_id", set.event_id)
+        .eq("area", set.area)
+        .eq("set_type", "area_final")
+        .maybeSingle();
+      if (finalSet && finalSet.status !== "draft") {
+        await service
+          .from("sd_sets")
+          .update({ status: "draft", winner_branch_id: null, published_at: null })
+          .eq("id", finalSet.id);
+      }
     }
-    revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-    revalidatePath(swordDuelsPath("nationals"));
-  }
 
-  revalidateSd(set.area);
+    await logAudit(email, "unpublish_sd_set", setId, {
+      area: set.area,
+      set_type: set.set_type,
+    });
+
+    if (set.set_type === "area_final") {
+      try {
+        await syncWildcardRound(set.event_id);
+        await trySyncKnockoutBracket(set.event_id);
+      } catch {
+        /* wildcard/knockout tables may not exist until migrations 019/020 */
+      }
+    }
+
+    scheduleSdRevalidation({ area: set.area });
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Unpublish failed",
+    };
+  }
 }
 
 export type SdRepresentativesPreviewRow = {
@@ -544,8 +584,7 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
     row_count: rows.length,
   });
 
-  revalidateSd();
-  revalidatePath(swordDuelsPath("brackets"));
+  scheduleSdRevalidation({ brackets: true });
 
   if (updated === 0) {
     return { ok: false, errors: warnings.length ? warnings : ["No rows imported."] };
@@ -574,7 +613,7 @@ export async function updateSdGroupSortMode(
   if (error) throw new Error(error.message);
 
   await logAudit(email, "update_sd_group_sort", event.id, { group_sort_mode: mode });
-  revalidateSd();
+  scheduleSdRevalidation();
 }
 
 export type SdWildcardScoreInput = {
@@ -617,8 +656,7 @@ export async function saveSdWildcardScores(
   await logAudit(email, "save_sd_wildcard_scores", round.id, {
     count: scores.length,
   });
-  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-  revalidatePath(swordDuelsPath("nationals"));
+  scheduleSdNationalsRevalidation();
 }
 
 export async function publishSdWildcardRoundForm(): Promise<void> {
@@ -631,8 +669,7 @@ export async function publishSdWildcardRoundForm(): Promise<void> {
   await trySyncKnockoutBracket(event.id);
 
   await logAudit(email, "publish_sd_wildcard_round", event.id, {});
-  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-  revalidatePath(swordDuelsPath("nationals"));
+  scheduleSdNationalsRevalidation();
 }
 
 export async function unpublishSdWildcardRoundForm(): Promise<void> {
@@ -645,8 +682,7 @@ export async function unpublishSdWildcardRoundForm(): Promise<void> {
   await trySyncKnockoutBracket(event.id);
 
   await logAudit(email, "unpublish_sd_wildcard_round", event.id, {});
-  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-  revalidatePath(swordDuelsPath("nationals"));
+  scheduleSdNationalsRevalidation();
 }
 
 export async function syncSdWildcardRoundForm(): Promise<void> {
@@ -656,8 +692,7 @@ export async function syncSdWildcardRoundForm(): Promise<void> {
 
   await syncWildcardRound(event.id);
   await trySyncKnockoutBracket(event.id);
-  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-  revalidatePath(swordDuelsPath("nationals"));
+  scheduleSdNationalsRevalidation();
 }
 
 export type SdKnockoutScoreInput = {
@@ -674,24 +709,21 @@ export async function saveSdKnockoutMatchScores(
   await logAudit(email, "save_sd_knockout_scores", matchId, {
     count: scores.length,
   });
-  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-  revalidatePath(swordDuelsPath("nationals"));
+  scheduleSdNationalsRevalidation();
 }
 
 export async function publishSdKnockoutMatchForm(matchId: string): Promise<void> {
   const { email } = await requireAdmin();
   await publishKnockoutMatch(matchId);
   await logAudit(email, "publish_sd_knockout_match", matchId, {});
-  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-  revalidatePath(swordDuelsPath("nationals"));
+  scheduleSdNationalsRevalidation();
 }
 
 export async function unpublishSdKnockoutMatchForm(matchId: string): Promise<void> {
   const { email } = await requireAdmin();
   await unpublishKnockoutMatch(matchId);
   await logAudit(email, "unpublish_sd_knockout_match", matchId, {});
-  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-  revalidatePath(swordDuelsPath("nationals"));
+  scheduleSdNationalsRevalidation();
 }
 
 export async function syncSdKnockoutBracketForm(): Promise<void> {
@@ -701,8 +733,7 @@ export async function syncSdKnockoutBracketForm(): Promise<void> {
 
   const ctx = await getSdNationalsContext(event.id);
   await syncKnockoutBracket(event.id, ctx.model);
-  revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
-  revalidatePath(swordDuelsPath("nationals"));
+  scheduleSdNationalsRevalidation();
 }
 
 export async function saveSdAreaSchedulesForm(
@@ -730,7 +761,5 @@ export async function saveSdAreaSchedulesForm(
     areas: Object.keys(config.byArea).length,
   });
 
-  revalidatePath("/");
-  revalidatePath(SWORD_DUELS_PUBLIC, "layout");
-  revalidatePath(swordDuelsPath("schedules"));
+  scheduleSdRevalidation({ home: true });
 }

@@ -45,13 +45,23 @@ export async function getSdEvent(): Promise<SdEvent | null> {
 
 export async function getAllBranches(): Promise<Branch[]> {
   const service = await createServiceClient();
-  const { data } = await service
+  const activeQuery = await service
     .from("branches")
     .select(BRANCH_WITH_REPS_SELECT)
     .eq("is_active", true)
     .order("area")
     .order("branch_code");
-  return (data ?? []) as Branch[];
+
+  if (activeQuery.error?.code === "42703") {
+    const fallback = await service
+      .from("branches")
+      .select(BRANCH_WITH_REPS_SELECT)
+      .order("area")
+      .order("branch_code");
+    return (fallback.data ?? []) as Branch[];
+  }
+
+  return (activeQuery.data ?? []) as Branch[];
 }
 
 interface AreaGroupRow {
