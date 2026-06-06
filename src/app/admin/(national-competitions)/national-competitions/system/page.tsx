@@ -20,6 +20,18 @@ const migrations = [
     note: "Featured program hero on public home (site_content site_home)",
   },
   {
+    file: "022_event_schedule.sql",
+    note: "Home page upcoming events (site_content event_schedule)",
+  },
+  {
+    file: "023_sd_area_schedules.sql",
+    note: "Per-area SD battle dates (site_content sd_area_schedules)",
+  },
+  {
+    file: "024_nc_phase_schedules.sql",
+    note: "NC round dates per phase (site_content nc_phase_schedules)",
+  },
+  {
     file: "011_branding_bucket_public.sql",
     note: "Public read for branding carousel photos",
   },

@@ -101,6 +101,10 @@ export const ADMIN_ADVANCEMENT_HINTS = {
 export const ADMIN_SITE_HINTS = {
   saveSiteHomeConfig:
     "Chooses whether Sword Duels or National Competitions owns the large hero on the public home page.",
+  saveEventSchedule:
+    "Planned event dates on the home page Upcoming column. Past rows are removed on save. Recent results still come from published scores automatically.",
+  saveNcPhaseSchedules:
+    "Round dates for June, July, and The Nationals on the home Upcoming column until each round is published.",
   saveCompetitionMap:
     "Updates the home page milestone, caption, and optional contestant list visibility.",
   suggestCompetitionMap:

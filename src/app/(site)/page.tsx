@@ -1,5 +1,7 @@
+import { HomeEventTimeline } from "@/components/home/HomeEventTimeline";
 import { HomeFeaturedHero } from "@/components/home/HomeFeaturedHero";
 import { HomeProgramsStrip } from "@/components/home/HomeProgramsStrip";
+import { SdPublicJourneyBar } from "@/components/sword-duels/SdPublicJourneyBar";
 import { CollapsibleCompetitionMap } from "@/components/home/CollapsibleCompetitionMap";
 import { HomeCarouselSection } from "@/components/home/HomeCarouselSection";
 import { SetupBanner } from "@/components/SetupBanner";
@@ -7,8 +9,12 @@ import { ShareCard } from "@/components/ShareCard";
 import {
   getBranding,
   getCompetitionMap,
+  getEventSchedule,
+  getNcPhaseSchedules,
+  getSdAreaSchedules,
   getSiteHomeConfig,
 } from "@/lib/data/content-queries";
+import { loadHomeEventTimeline } from "@/lib/home-event-timeline";
 import { loadNcHomeStatusLine } from "@/lib/home-nc-status";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
@@ -48,14 +54,21 @@ export default async function HomePage() {
   const configured = isSupabaseConfigured();
   const siteUrl = getPublicSiteUrl();
   const mapConfig = await getCompetitionMap();
-  const [branding, homeConfig, sdJourney, ncStatusLine] = await Promise.all([
-    getBranding(),
-    getSiteHomeConfig(),
-    configured
-      ? loadPublicJourneyState().catch(() => null)
-      : Promise.resolve(null),
-    loadNcHomeStatusLine(mapConfig),
+  const [eventSchedule, sdAreaSchedules, ncPhaseSchedules] = await Promise.all([
+    getEventSchedule(),
+    getSdAreaSchedules(),
+    getNcPhaseSchedules(),
   ]);
+  const [branding, homeConfig, sdJourney, ncStatusLine, timeline] =
+    await Promise.all([
+      getBranding(),
+      getSiteHomeConfig(),
+      configured
+        ? loadPublicJourneyState().catch(() => null)
+        : Promise.resolve(null),
+      loadNcHomeStatusLine(mapConfig),
+      loadHomeEventTimeline(eventSchedule, sdAreaSchedules, ncPhaseSchedules),
+    ]);
 
   const featured = resolveFeaturedProgram(homeConfig, sdJourney);
   const sdShare = journeyShareCopy(sdJourney);
@@ -83,6 +96,14 @@ export default async function HomePage() {
         sdJourney={sdJourney}
       />
 
+      {featured === "sword_duels" &&
+        sdJourney &&
+        sdJourney.totalAreas > 0 && (
+          <div className="mx-auto max-w-3xl">
+            <SdPublicJourneyBar journey={sdJourney} />
+          </div>
+        )}
+
       {!configured && <SetupBanner />}
 
       <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
@@ -91,8 +112,16 @@ export default async function HomePage() {
           sdJourney={sdJourney}
           ncStatusLine={ncStatusLine}
         />
+        <HomeEventTimeline
+          upcoming={timeline.upcoming}
+          recent={timeline.recent}
+          featured={featured}
+        />
         <HomeCarouselSection branding={branding} />
-        <CollapsibleCompetitionMap mapConfig={mapConfig} />
+        <CollapsibleCompetitionMap
+          mapConfig={mapConfig}
+          defaultOpen={featured === "national_competitions"}
+        />
         <ShareCard
           url={shareUrl}
           title={shareTitle}

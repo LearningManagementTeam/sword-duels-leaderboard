@@ -12,6 +12,7 @@ import {
   previewWildcardLeader,
   wildcardScoresMap,
 } from "@/lib/products/sword-duels/build-nationals-wildcard-model";
+import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { NationalsWildcardMap } from "./NationalsWildcardMap";
 import { SdButton } from "@/components/ui/SdButton";
 
@@ -23,6 +24,7 @@ export function WildcardAdminForm({ model }: Props) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
 
   const initialDraft = useMemo(() => {
     const map: Record<string, string> = {};
@@ -175,6 +177,26 @@ export function WildcardAdminForm({ model }: Props) {
           </p>
         )}
 
+        {showUnpublishConfirm && (
+          <AdminConfirmPanel
+            title="Unpublish wildcard round?"
+            tone="danger"
+            confirmLabel="Unpublish wildcard"
+            busy={pending}
+            onConfirm={() => {
+              setShowUnpublishConfirm(false);
+              run(unpublishSdWildcardRoundForm, "Wildcard unpublished.");
+            }}
+            onCancel={() => setShowUnpublishConfirm(false)}
+          >
+            <p>
+              This unlocks the nationals field and resets knockout bracket
+              progress that depended on the wild card slot. Only unpublish if
+              wildcard scores were entered in error.
+            </p>
+          </AdminConfirmPanel>
+        )}
+
         {error && <p className="text-sm text-red-300">{error}</p>}
         {message && <p className="text-sm text-emerald-300">{message}</p>}
 
@@ -210,9 +232,7 @@ export function WildcardAdminForm({ model }: Props) {
               type="button"
               variant="ghost"
               disabled={pending}
-              onClick={() =>
-                run(unpublishSdWildcardRoundForm, "Wildcard unpublished.")
-              }
+              onClick={() => setShowUnpublishConfirm(true)}
             >
               Unpublish wildcard
             </SdButton>

@@ -1242,6 +1242,84 @@ export async function saveMechanicsContent(body: MechanicsPublicBody) {
   return { ok: true };
 }
 
+export async function saveEventSchedule(
+  config: import("@/lib/event-schedule").EventScheduleConfig
+) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const { EVENT_SCHEDULE_SLUG, prunePastScheduleEntries } = await import(
+    "@/lib/event-schedule"
+  );
+
+  const { config: pruned, removed } = prunePastScheduleEntries(config);
+
+  const payload = {
+    entries: pruned.entries.map((e) => ({
+      id: e.id,
+      program: e.program,
+      title: e.title.trim(),
+      scheduledAt: e.scheduledAt,
+      ...(e.area ? { area: e.area } : {}),
+    })),
+  };
+
+  const { error } = await service.from("site_content").upsert(
+    {
+      slug: EVENT_SCHEDULE_SLUG,
+      body: payload,
+      updated_at: new Date().toISOString(),
+      updated_by_email: email,
+    },
+    { onConflict: "slug" }
+  );
+
+  if (error) throw new Error(error.message);
+
+  await logAudit(
+    email,
+    "save_event_schedule",
+    "site_content",
+    EVENT_SCHEDULE_SLUG,
+    { count: payload.entries.length, removed }
+  );
+
+  revalidatePath("/");
+  revalidatePath("/admin/national-competitions/competition");
+  return { ok: true, removed, config: pruned };
+}
+
+export async function saveNcPhaseSchedules(
+  config: import("@/lib/nc-phase-schedules").NcPhaseSchedulesConfig
+) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const { NC_PHASE_SCHEDULES_SLUG } = await import("@/lib/nc-phase-schedules");
+
+  const { error } = await service.from("site_content").upsert(
+    {
+      slug: NC_PHASE_SCHEDULES_SLUG,
+      body: config,
+      updated_at: new Date().toISOString(),
+      updated_by_email: email,
+    },
+    { onConflict: "slug" }
+  );
+
+  if (error) throw new Error(error.message);
+
+  await logAudit(
+    email,
+    "save_nc_phase_schedules",
+    "site_content",
+    NC_PHASE_SCHEDULES_SLUG,
+    {}
+  );
+
+  revalidatePath("/");
+  revalidatePath("/admin/national-competitions/competition");
+  return { ok: true };
+}
+
 export async function saveSiteHomeConfig(
   config: import("@/lib/site-home-config").SiteHomeConfig
 ) {

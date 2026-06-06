@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SdAreaSchedulePanel } from "@/components/sword-duels/SdAreaSchedulePanel";
 import { AreaGroupSplitPanel } from "@/components/sword-duels/AreaGroupSplitPanel";
 import { AreaGroupStandingsPanel } from "@/components/sword-duels/AreaGroupStandingsPanel";
 import { AreaTournamentMap } from "@/components/sword-duels/AreaTournamentMap";
@@ -10,6 +11,10 @@ import {
   getSdPublicAreaSummary,
   resolveAreaChampionDisplayName,
 } from "@/lib/products/sword-duels/public-area-summary";
+import {
+  publishStateForArea,
+} from "@/lib/products/sword-duels/area-schedules";
+import { getSdAreaSchedules } from "@/lib/data/content-queries";
 import {
   filterPublicScores,
   getSdPublicArea,
@@ -60,7 +65,10 @@ export default async function SwordDuelsAreaPublicPage({
 }) {
   const { area: areaParam } = await params;
   const area = decodeAreaSlug(areaParam);
-  const ctx = await getSdPublicArea(area);
+  const [ctx, schedules] = await Promise.all([
+    getSdPublicArea(area),
+    getSdAreaSchedules(),
+  ]);
 
   if (!ctx) {
     return (
@@ -108,6 +116,12 @@ export default async function SwordDuelsAreaPublicPage({
       <AreaGroupSplitPanel
         bracket={bracket}
         groupSortMode={event.group_sort_mode}
+      />
+
+      <SdAreaSchedulePanel
+        area={area}
+        config={schedules}
+        publishState={publishStateForArea(sets)}
       />
 
       <AreaTournamentMap

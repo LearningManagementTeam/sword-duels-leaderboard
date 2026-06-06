@@ -3,11 +3,18 @@ import type { CompetitionMapConfig } from "@/lib/competition-map";
 
 interface Props {
   mapConfig: CompetitionMapConfig;
+  defaultOpen?: boolean;
 }
 
-export async function CollapsibleCompetitionMap({ mapConfig }: Props) {
+export async function CollapsibleCompetitionMap({
+  mapConfig,
+  defaultOpen = false,
+}: Props) {
   return (
-    <details className="group sd-glass-strong mx-auto max-w-3xl rounded-2xl">
+    <details
+      className="group sd-glass-strong mx-auto max-w-3xl rounded-2xl"
+      open={defaultOpen || undefined}
+    >
       <summary className="cursor-pointer list-none px-5 py-4 text-center sm:px-6 sm:text-left [&::-webkit-details-marker]:hidden">
         <span className="flex items-center justify-between gap-3">
           <span className="min-w-0 flex-1">

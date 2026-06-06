@@ -701,3 +701,33 @@ export async function syncSdKnockoutBracketForm(): Promise<void> {
   revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
   revalidatePath(swordDuelsPath("nationals"));
 }
+
+export async function saveSdAreaSchedulesForm(
+  config: import("@/lib/products/sword-duels/area-schedules").SdAreaSchedulesConfig
+): Promise<void> {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const { SD_AREA_SCHEDULES_SLUG } = await import(
+    "@/lib/products/sword-duels/area-schedules"
+  );
+
+  const { error } = await service.from("site_content").upsert(
+    {
+      slug: SD_AREA_SCHEDULES_SLUG,
+      body: config,
+      updated_at: new Date().toISOString(),
+      updated_by_email: email,
+    },
+    { onConflict: "slug" }
+  );
+
+  if (error) throw new Error(error.message);
+
+  await logAudit(email, "save_sd_area_schedules", SD_AREA_SCHEDULES_SLUG, {
+    areas: Object.keys(config.byArea).length,
+  });
+
+  revalidatePath("/");
+  revalidatePath(SWORD_DUELS_PUBLIC, "layout");
+  revalidatePath(swordDuelsPath("schedules"));
+}
