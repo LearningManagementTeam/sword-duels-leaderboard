@@ -45,6 +45,7 @@ const NAV_GROUPS: NavGroup[] = [
         href: nationalCompetitionsPath("representatives"),
         label: "Representatives",
       },
+      { href: nationalCompetitionsPath("employees"), label: "Employees" },
     ],
   },
   {

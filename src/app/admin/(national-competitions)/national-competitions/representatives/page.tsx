@@ -21,7 +21,11 @@ export default async function RepresentativesPage() {
             Admin → Branches
           </Link>{" "}
           (same file includes branch_code, branch_name, area, region, and
-          representative columns).
+          representative columns). Employee profiles and status live on{" "}
+          <Link href="/admin/national-competitions/employees" className="sd-link">
+            Admin → Employees
+          </Link>
+          .
         </p>
       </div>
 

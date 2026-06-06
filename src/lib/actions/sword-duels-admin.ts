@@ -28,7 +28,6 @@ import {
 } from "@/lib/products/sword-duels/knockout-sync";
 import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
 import { parseRepresentativesCsv } from "@/lib/representatives-csv";
-import { representativeDbUpdate } from "@/lib/representative-fields";
 import { createServiceClient } from "@/lib/supabase/server";
 
 async function requireAdmin() {
@@ -265,7 +264,23 @@ export async function saveSdSetScores(
     throw new Error("Unpublish this set before editing scores");
   }
 
+  const branchIds = [...new Set(scores.map((row) => row.branch_id))];
+  const { data: branchRows } = await service
+    .from("branches")
+    .select(
+      "id, representative_1_employee_id, representative_2_employee_id"
+    )
+    .in("id", branchIds);
+  const branchById = new Map((branchRows ?? []).map((b) => [b.id, b]));
+
   for (const row of scores) {
+    const slot = row.active_representative === 2 ? 2 : 1;
+    const branch = branchById.get(row.branch_id);
+    const activeEmployeeId =
+      slot === 2
+        ? branch?.representative_2_employee_id ?? null
+        : branch?.representative_1_employee_id ?? null;
+
     const { error } = await service.from("sd_set_scores").upsert(
       {
         set_id: setId,
@@ -273,7 +288,8 @@ export async function saveSdSetScores(
         points: row.points,
         hearts_remaining: row.hearts_remaining ?? null,
         is_eliminated: row.is_eliminated ?? false,
-        active_representative: row.active_representative === 2 ? 2 : 1,
+        active_representative: slot,
+        active_employee_id: activeEmployeeId,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "set_id,branch_id" }
@@ -539,36 +555,43 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
     .select("id, branch_code")
     .eq("is_active", true);
 
-  const codeToId = new Map(
-    (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b.id])
+  const codeToBranch = new Map(
+    (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b])
   );
 
   const notFound: string[] = [];
   const now = new Date().toISOString();
   let updated = 0;
+  const { linkBranchRepresentativesFromPayload } = await import("@/lib/employees");
 
   for (const row of rows) {
-    const id = codeToId.get(row.branch_code.toLowerCase());
-    if (!id) {
+    const branch = codeToBranch.get(row.branch_code.toLowerCase());
+    if (!branch) {
       notFound.push(row.branch_code);
       continue;
     }
-    const { error } = await service
-      .from("branches")
-      .update({
-        ...representativeDbUpdate({
+
+    try {
+      await linkBranchRepresentativesFromPayload(
+        service,
+        branch.id,
+        branch.branch_code,
+        {
           representative_1: row.representative_1,
           representative_2: row.representative_2,
           representative_1_employee_no: row.representative_1_employee_no,
           representative_1_position: row.representative_1_position,
           representative_2_employee_no: row.representative_2_employee_no,
           representative_2_position: row.representative_2_position,
-        }),
-        representatives_updated_at: now,
-      })
-      .eq("id", id);
-
-    if (error) return { ok: false, errors: [error.message] };
+        },
+        now
+      );
+    } catch (e) {
+      return {
+        ok: false,
+        errors: [e instanceof Error ? e.message : "Import failed"],
+      };
+    }
     updated++;
   }
 

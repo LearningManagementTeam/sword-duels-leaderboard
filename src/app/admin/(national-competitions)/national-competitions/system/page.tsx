@@ -36,6 +36,10 @@ const migrations = [
     note: "is_active flag on branches (soft deactivate without deleting scores)",
   },
   {
+    file: "026_employees.sql",
+    note: "Employee profiles for reps, branch FKs, SD score snapshots",
+  },
+  {
     file: "011_branding_bucket_public.sql",
     note: "Public read for branding carousel photos",
   },

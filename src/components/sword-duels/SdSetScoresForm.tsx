@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   publishSdSet,
   saveSdSetScores,
@@ -57,6 +58,7 @@ export function SdSetScoresForm({
   canEdit,
   lockedReason,
 }: Props) {
+  const router = useRouter();
   const scoreByBranch = useMemo(
     () => new Map(initialScores.map((s) => [s.branch_id, s])),
     [initialScores]
@@ -87,6 +89,11 @@ export function SdSetScoresForm({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
+  const [setStatus, setSetStatus] = useState(set.status);
+
+  useEffect(() => {
+    setSetStatus(set.status);
+  }, [set.status]);
 
   const meta = setMeta(setType);
   const modeInfo = SD_SCORING_MODE_LABELS[mode];
@@ -110,7 +117,7 @@ export function SdSetScoresForm({
     return new Set(survivors.slice(0, 2).map((r) => r.branch_id));
   }, [preview, mode]);
 
-  const isPublished = set.status === "published";
+  const isPublished = setStatus === "published";
   const disabled = !canEdit || isPublished || !set.id;
 
   async function handleSave() {
@@ -146,11 +153,13 @@ export function SdSetScoresForm({
     try {
       await handleSave();
       const { winnerId } = await publishSdSet(set.id);
+      setSetStatus("published");
       setMessage(
         winnerId
           ? `Published. Winner locked in.`
           : "Published."
       );
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Publish failed");
     } finally {
@@ -178,7 +187,9 @@ export function SdSetScoresForm({
         setError(result.error);
         return;
       }
+      setSetStatus("draft");
       setMessage("Reverted to draft.");
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unpublish failed");
     } finally {

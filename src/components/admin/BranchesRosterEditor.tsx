@@ -11,6 +11,8 @@ import {
   setBranchActive,
   type BranchRosterUpdate,
 } from "@/lib/actions/admin";
+import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
+import { nationalCompetitionsPath } from "@/lib/admin-routes";
 import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
 import { normalizeBranchCode } from "@/lib/branch-roster";
 import { REGIONS, REGION_LABELS, type Region } from "@/lib/scoring-config";
@@ -18,6 +20,12 @@ import type { Branch } from "@/lib/types";
 
 type RowState = BranchRosterUpdate & {
   is_active: boolean;
+  representative_1?: string | null;
+  representative_1_employee_no?: string | null;
+  representative_1_employment_status?: import("@/lib/employees").EmploymentStatus | null;
+  representative_2?: string | null;
+  representative_2_employee_no?: string | null;
+  representative_2_employment_status?: import("@/lib/employees").EmploymentStatus | null;
 };
 
 interface Props {
@@ -42,6 +50,12 @@ function branchToRow(b: Branch): RowState {
     area: b.area,
     region: b.region,
     is_active: b.is_active !== false,
+    representative_1: b.representative_1,
+    representative_1_employee_no: b.representative_1_employee_no,
+    representative_1_employment_status: b.representative_1_employment_status,
+    representative_2: b.representative_2,
+    representative_2_employee_no: b.representative_2_employee_no,
+    representative_2_employment_status: b.representative_2_employment_status,
   };
 }
 
@@ -393,6 +407,7 @@ export function BranchesRosterEditor({
                 <th className="px-2 py-2">Name</th>
                 <th className="px-2 py-2">Area</th>
                 <th className="px-2 py-2">Region</th>
+                <th className="px-2 py-2">Reps</th>
                 <th className="px-2 py-2">Status</th>
                 <th className="px-2 py-2 text-right">Actions</th>
               </tr>
@@ -452,6 +467,48 @@ export function BranchesRosterEditor({
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td className="px-2 py-2 text-xs text-sd-muted">
+                    <div className="min-w-[10rem] space-y-1.5">
+                      {row.representative_1?.trim() ? (
+                        <div>
+                          <span className="text-white">{row.representative_1}</span>
+                          {row.representative_1_employee_no && (
+                            <span className="ml-1 text-sd-muted/70">
+                              ({row.representative_1_employee_no})
+                            </span>
+                          )}
+                          <div className="mt-0.5">
+                            <EmploymentStatusBadge
+                              status={row.representative_1_employment_status}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <span>—</span>
+                      )}
+                      {row.representative_2?.trim() && (
+                        <div>
+                          <span className="text-white">{row.representative_2}</span>
+                          {row.representative_2_employee_no && (
+                            <span className="ml-1 text-sd-muted/70">
+                              ({row.representative_2_employee_no})
+                            </span>
+                          )}
+                          <div className="mt-0.5">
+                            <EmploymentStatusBadge
+                              status={row.representative_2_employment_status}
+                            />
+                          </div>
+                        </div>
+                      )}
+                      <Link
+                        href={nationalCompetitionsPath("employees")}
+                        className="sd-link text-[10px]"
+                      >
+                        Employee directory →
+                      </Link>
+                    </div>
                   </td>
                   <td className="px-2 py-2">
                     {row.is_active ? (

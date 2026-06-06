@@ -1,5 +1,6 @@
 import type { Region, SeasonSlug } from "./scoring-config";
 import type { BranchRepresentativeFields } from "./representative-fields";
+import type { BranchRepEmployeeFields } from "./representative-active";
 
 export type BranchStatus =
   | "active"
@@ -11,7 +12,7 @@ export type BranchStatus =
 
 export type RoundStatus = "draft" | "published";
 
-export interface Branch extends BranchRepresentativeFields {
+export interface Branch extends BranchRepresentativeFields, BranchRepEmployeeFields {
   id: string;
   branch_code: string;
   branch_name: string;

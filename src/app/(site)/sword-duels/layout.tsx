@@ -1,7 +1,7 @@
 import { SwordDuelsPublicChrome } from "@/components/sword-duels/SwordDuelsPublicChrome";
 import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function SwordDuelsLayout({
   children,

@@ -19,7 +19,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { Region } from "@/lib/scoring-config";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const journey = await loadPublicJourneyState().catch(() => null);

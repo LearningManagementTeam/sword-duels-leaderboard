@@ -791,7 +791,8 @@ export async function getBranchesForRepresentatives() {
 
   if (error) throw error;
 
-  const branches = data ?? [];
+  const { enrichBranchesWithRepEmployees } = await import("@/lib/employees");
+  const branches = await enrichBranchesWithRepEmployees((data ?? []) as import("@/lib/types").Branch[]);
   const withReps = branches.filter((b) => b.representative_1?.trim()).length;
 
   return {
@@ -815,10 +816,13 @@ export async function getBranchesForRosterAdmin() {
 
   if (error) throw error;
 
-  const branches = (data ?? []).map((row) => ({
-    ...row,
-    is_active: row.is_active !== false,
-  }));
+  const { enrichBranchesWithRepEmployees } = await import("@/lib/employees");
+  const branches = await enrichBranchesWithRepEmployees(
+    (data ?? []).map((row) => ({
+      ...row,
+      is_active: row.is_active !== false,
+    })) as import("@/lib/types").Branch[]
+  );
   const activeCount = branches.filter((b) => b.is_active).length;
 
   return {

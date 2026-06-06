@@ -18,6 +18,8 @@ export const ADMIN_NAV_HINTS: Record<string, string> = {
     "Master branch list: add or edit one branch, deactivate closed branches, or bulk-import CSV before June Round 1.",
   [nationalCompetitionsPath("representatives")]:
     "Add or fix branch champion names anytime — for the public board and TV display.",
+  [nationalCompetitionsPath("employees")]:
+    "Competition rep profiles by employee number — track active, on leave, or resigned status.",
   [nationalCompetitionsPath("competition")]:
     "Update the home page journey map (“you are here”) after major beats — not needed for every score change.",
   [nationalCompetitionsPath("mechanics")]:

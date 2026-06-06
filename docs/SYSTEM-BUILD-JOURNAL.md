@@ -208,4 +208,16 @@ When new work ships, add a dated section here (or ask the agent to, using the **
 
 **In one sentence:** You can fix roster mistakes without re-uploading the whole CSV.
 
-Last updated: **6 June 2026**
+### Follow-up — employee profiles (reps)
+
+| What we built | What it does for you |
+|---------------|----------------------|
+| **Employees directory** | Admin → Employees: search, filter by status, edit profiles |
+| **Employment status** | Mark reps active, resigned, or on leave; badges in admin |
+| **Rep save + CSV import** | Saving reps creates/updates employee rows and keeps branch text in sync |
+| **SD score snapshots** | Published Sword Duels sets remember which employee competed |
+| **Migration 026** | `employees` table, branch rep FKs, `active_employee_id` on SD scores |
+
+**In one sentence:** Reps now have stable employee profiles so roster changes do not rewrite published competition history.
+
+Last updated: **2 June 2026**

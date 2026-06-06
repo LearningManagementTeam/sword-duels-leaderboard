@@ -1,7 +1,7 @@
 /** Shared branch representative columns — names, employee no., position. */
 
 export const BRANCH_REP_COLUMNS =
-  "representative_1, representative_2, representative_1_employee_no, representative_1_position, representative_2_employee_no, representative_2_position";
+  "representative_1, representative_2, representative_1_employee_no, representative_1_position, representative_2_employee_no, representative_2_position, representative_1_employee_id, representative_2_employee_id";
 
 export const BRANCH_WITH_REPS_SELECT = `id, branch_code, branch_name, area, region, ${BRANCH_REP_COLUMNS}`;
 
@@ -12,6 +12,8 @@ export interface BranchRepresentativeFields {
   representative_1_position?: string | null;
   representative_2_employee_no?: string | null;
   representative_2_position?: string | null;
+  representative_1_employee_id?: string | null;
+  representative_2_employee_id?: string | null;
 }
 
 export type RepresentativeSavePayload = {

@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
+import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
 import { saveBranchRepresentatives } from "@/lib/actions/admin";
 import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
+import type { EmploymentStatus } from "@/lib/employee-types";
 import { repSnapshot, type RepresentativeSavePayload } from "@/lib/representative-fields";
 import type { Branch } from "@/lib/types";
 import { REGION_LABELS } from "@/lib/scoring-config";
@@ -14,6 +16,8 @@ type RowState = RepresentativeSavePayload & {
   branch_name: string;
   area: string;
   region: Region;
+  representative_1_employment_status?: EmploymentStatus | null;
+  representative_2_employment_status?: EmploymentStatus | null;
 };
 
 interface Props {
@@ -42,6 +46,8 @@ function branchToRow(b: Branch): RowState {
     representative_1_position: b.representative_1_position ?? "",
     representative_2_employee_no: b.representative_2_employee_no ?? "",
     representative_2_position: b.representative_2_position ?? "",
+    representative_1_employment_status: b.representative_1_employment_status ?? null,
+    representative_2_employment_status: b.representative_2_employment_status ?? null,
   };
 }
 
@@ -50,6 +56,7 @@ function RepBlock({
   nameField,
   empField,
   posField,
+  status,
   row,
   onUpdate,
 }: {
@@ -57,14 +64,24 @@ function RepBlock({
   nameField: "representative_1" | "representative_2";
   empField: "representative_1_employee_no" | "representative_2_employee_no";
   posField: "representative_1_position" | "representative_2_position";
+  status?: EmploymentStatus | null;
   row: RowState;
   onUpdate: (branch_id: string, field: RepField, value: string) => void;
 }) {
   return (
     <div className="space-y-2 rounded-lg border border-emerald-500/15 bg-sd-deep/20 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-sd-muted/80">
-        {title}
-      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-sd-muted/80">
+          {title}
+        </p>
+        <EmploymentStatusBadge status={status} />
+      </div>
+      {status === "resigned" && row[nameField].trim() && (
+        <p className="text-xs text-amber-200/90">
+          This employee is marked resigned. Update their status on the Employees
+          page if they are competing again.
+        </p>
+      )}
       <label className="block text-xs">
         <span className="text-sd-muted/70">Name</span>
         <input
@@ -272,6 +289,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
               nameField="representative_1"
               empField="representative_1_employee_no"
               posField="representative_1_position"
+              status={row.representative_1_employment_status}
               row={row}
               onUpdate={updateRow}
             />
@@ -280,6 +298,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
               nameField="representative_2"
               empField="representative_2_employee_no"
               posField="representative_2_position"
+              status={row.representative_2_employment_status}
               row={row}
               onUpdate={updateRow}
             />

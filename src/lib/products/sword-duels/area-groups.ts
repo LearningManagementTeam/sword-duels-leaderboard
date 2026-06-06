@@ -27,6 +27,10 @@ function toGroupBranch(
     representative_1_position: branch.representative_1_position,
     representative_2_employee_no: branch.representative_2_employee_no,
     representative_2_position: branch.representative_2_position,
+    representative_1_employee_id: branch.representative_1_employee_id,
+    representative_2_employee_id: branch.representative_2_employee_id,
+    representative_1_employment_status: branch.representative_1_employment_status,
+    representative_2_employment_status: branch.representative_2_employment_status,
   };
 }
 

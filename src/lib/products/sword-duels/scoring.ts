@@ -1,5 +1,5 @@
 import {
-  resolveActiveRepresentativeName,
+  type RepScoreSnapshot,
   resolveActiveRepresentativeProfile,
 } from "@/lib/representative-active";
 import type { SdAreaGroupBranch, SdScoringMode, SdSetScore } from "./types";
@@ -57,7 +57,16 @@ export function computeSetResults(
   const rows = participants.map((p) => {
     const s = byScore.get(p.branch_id);
     const activeSlot = s?.active_representative ?? 1;
-    const profile = resolveActiveRepresentativeProfile(p, activeSlot);
+    const snapshot: RepScoreSnapshot | null = s
+      ? {
+          active_employee_id: s.active_employee_id,
+          active_employee_name: s.active_employee_name,
+          active_employee_no: s.active_employee_no,
+          active_employee_position: s.active_employee_position,
+          active_employee_status: s.active_employee_status,
+        }
+      : null;
+    const profile = resolveActiveRepresentativeProfile(p, activeSlot, snapshot);
     return {
       branch_id: p.branch_id,
       branch_code: p.branch_code,

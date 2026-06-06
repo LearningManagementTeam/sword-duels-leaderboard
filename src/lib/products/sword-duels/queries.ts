@@ -1,3 +1,4 @@
+import { enrichBranchesWithRepEmployees } from "@/lib/employees";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BRANCH_WITH_REPS_SELECT } from "@/lib/representative-fields";
 import type { Branch } from "@/lib/types";
@@ -58,10 +59,10 @@ export async function getAllBranches(): Promise<Branch[]> {
       .select(BRANCH_WITH_REPS_SELECT)
       .order("area")
       .order("branch_code");
-    return (fallback.data ?? []) as Branch[];
+    return enrichBranchesWithRepEmployees((fallback.data ?? []) as Branch[]);
   }
 
-  return (activeQuery.data ?? []) as Branch[];
+  return enrichBranchesWithRepEmployees((activeQuery.data ?? []) as Branch[]);
 }
 
 interface AreaGroupRow {
@@ -115,6 +116,10 @@ async function loadPersistedAreaBrackets(
           representative_1_position: branch.representative_1_position,
           representative_2_employee_no: branch.representative_2_employee_no,
           representative_2_position: branch.representative_2_position,
+          representative_1_employee_id: branch.representative_1_employee_id,
+          representative_2_employee_id: branch.representative_2_employee_id,
+          representative_1_employment_status: branch.representative_1_employment_status,
+          representative_2_employment_status: branch.representative_2_employment_status,
         };
         if (row.group_label === "a") groupA.push(entry);
         else groupB.push(entry);
@@ -175,18 +180,38 @@ export async function getSdSetScores(setIds: string[]): Promise<SdSetScore[]> {
   const { data } = await service
     .from("sd_set_scores")
     .select(
-      "branch_id, points, hearts_remaining, is_eliminated, active_representative, set_id"
+      "branch_id, points, hearts_remaining, is_eliminated, active_representative, active_employee_id, set_id"
     )
     .in("set_id", setIds);
 
-  return (data ?? []).map((row) => ({
-    branch_id: row.branch_id,
-    points: Number(row.points),
-    hearts_remaining: row.hearts_remaining,
-    is_eliminated: row.is_eliminated,
-    active_representative: (row.active_representative === 2 ? 2 : 1) as 1 | 2,
-    set_id: row.set_id as string,
-  })) as (SdSetScore & { set_id: string })[];
+  const employeeIds = [
+    ...new Set(
+      (data ?? [])
+        .map((row) => row.active_employee_id as string | null)
+        .filter((id): id is string => Boolean(id))
+    ),
+  ];
+  const { loadEmployeesByIds } = await import("@/lib/employees");
+  const employeesById = await loadEmployeesByIds(employeeIds);
+
+  return (data ?? []).map((row) => {
+    const employee = row.active_employee_id
+      ? employeesById.get(row.active_employee_id as string)
+      : null;
+    return {
+      branch_id: row.branch_id,
+      points: Number(row.points),
+      hearts_remaining: row.hearts_remaining,
+      is_eliminated: row.is_eliminated,
+      active_representative: (row.active_representative === 2 ? 2 : 1) as 1 | 2,
+      active_employee_id: (row.active_employee_id as string | null) ?? null,
+      active_employee_name: employee?.full_name ?? null,
+      active_employee_no: employee?.employee_no ?? null,
+      active_employee_position: employee?.position ?? null,
+      active_employee_status: employee?.employment_status ?? null,
+      set_id: row.set_id as string,
+    };
+  }) as (SdSetScore & { set_id: string })[];
 }
 
 export function scoresBySetId(

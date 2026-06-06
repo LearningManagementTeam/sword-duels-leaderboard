@@ -301,6 +301,38 @@ export async function importParticipatingBranchesForJuneArea(
     return { ok: false as const, errors: [branchError.message] };
   }
 
+  const repRows = rows.filter((r) => r.representative_1?.trim());
+  if (repRows.length > 0) {
+    const { data: importedForReps } = await service
+      .from("branches")
+      .select("id, branch_code")
+      .in(
+        "branch_code",
+        repRows.map((r) => r.branch_code)
+      );
+    const { linkBranchRepresentativesFromPayload } = await import("@/lib/employees");
+    for (const csvRow of repRows) {
+      const branch = (importedForReps ?? []).find(
+        (b) => b.branch_code === csvRow.branch_code
+      );
+      if (!branch) continue;
+      await linkBranchRepresentativesFromPayload(
+        service,
+        branch.id,
+        branch.branch_code,
+        {
+          representative_1: csvRow.representative_1 ?? "",
+          representative_2: csvRow.representative_2 ?? "",
+          representative_1_employee_no: csvRow.representative_1_employee_no ?? "",
+          representative_1_position: csvRow.representative_1_position ?? "",
+          representative_2_employee_no: csvRow.representative_2_employee_no ?? "",
+          representative_2_position: csvRow.representative_2_position ?? "",
+        },
+        now
+      );
+    }
+  }
+
   const { data: season } = await service
     .from("seasons")
     .select("id")
@@ -376,25 +408,112 @@ export async function saveBranchRepresentatives(
   const service = await createServiceClient();
   const now = new Date().toISOString();
 
-  for (const row of updates) {
-    const { error } = await service
-      .from("branches")
-      .update({
-        ...representativeDbUpdate(row),
-        representatives_updated_at: now,
-      })
-      .eq("id", row.branch_id);
+  const branchIds = updates.map((row) => row.branch_id);
+  const { data: branchRows } = await service
+    .from("branches")
+    .select("id, branch_code")
+    .in("id", branchIds);
+  const codeById = new Map(
+    (branchRows ?? []).map((b) => [b.id, b.branch_code as string])
+  );
 
-    if (error) return { ok: false as const, errors: [error.message] };
+  for (const row of updates) {
+    const branchCode = codeById.get(row.branch_id);
+    if (!branchCode) {
+      return { ok: false as const, errors: ["Branch not found for representative update."] };
+    }
+
+    try {
+      const { linkBranchRepresentativesFromPayload } = await import(
+        "@/lib/employees"
+      );
+      await linkBranchRepresentativesFromPayload(
+        service,
+        row.branch_id,
+        branchCode,
+        row,
+        now
+      );
+    } catch (e) {
+      return {
+        ok: false as const,
+        errors: [e instanceof Error ? e.message : "Failed to save representatives"],
+      };
+    }
   }
 
   await logAudit(email, "save_representatives", "branches", null, {
     count: updates.length,
   });
   revalidatePath("/admin/national-competitions/representatives");
+  revalidatePath("/admin/national-competitions/employees");
   revalidatePath("/admin/sword-duels/representatives");
   revalidatePath("/sword-duels");
   return { ok: true as const, count: updates.length };
+}
+
+function revalidateEmployeePaths() {
+  revalidatePath("/admin/national-competitions/employees");
+  revalidatePath("/admin/national-competitions/representatives");
+  revalidatePath("/admin/national-competitions/branches");
+  revalidatePath("/admin/sword-duels/representatives");
+  revalidatePath("/sword-duels");
+}
+
+export async function saveEmployeeProfileAction(
+  employeeId: string,
+  fields: {
+    employee_no: string;
+    full_name: string;
+    position: string;
+    notes?: string;
+  }
+) {
+  const { email } = await requireAdmin();
+  const { updateEmployeeProfile, syncBranchRepTextFromEmployee } = await import(
+    "@/lib/employees"
+  );
+
+  const employee = await updateEmployeeProfile(employeeId, fields);
+  await syncBranchRepTextFromEmployee(employee.id);
+
+  await logAudit(email, "update_employee", "employee", employeeId, {
+    employee_no: employee.employee_no,
+  });
+  revalidateEmployeePaths();
+  return { ok: true as const, employee };
+}
+
+export async function createEmployeeAction(fields: {
+  employee_no: string;
+  full_name: string;
+  position?: string;
+  notes?: string;
+}) {
+  const { email } = await requireAdmin();
+  const { createEmployeeRecord } = await import("@/lib/employees");
+
+  const employee = await createEmployeeRecord(fields);
+  await logAudit(email, "create_employee", "employee", employee.id, {
+    employee_no: employee.employee_no,
+  });
+  revalidateEmployeePaths();
+  return { ok: true as const, employee };
+}
+
+export async function setEmployeeEmploymentStatusAction(
+  employeeId: string,
+  status: import("@/lib/employees").EmploymentStatus
+) {
+  const { email } = await requireAdmin();
+  const { setEmployeeEmploymentStatus } = await import("@/lib/employees");
+
+  const employee = await setEmployeeEmploymentStatus(employeeId, status);
+  await logAudit(email, "set_employee_status", "employee", employeeId, {
+    status,
+  });
+  revalidateEmployeePaths();
+  return { ok: true as const, employee };
 }
 
 function revalidateBranchRosterPaths() {
@@ -576,36 +695,42 @@ export async function importRepresentativesFromCsv(csvText: string) {
     .from("branches")
     .select("id, branch_code");
 
-  const codeToId = new Map(
-    (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b.id])
+  const codeToBranch = new Map(
+    (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b])
   );
 
   const notFound: string[] = [];
   const now = new Date().toISOString();
   let updated = 0;
+  const { linkBranchRepresentativesFromPayload } = await import("@/lib/employees");
 
   for (const row of rows) {
-    const id = codeToId.get(row.branch_code.toLowerCase());
-    if (!id) {
+    const branch = codeToBranch.get(row.branch_code.toLowerCase());
+    if (!branch) {
       notFound.push(row.branch_code);
       continue;
     }
-    const { error } = await service
-      .from("branches")
-      .update({
-        ...representativeDbUpdate({
+    try {
+      await linkBranchRepresentativesFromPayload(
+        service,
+        branch.id,
+        branch.branch_code,
+        {
           representative_1: row.representative_1,
           representative_2: row.representative_2,
           representative_1_employee_no: row.representative_1_employee_no,
           representative_1_position: row.representative_1_position,
           representative_2_employee_no: row.representative_2_employee_no,
           representative_2_position: row.representative_2_position,
-        }),
-        representatives_updated_at: now,
-      })
-      .eq("id", id);
-
-    if (error) return { ok: false as const, errors: [error.message] };
+        },
+        now
+      );
+    } catch (e) {
+      return {
+        ok: false as const,
+        errors: [e instanceof Error ? e.message : "Failed to import representatives"],
+      };
+    }
     updated++;
   }
 
@@ -621,6 +746,7 @@ export async function importRepresentativesFromCsv(csvText: string) {
     row_count: rows.length,
   });
   revalidatePath("/admin/national-competitions/representatives");
+  revalidatePath("/admin/national-competitions/employees");
 
   if (updated === 0) {
     return { ok: false as const, errors: resultErrors };

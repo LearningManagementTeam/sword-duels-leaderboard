@@ -24,7 +24,7 @@ import {
   buildSdPageMetadata,
 } from "@/lib/products/sword-duels/share-metadata";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

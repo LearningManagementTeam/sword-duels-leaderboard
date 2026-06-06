@@ -74,7 +74,16 @@ export function buildNationalsRosterFromContext(
     if (winnerRow && winnerBranch) {
       const profile = resolveActiveRepresentativeProfile(
         winnerBranch,
-        winnerScore?.active_representative
+        winnerScore?.active_representative,
+        winnerScore
+          ? {
+              active_employee_id: winnerScore.active_employee_id,
+              active_employee_name: winnerScore.active_employee_name,
+              active_employee_no: winnerScore.active_employee_no,
+              active_employee_position: winnerScore.active_employee_position,
+              active_employee_status: winnerScore.active_employee_status,
+            }
+          : null
       );
       areaReps.push({
         area: bracket.area,
@@ -95,7 +104,16 @@ export function buildNationalsRosterFromContext(
     if (loserRow && loserBranch) {
       const profile = resolveActiveRepresentativeProfile(
         loserBranch,
-        loserScore?.active_representative
+        loserScore?.active_representative,
+        loserScore
+          ? {
+              active_employee_id: loserScore.active_employee_id,
+              active_employee_name: loserScore.active_employee_name,
+              active_employee_no: loserScore.active_employee_no,
+              active_employee_position: loserScore.active_employee_position,
+              active_employee_status: loserScore.active_employee_status,
+            }
+          : null
       );
       losers.push({
         id: loserRow.branch_id,

@@ -20,7 +20,7 @@ import {
 import { getSdEvent } from "@/lib/products/sword-duels/queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Sword Duels — TV bracket",

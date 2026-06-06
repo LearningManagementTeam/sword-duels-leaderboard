@@ -13,6 +13,8 @@ export interface SdEvent {
 }
 
 export interface SdAreaGroupBranch extends BranchRepresentativeFields {
+  representative_1_employment_status?: import("@/lib/employees").EmploymentStatus | null;
+  representative_2_employment_status?: import("@/lib/employees").EmploymentStatus | null;
   branch_id: string;
   branch_code: string;
   branch_name: string;
@@ -39,6 +41,11 @@ export interface SdSetScore {
   hearts_remaining: number | null;
   is_eliminated: boolean;
   active_representative?: 1 | 2;
+  active_employee_id?: string | null;
+  active_employee_name?: string | null;
+  active_employee_no?: string | null;
+  active_employee_position?: string | null;
+  active_employee_status?: import("@/lib/employees").EmploymentStatus | null;
 }
 
 export interface SdAreaBracket {

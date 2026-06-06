@@ -133,6 +133,7 @@ export default async function SwordDuelsAreaPage({
           return (
             <div key={set.set_type} id={set.set_type} className="scroll-mt-24">
               <SdSetScoresForm
+                key={`${set.id}-${set.status}`}
                 set={set}
                 setType={set.set_type}
                 participants={participants}
