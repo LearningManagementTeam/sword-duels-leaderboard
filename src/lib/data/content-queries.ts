@@ -18,6 +18,12 @@ import {
   type MechanicsPublicBody,
 } from "@/lib/mechanics-content";
 import {
+  DEFAULT_SITE_HOME_CONFIG,
+  parseSiteHomeConfigBody,
+  SITE_HOME_CONFIG_SLUG,
+  type SiteHomeConfig,
+} from "@/lib/site-home-config";
+import {
   createServiceClient,
   isSupabaseServiceConfigured,
 } from "@/lib/supabase/server";
@@ -65,4 +71,19 @@ export const getCompetitionMap = cache(async (): Promise<CompetitionMapConfig> =
 
   if (error || !data) return { ...DEFAULT_COMPETITION_MAP_CONFIG };
   return parseCompetitionMapBody(data.body);
+});
+
+export const getSiteHomeConfig = cache(async (): Promise<SiteHomeConfig> => {
+  if (!isSupabaseServiceConfigured()) {
+    return { ...DEFAULT_SITE_HOME_CONFIG };
+  }
+  const service = await createServiceClient();
+  const { data, error } = await service
+    .from("site_content")
+    .select("body")
+    .eq("slug", SITE_HOME_CONFIG_SLUG)
+    .maybeSingle();
+
+  if (error || !data) return { ...DEFAULT_SITE_HOME_CONFIG };
+  return parseSiteHomeConfigBody(data.body);
 });

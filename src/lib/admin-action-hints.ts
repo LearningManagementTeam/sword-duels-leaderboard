@@ -99,6 +99,8 @@ export const ADMIN_ADVANCEMENT_HINTS = {
 };
 
 export const ADMIN_SITE_HINTS = {
+  saveSiteHomeConfig:
+    "Chooses whether Sword Duels or National Competitions owns the large hero on the public home page.",
   saveCompetitionMap:
     "Updates the home page milestone, caption, and optional contestant list visibility.",
   suggestCompetitionMap:

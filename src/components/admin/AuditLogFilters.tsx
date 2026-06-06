@@ -9,6 +9,7 @@ const ACTION_OPTIONS = [
   { value: "publish_round", label: "Publish round" },
   { value: "save_round_results", label: "Save round (draft)" },
   { value: "save_competition_map", label: "Competition map" },
+  { value: "save_site_home_config", label: "Site home hero" },
   { value: "upload_branding_logo", label: "Branding (logo)" },
   { value: "upload_carousel_slide", label: "Branding (carousel)" },
   { value: "upload_sponsor_logo", label: "Branding (partner logos)" },

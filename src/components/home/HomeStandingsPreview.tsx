@@ -9,6 +9,7 @@ import {
 } from "@/lib/leaderboard-display";
 import type { BrandingConfig } from "@/lib/branding";
 import type { CompetitionMapConfig } from "@/lib/competition-map";
+import type { SiteHomeConfig } from "@/lib/site-home-config";
 import {
   getBranchCount,
   getLatestPublishedRoundNumber,
@@ -38,6 +39,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 interface Props {
   mapConfig: CompetitionMapConfig;
   branding: BrandingConfig;
+  homeConfig?: SiteHomeConfig;
 }
 
 type PreviewRow = {
@@ -73,6 +75,7 @@ async function loadHomePreviewRows(
 export async function HomeStandingsPreview({
   mapConfig: config,
   branding,
+  homeConfig,
 }: Props) {
   const standingsHref = resolvePublicStandingsHref(config);
   const { seasonSlug } = parsePublicStandingsPath(standingsHref);
@@ -99,7 +102,13 @@ export async function HomeStandingsPreview({
     }
   }
 
-  const headline = buildHomeArenaHeadline(seasonSlug, latestRound);
+  const autoHeadline = buildHomeArenaHeadline(seasonSlug, latestRound);
+  const headline = {
+    phaseLabel: homeConfig?.heroHeadlineOverride || autoHeadline.phaseLabel,
+    roundLine: homeConfig?.heroSublineOverride || autoHeadline.roundLine,
+    scopeLine: autoHeadline.scopeLine,
+    mechanicsLine: autoHeadline.mechanicsLine,
+  };
   const cta = resolveHomeStandingsCta(
     config.milestoneId,
     junePublishedRound,
@@ -117,7 +126,7 @@ export async function HomeStandingsPreview({
       <div className="mx-auto max-w-3xl space-y-6 text-center">
         <header className="space-y-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-sd-glow/90">
-            The arena
+            Now live · National Competitions
           </p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <h2 className="text-2xl font-bold text-white sm:text-3xl">

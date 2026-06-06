@@ -1242,6 +1242,44 @@ export async function saveMechanicsContent(body: MechanicsPublicBody) {
   return { ok: true };
 }
 
+export async function saveSiteHomeConfig(
+  config: import("@/lib/site-home-config").SiteHomeConfig
+) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const { SITE_HOME_CONFIG_SLUG } = await import("@/lib/site-home-config");
+
+  const payload = {
+    featuredProgram: config.featuredProgram,
+    heroHeadlineOverride: config.heroHeadlineOverride ?? "",
+    heroSublineOverride: config.heroSublineOverride ?? "",
+  };
+
+  const { error } = await service.from("site_content").upsert(
+    {
+      slug: SITE_HOME_CONFIG_SLUG,
+      body: payload,
+      updated_at: new Date().toISOString(),
+      updated_by_email: email,
+    },
+    { onConflict: "slug" }
+  );
+
+  if (error) throw new Error(error.message);
+
+  await logAudit(
+    email,
+    "save_site_home_config",
+    "site_content",
+    SITE_HOME_CONFIG_SLUG,
+    { featuredProgram: payload.featuredProgram }
+  );
+
+  revalidatePath("/");
+  revalidatePath("/admin/national-competitions/competition");
+  return { ok: true };
+}
+
 export async function saveCompetitionMap(config: CompetitionMapConfig) {
   const { email } = await requireAdmin();
   const service = await createServiceClient();

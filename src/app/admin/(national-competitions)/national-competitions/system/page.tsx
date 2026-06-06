@@ -16,6 +16,10 @@ const migrations = [
     note: "Home page competition map site_content row",
   },
   {
+    file: "021_site_home_config.sql",
+    note: "Featured program hero on public home (site_content site_home)",
+  },
+  {
     file: "011_branding_bucket_public.sql",
     note: "Public read for branding carousel photos",
   },
