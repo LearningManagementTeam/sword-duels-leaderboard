@@ -23,7 +23,7 @@ export interface RepSlotInput {
 }
 
 const EMPLOYEE_COLUMNS =
-  "id, employee_no, full_name, position, employment_status, resigned_at, notes, photo_path, created_at, updated_at";
+  "id, employee_no, full_name, position, employment_status, resigned_at, notes, photo_path, home_branch_id, created_at, updated_at";
 
 export function normalizeEmployeeNo(value: string): string {
   return value.trim();
@@ -263,6 +263,21 @@ export interface GetEmployeesForAdminOptions {
   branchId?: string;
 }
 
+export async function getBranchOptionsForHris(): Promise<
+  import("@/lib/employee-types").HrisBranchOption[]
+> {
+  const service = await createServiceClient();
+  const { data, error } = await service
+    .from("branches")
+    .select("id, branch_code, branch_name, area")
+    .eq("is_active", true)
+    .order("area")
+    .order("branch_name");
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as import("@/lib/employee-types").HrisBranchOption[];
+}
+
 export async function getEmployeesForAdmin(
   options: GetEmployeesForAdminOptions = {}
 ): Promise<EmployeeAdminRow[]> {
@@ -281,6 +296,10 @@ export async function getEmployeesForAdmin(
     .select(
       "id, branch_code, branch_name, representative_1_employee_id, representative_2_employee_id"
     );
+
+  const branchById = new Map(
+    (branches ?? []).map((b) => [b.id, { branch_code: b.branch_code, branch_name: b.branch_name }])
+  );
 
   const assignmentsByEmployee = new Map<string, EmployeeRepAssignment[]>();
   for (const branch of branches ?? []) {
@@ -312,20 +331,29 @@ export async function getEmployeesForAdmin(
   return (employees ?? [])
     .map((row) => {
       const employee = row as Employee;
+      const homeBranch = employee.home_branch_id
+        ? branchById.get(employee.home_branch_id)
+        : null;
       return {
         ...employee,
+        home_branch_code: homeBranch?.branch_code ?? null,
+        home_branch_name: homeBranch?.branch_name ?? null,
         rep_assignments: assignmentsByEmployee.get(employee.id) ?? [],
       };
     })
     .filter((row) => {
-      if (branchId && !row.rep_assignments.some((a) => a.branch_id === branchId)) {
-        return false;
+      if (branchId) {
+        const matchesHome = row.home_branch_id === branchId;
+        const matchesRep = row.rep_assignments.some((a) => a.branch_id === branchId);
+        if (!matchesHome && !matchesRep) return false;
       }
       if (!search) return true;
       return (
         row.full_name.toLowerCase().includes(search) ||
         row.employee_no.toLowerCase().includes(search) ||
         (row.position?.toLowerCase().includes(search) ?? false) ||
+        (row.home_branch_code?.toLowerCase().includes(search) ?? false) ||
+        (row.home_branch_name?.toLowerCase().includes(search) ?? false) ||
         row.rep_assignments.some(
           (a) =>
             a.branch_code.toLowerCase().includes(search) ||
@@ -342,6 +370,7 @@ export async function updateEmployeeProfile(
     full_name: string;
     position: string;
     notes?: string;
+    home_branch_id?: string | null;
   }
 ): Promise<Employee> {
   const service = await createServiceClient();
@@ -358,6 +387,7 @@ export async function updateEmployeeProfile(
       notes: fields.notes?.trim()
         ? normalizeAllCapsText(fields.notes.trim()) || null
         : null,
+      home_branch_id: fields.home_branch_id?.trim() || null,
       updated_at: now,
     })
     .eq("id", employeeId)
@@ -373,6 +403,7 @@ export async function createEmployeeRecord(fields: {
   full_name: string;
   position?: string;
   notes?: string;
+  home_branch_id?: string | null;
 }): Promise<Employee> {
   const service = await createServiceClient();
   const now = new Date().toISOString();
@@ -388,6 +419,7 @@ export async function createEmployeeRecord(fields: {
       notes: fields.notes?.trim()
         ? normalizeAllCapsText(fields.notes.trim()) || null
         : null,
+      home_branch_id: fields.home_branch_id?.trim() || null,
       employment_status: "active",
       updated_at: now,
     })

@@ -9,8 +9,16 @@ export interface Employee {
   resigned_at: string | null;
   notes: string | null;
   photo_path: string | null;
+  home_branch_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface HrisBranchOption {
+  id: string;
+  branch_code: string;
+  branch_name: string;
+  area: string | null;
 }
 
 export interface EmployeeRepAssignment {
@@ -21,6 +29,8 @@ export interface EmployeeRepAssignment {
 }
 
 export interface EmployeeAdminRow extends Employee {
+  home_branch_code: string | null;
+  home_branch_name: string | null;
   rep_assignments: EmployeeRepAssignment[];
 }
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { EmployeesDirectoryEditor } from "@/components/admin/EmployeesDirectoryEditor";
 import { SetupBanner } from "@/components/SetupBanner";
 import { hrisPath, nationalCompetitionsPath } from "@/lib/admin-routes";
-import { getEmployeesForAdmin } from "@/lib/employees";
+import { getBranchOptionsForHris, getEmployeesForAdmin } from "@/lib/employees";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -10,12 +10,17 @@ export const dynamic = "force-dynamic";
 export default async function HrisEmployeesPage() {
   const configured = isSupabaseConfigured();
   let employees: Awaited<ReturnType<typeof getEmployeesForAdmin>> = [];
+  let branches: Awaited<ReturnType<typeof getBranchOptionsForHris>> = [];
 
   if (configured) {
     try {
-      employees = await getEmployeesForAdmin();
+      [employees, branches] = await Promise.all([
+        getEmployeesForAdmin(),
+        getBranchOptionsForHris(),
+      ]);
     } catch {
       employees = [];
+      branches = [];
     }
   }
 
@@ -24,15 +29,17 @@ export default async function HrisEmployeesPage() {
       <div className="sd-page-header">
         <h1>Employee directory</h1>
         <p>
-          Manage competition rep profiles — employee number, name, position, and
-          employment status. Assign reps per branch on{" "}
+          Manage HR employee profiles — number, name, position, optional home
+          branch, photo, and employment status. Home branch is where someone
+          works; it does not assign them as a competition rep. Assign reps per
+          branch on{" "}
           <Link
             href={nationalCompetitionsPath("representatives")}
             className="sd-link"
           >
             Revalida → Representatives
           </Link>
-          ; changes there sync here automatically. Branches are managed on{" "}
+          . Branches are managed on{" "}
           <Link href={hrisPath("branches")} className="sd-link">
             HRIS → Branches
           </Link>
@@ -42,7 +49,7 @@ export default async function HrisEmployeesPage() {
 
       {!configured && <SetupBanner />}
 
-      <EmployeesDirectoryEditor employees={employees} />
+      <EmployeesDirectoryEditor employees={employees} branches={branches} />
     </div>
   );
 }

@@ -469,6 +469,7 @@ export async function saveEmployeeProfileAction(
     full_name: string;
     position: string;
     notes?: string;
+    home_branch_id?: string | null;
   }
 ) {
   try {
@@ -498,6 +499,7 @@ export async function createEmployeeAction(fields: {
   full_name: string;
   position?: string;
   notes?: string;
+  home_branch_id?: string | null;
 }) {
   try {
     const { email } = await requireAdmin();
