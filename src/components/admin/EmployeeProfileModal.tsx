@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { EmployeePhotoEditor } from "@/components/admin/EmployeePhotoEditor";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
-import { RepAvatar } from "@/components/ui/RepAvatar";
 import {
   createEmployeeAction,
   deleteEmployeeAction,
@@ -21,7 +20,6 @@ import type {
   HrisBranchOption,
 } from "@/lib/employee-types";
 import { employmentStatusLabel } from "@/lib/employee-types";
-import { resolveEmployeePhotoUrl } from "@/lib/employee-photo-storage";
 import { normalizeAllCapsText } from "@/lib/text-format";
 
 type ProfileDraft = {
@@ -76,30 +74,28 @@ export function EmployeeProfileModal({
   );
   const [draftPhoto, setDraftPhoto] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [photoMessage, setPhotoMessage] = useState("");
-  const [photoError, setPhotoError] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [branchFilter, setBranchFilter] = useState("");
+  const [listStale, setListStale] = useState(false);
 
   const isCreate = mode === "create";
   const displayName = draft.full_name || employee?.full_name || "New employee";
-  const photoUrl = isCreate
-    ? null
-    : resolveEmployeePhotoUrl(employee?.photo_path ?? null);
 
   useEffect(() => {
     setDraft(employee ? draftFromEmployee(employee) : emptyDraft());
     setDraftPhoto(null);
-    setPhotoMessage("");
-    setPhotoError(false);
     setShowDeleteConfirm(false);
     setBranchFilter("");
+    setListStale(false);
   }, [employee, mode]);
 
   const handleClose = useCallback(() => {
     if (loading) return;
+    if (listStale) {
+      router.refresh();
+    }
     onClose();
-  }, [loading, onClose]);
+  }, [listStale, loading, onClose, router]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -232,25 +228,18 @@ export function EmployeeProfileModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <RepAvatar
-              name={displayName}
-              photoUrl={photoUrl}
-              size="lg"
-            />
-            <div>
-              <h2 id="employee-profile-title" className="text-lg font-semibold text-white">
-                {isCreate ? "New employee" : displayName}
-              </h2>
-              {!isCreate && employee && (
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-emerald-100">
-                    {employee.employee_no}
-                  </span>
-                  <EmploymentStatusBadge status={employee.employment_status} />
-                </div>
-              )}
-            </div>
+          <div>
+            <h2 id="employee-profile-title" className="text-lg font-semibold text-white">
+              {isCreate ? "New employee" : displayName}
+            </h2>
+            {!isCreate && employee && (
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <span className="font-mono text-xs text-emerald-100">
+                  {employee.employee_no}
+                </span>
+                <EmploymentStatusBadge status={employee.employment_status} />
+              </div>
+            )}
           </div>
           <button
             type="button"
@@ -272,26 +261,11 @@ export function EmployeeProfileModal({
             : {
                 employeeId: employee!.id,
                 photoPath: employee!.photo_path,
+                onPhotoUpdated: () => setListStale(true),
               })}
           name={displayName}
           disabled={loading}
-          onMessage={(msg, err) => {
-            if (msg) {
-              setPhotoMessage(msg);
-              setPhotoError(!!err);
-            }
-          }}
         />
-
-        {photoMessage && (
-          <p
-            className={`text-xs ${
-              photoError ? "text-rose-200" : "text-emerald-200"
-            }`}
-          >
-            {photoMessage}
-          </p>
-        )}
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm sm:col-span-1">

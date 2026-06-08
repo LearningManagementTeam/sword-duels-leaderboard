@@ -37,7 +37,10 @@ import {
   type BrandingConfig,
 } from "@/lib/branding";
 import { revalidateBrandingPublicPaths } from "@/lib/branding-revalidate";
-import { normalizeEmployeePhotoBuffer } from "@/lib/employee-photo-file";
+import {
+  persistEmployeePhotoRemove,
+  persistEmployeePhotoUpload,
+} from "@/lib/employee-photo-upload";
 import {
   COMPETITION_MAP_SLUG,
   type CompetitionMapConfig,
@@ -462,6 +465,10 @@ function revalidateEmployeePaths() {
   revalidatePath("/", "layout");
 }
 
+function revalidateEmployeePhotoPaths() {
+  revalidatePath("/admin/hris/employees");
+}
+
 export async function saveEmployeeProfileAction(
   employeeId: string,
   fields: {
@@ -561,73 +568,28 @@ export async function setEmployeeEmploymentStatusAction(
   }
 }
 
-async function removeEmployeePhotoFiles(
-  service: Awaited<ReturnType<typeof createServiceClient>>,
-  employeeId: string
-) {
-  await service.storage
-    .from("employee-photos")
-    .remove([
-      `${employeeId}.png`,
-      `${employeeId}.jpg`,
-      `${employeeId}.webp`,
-    ]);
-}
-
 export async function uploadEmployeePhotoAction(
   employeeId: string,
   formData: FormData
 ) {
   try {
     const { email } = await requireAdmin();
-    const service = await createServiceClient();
     const entry = formData.get("file");
-    const { employeePhotoStoragePath, employeePhotoUrl } = await import(
-      "@/lib/employee-photo-storage"
-    );
 
     if (!(entry instanceof Blob) || entry.size === 0) {
       return { ok: false as const, error: "Choose a photo to upload." };
     }
 
-    const buffer = Buffer.from(await entry.arrayBuffer());
-    const fileName = entry instanceof File ? entry.name : "upload";
-    const normalized = normalizeEmployeePhotoBuffer(
-      buffer,
-      fileName,
-      entry.type || ""
-    );
-    if ("error" in normalized) {
-      return { ok: false as const, error: normalized.error };
-    }
-
-    const path = employeePhotoStoragePath(employeeId, normalized.ext);
-    await removeEmployeePhotoFiles(service, employeeId);
-
-    const { error: uploadErr } = await service.storage
-      .from("employee-photos")
-      .upload(path, buffer, {
-        contentType: normalized.mime,
-        upsert: true,
-      });
-    if (uploadErr) {
-      return { ok: false as const, error: uploadErr.message };
-    }
-
-    const now = new Date().toISOString();
-    const { error } = await service
-      .from("employees")
-      .update({ photo_path: path, updated_at: now })
-      .eq("id", employeeId);
-    if (error) {
-      return { ok: false as const, error: error.message };
+    const result = await persistEmployeePhotoUpload(employeeId, entry);
+    if (!result.ok) {
+      return { ok: false as const, error: result.error };
     }
 
     await logAudit(email, "upload_employee_photo", "employee", employeeId, {
-      photo_path: path,
+      photo_path: result.photoUrl,
     });
-    revalidateEmployeePaths();
-    return { ok: true as const, photoUrl: employeePhotoUrl(path) };
+    revalidateEmployeePhotoPaths();
+    return { ok: true as const, photoUrl: result.photoUrl };
   } catch (e) {
     return {
       ok: false as const,
@@ -639,20 +601,14 @@ export async function uploadEmployeePhotoAction(
 export async function removeEmployeePhotoAction(employeeId: string) {
   try {
     const { email } = await requireAdmin();
-    const service = await createServiceClient();
 
-    await removeEmployeePhotoFiles(service, employeeId);
-    const now = new Date().toISOString();
-    const { error } = await service
-      .from("employees")
-      .update({ photo_path: null, updated_at: now })
-      .eq("id", employeeId);
-    if (error) {
-      return { ok: false as const, error: error.message };
+    const result = await persistEmployeePhotoRemove(employeeId);
+    if (!result.ok) {
+      return { ok: false as const, error: result.error };
     }
 
     await logAudit(email, "remove_employee_photo", "employee", employeeId, {});
-    revalidateEmployeePaths();
+    revalidateEmployeePhotoPaths();
     return { ok: true as const };
   } catch (e) {
     return {

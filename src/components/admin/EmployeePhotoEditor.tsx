@@ -4,10 +4,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { RepAvatar } from "@/components/ui/RepAvatar";
 import {
-  removeEmployeePhotoAction,
-  uploadEmployeePhotoAction,
-} from "@/lib/actions/admin";
-import {
   imageFileFromClipboardApi,
   imageFileFromDataTransfer,
   isEditablePasteTarget,
@@ -20,7 +16,9 @@ type PhotoStatus = "idle" | "reading" | "uploading" | "removing" | "success" | "
 type CommonProps = {
   name: string;
   disabled?: boolean;
-  onMessage: (message: string, error?: boolean) => void;
+  /** When set, skips full-page refresh after upload/remove. */
+  onPhotoUpdated?: () => void;
+  onMessage?: (message: string, error?: boolean) => void;
 };
 
 type SavedProps = CommonProps & {
@@ -39,8 +37,41 @@ type DraftProps = CommonProps & {
 
 type Props = SavedProps | DraftProps;
 
+async function uploadPhotoViaApi(
+  employeeId: string,
+  file: File
+): Promise<{ photoUrl: string }> {
+  const formData = new FormData();
+  formData.set("employeeId", employeeId);
+  formData.set("file", file);
+  const response = await fetch("/api/hris/employee-photo", {
+    method: "POST",
+    body: formData,
+  });
+  const data = (await response.json()) as {
+    ok?: boolean;
+    error?: string;
+    photoUrl?: string;
+  };
+  if (!response.ok || !data.ok || !data.photoUrl) {
+    throw new Error(data.error ?? "Upload failed.");
+  }
+  return { photoUrl: data.photoUrl };
+}
+
+async function removePhotoViaApi(employeeId: string): Promise<void> {
+  const response = await fetch(
+    `/api/hris/employee-photo?employeeId=${encodeURIComponent(employeeId)}`,
+    { method: "DELETE" }
+  );
+  const data = (await response.json()) as { ok?: boolean; error?: string };
+  if (!response.ok || !data.ok) {
+    throw new Error(data.error ?? "Remove failed.");
+  }
+}
+
 export function EmployeePhotoEditor(props: Props) {
-  const { name, disabled = false, onMessage } = props;
+  const { name, disabled = false, onPhotoUpdated, onMessage } = props;
   const isDraft = !("employeeId" in props && props.employeeId);
 
   const router = useRouter();
@@ -51,6 +82,7 @@ export function EmployeePhotoEditor(props: Props) {
   const [pasteFocused, setPasteFocused] = useState(false);
   const [status, setStatus] = useState<PhotoStatus>("idle");
   const [statusMessage, setStatusMessage] = useState("");
+  const [localPhotoUrl, setLocalPhotoUrl] = useState<string | null>(null);
 
   const savedPhotoUrl = !isDraft
     ? resolveEmployeePhotoUrl(props.photoPath)
@@ -66,14 +98,22 @@ export function EmployeePhotoEditor(props: Props) {
     };
   }, [draftPreviewUrl]);
 
-  const photoUrl = isDraft ? draftPreviewUrl : savedPhotoUrl;
+  const savedEmployeeId = !isDraft ? props.employeeId : undefined;
+  const savedPhotoPath = !isDraft ? props.photoPath : null;
+  const onDraftFileChange = isDraft ? props.onDraftFileChange : undefined;
+
+  useEffect(() => {
+    setLocalPhotoUrl(null);
+  }, [savedPhotoPath, savedEmployeeId]);
+
+  const photoUrl = isDraft ? draftPreviewUrl : localPhotoUrl ?? savedPhotoUrl;
   const fileLabel = isDraft ? "new-employee" : props.employeeId;
 
   const setFeedback = useCallback(
     (message: string, nextStatus: PhotoStatus, error = false) => {
       setStatus(nextStatus);
       setStatusMessage(message);
-      onMessage(message, error);
+      onMessage?.(message, error);
     },
     [onMessage]
   );
@@ -81,7 +121,7 @@ export function EmployeePhotoEditor(props: Props) {
   const clearFeedback = useCallback(() => {
     setStatus("idle");
     setStatusMessage("");
-    onMessage("");
+    onMessage?.("");
   }, [onMessage]);
 
   useEffect(() => {
@@ -93,8 +133,19 @@ export function EmployeePhotoEditor(props: Props) {
     return () => window.clearTimeout(timer);
   }, [status]);
 
-  const onDraftFileChange = isDraft ? props.onDraftFileChange : undefined;
-  const savedEmployeeId = !isDraft ? props.employeeId : undefined;
+  const afterPhotoSaved = useCallback(
+    (nextUrl: string | null) => {
+      if (!isDraft) {
+        setLocalPhotoUrl(nextUrl);
+      }
+      if (onPhotoUpdated) {
+        onPhotoUpdated();
+        return;
+      }
+      startTransition(() => router.refresh());
+    },
+    [isDraft, onPhotoUpdated, router, startTransition]
+  );
 
   const applyFile = useCallback(
     async (rawFile: File, source: "upload" | "paste") => {
@@ -121,15 +172,13 @@ export function EmployeePhotoEditor(props: Props) {
       setBusy(true);
       setFeedback("Uploading photo…", "uploading");
       try {
-        const formData = new FormData();
-        formData.set("file", result.file);
-        const upload = await uploadEmployeePhotoAction(savedEmployeeId, formData);
-        if (!upload.ok) throw new Error(upload.error);
+        const upload = await uploadPhotoViaApi(savedEmployeeId, result.file);
+        if (!upload.photoUrl) throw new Error("Upload failed.");
         setFeedback(
           source === "paste" ? "Photo pasted and saved." : "Photo uploaded.",
           "success"
         );
-        startTransition(() => router.refresh());
+        afterPhotoSaved(upload.photoUrl);
       } catch (e) {
         setFeedback(
           e instanceof Error ? e.message : "Upload failed.",
@@ -141,7 +190,14 @@ export function EmployeePhotoEditor(props: Props) {
         if (inputRef.current) inputRef.current.value = "";
       }
     },
-    [fileLabel, isDraft, onDraftFileChange, router, savedEmployeeId, setFeedback, startTransition]
+    [
+      afterPhotoSaved,
+      fileLabel,
+      isDraft,
+      onDraftFileChange,
+      savedEmployeeId,
+      setFeedback,
+    ]
   );
 
   const applyFileRef = useRef(applyFile);
@@ -221,10 +277,9 @@ export function EmployeePhotoEditor(props: Props) {
     setFeedback("Removing photo…", "removing");
     void (async () => {
       try {
-        const result = await removeEmployeePhotoAction(props.employeeId);
-        if (!result.ok) throw new Error(result.error);
+        await removePhotoViaApi(props.employeeId);
         setFeedback("Photo removed.", "success");
-        startTransition(() => router.refresh());
+        afterPhotoSaved(null);
       } catch (e) {
         setFeedback(
           e instanceof Error ? e.message : "Remove failed.",
@@ -242,6 +297,9 @@ export function EmployeePhotoEditor(props: Props) {
 
   return (
     <div className="space-y-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-sd-muted">
+        Photo
+      </p>
       <div className="flex flex-wrap items-center gap-3">
         <div
           ref={pasteZoneRef}
