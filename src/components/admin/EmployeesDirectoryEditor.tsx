@@ -405,7 +405,7 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
         <p className="text-sm text-sd-muted">No employees match your filters.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[52rem] text-left text-sm">
+          <table className="w-full min-w-[44rem] text-left text-sm">
             <thead>
               <tr className="border-b border-emerald-500/15 text-xs uppercase tracking-wide text-sd-muted">
                 <th className="px-2 py-2">Photo</th>
@@ -413,7 +413,6 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                 <th className="px-2 py-2">Name</th>
                 <th className="px-2 py-2">Position</th>
                 <th className="px-2 py-2">Status</th>
-                <th className="px-2 py-2">Rep for branch</th>
                 <th className="px-2 py-2 text-right">Actions</th>
               </tr>
             </thead>
@@ -424,7 +423,7 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                     key={row.id}
                     className="border-b border-emerald-500/10 bg-sd-deep/30"
                   >
-                    <td colSpan={7} className="px-2 py-3">
+                    <td colSpan={6} className="px-2 py-3">
                       <p className="mb-3 text-xs font-medium uppercase tracking-wide text-violet-200/80">
                         Edit employee
                       </p>
@@ -554,19 +553,6 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                     </td>
                     <td className="px-2 py-2">
                       <EmploymentStatusBadge status={row.employment_status} />
-                    </td>
-                    <td className="px-2 py-2 text-xs text-sd-muted">
-                      {row.rep_assignments.length === 0 ? (
-                        "—"
-                      ) : (
-                        <ul className="space-y-0.5">
-                          {row.rep_assignments.map((a) => (
-                            <li key={`${a.branch_id}-${a.slot}`}>
-                              {a.branch_code} · Rep {a.slot}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
                     </td>
                     <td className="px-2 py-2 text-right">
                       <div className="flex flex-col items-end gap-2">
