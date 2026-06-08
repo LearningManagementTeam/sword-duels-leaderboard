@@ -6,6 +6,7 @@ import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 
 const LINKS = [
   { href: SWORD_DUELS_PUBLIC, label: "Areas", exact: true },
+  { href: `${SWORD_DUELS_PUBLIC}/calendar`, label: "Calendar", exact: true },
   { href: `${SWORD_DUELS_PUBLIC}/nationals`, label: "Nationals", exact: false },
   { href: `${SWORD_DUELS_PUBLIC}/mechanics`, label: "How it works", exact: true },
   { href: `${SWORD_DUELS_PUBLIC}/tv`, label: "TV", exact: false },

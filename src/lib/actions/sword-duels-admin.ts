@@ -68,6 +68,7 @@ function scheduleSdRevalidation(options?: {
       revalidatePath(swordDuelsPath("areas"));
       revalidatePath(swordDuelsPath("nationals"));
       revalidatePath(SWORD_DUELS_PUBLIC);
+      revalidatePath(`${SWORD_DUELS_PUBLIC}/calendar`);
       revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
       if (options?.area) {
         const slug = areaSlug(options.area);
@@ -80,6 +81,7 @@ function scheduleSdRevalidation(options?: {
       if (options?.home) {
         revalidatePath("/");
         revalidatePath(swordDuelsPath("schedules"));
+        revalidatePath(swordDuelsPath("calendar"));
       }
     } catch {
       /* non-fatal */
@@ -801,6 +803,49 @@ export async function saveSdAreaSchedulesForm(
 
   await logAudit(email, "save_sd_area_schedules", SD_AREA_SCHEDULES_SLUG, {
     areas: Object.keys(config.byArea).length,
+  });
+
+  scheduleSdRevalidation({ home: true });
+}
+
+export async function saveEventsCalendarForm(
+  config: import("@/lib/events-calendar").EventsCalendarConfig
+): Promise<void> {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const { EVENTS_CALENDAR_SLUG } = await import("@/lib/events-calendar");
+
+  const payload = {
+    events: config.events.map((e) => ({
+      id: e.id,
+      kind: e.kind,
+      title: e.title.trim(),
+      startAt: e.startAt,
+      published: e.published,
+      program: e.program,
+      ...(e.endAt ? { endAt: e.endAt } : {}),
+      ...(e.timeLabel ? { timeLabel: e.timeLabel.trim() } : {}),
+      ...(e.areas?.length ? { areas: e.areas } : {}),
+      ...(e.setLabel ? { setLabel: e.setLabel.trim() } : {}),
+      ...(e.description ? { description: e.description.trim() } : {}),
+    })),
+  };
+
+  const { error } = await service.from("site_content").upsert(
+    {
+      slug: EVENTS_CALENDAR_SLUG,
+      body: payload,
+      updated_at: new Date().toISOString(),
+      updated_by_email: email,
+    },
+    { onConflict: "slug" }
+  );
+
+  if (error) throw new Error(error.message);
+
+  await logAudit(email, "save_events_calendar", EVENTS_CALENDAR_SLUG, {
+    count: payload.events.length,
+    published: payload.events.filter((e) => e.published).length,
   });
 
   scheduleSdRevalidation({ home: true });

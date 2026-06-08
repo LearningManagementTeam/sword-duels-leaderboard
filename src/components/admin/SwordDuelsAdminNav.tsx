@@ -25,6 +25,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: SWORD_DUELS_ADMIN, label: "Dashboard", exact: true },
       { href: swordDuelsPath("areas"), label: "Areas" },
       { href: swordDuelsPath("schedules"), label: "Schedules" },
+      { href: swordDuelsPath("calendar"), label: "Calendar" },
       { href: swordDuelsPath("nationals"), label: "Nationals" },
     ],
   },

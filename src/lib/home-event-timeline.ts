@@ -4,6 +4,12 @@ import {
   upcomingScheduleEntries,
 } from "@/lib/event-schedule";
 import {
+  formatCalendarEventTitle,
+  nextCalendarEvent,
+  publishedCalendarEvents,
+  type EventsCalendarConfig,
+} from "@/lib/events-calendar";
+import {
   upcomingFromNcPhaseSchedules,
   type NcPhaseSchedulesConfig,
 } from "@/lib/nc-phase-schedules";
@@ -40,6 +46,53 @@ export interface HomeTimelineItem {
   href?: string;
   source: "scheduled" | "published";
 }
+
+function upcomingFromEventsCalendar(
+  config: EventsCalendarConfig,
+  now = Date.now(),
+  limit = 16
+): HomeTimelineItem[] {
+  const macroOnly = publishedCalendarEvents(config).filter(
+    (e) => !e.areas?.length
+  );
+
+  return macroOnly
+    .filter((e) => {
+      const end =
+        e.endAt != null
+          ? new Date(`${e.endAt}T23:59:59+08:00`).getTime()
+          : new Date(
+              e.startAt.length === 10
+                ? `${e.startAt}T23:59:59+08:00`
+                : e.startAt
+            ).getTime();
+      return end >= now;
+    })
+    .sort((a, b) => {
+      const aStart = new Date(
+        a.startAt.length === 10 ? `${a.startAt}T08:00:00+08:00` : a.startAt
+      ).getTime();
+      const bStart = new Date(
+        b.startAt.length === 10 ? `${b.startAt}T08:00:00+08:00` : b.startAt
+      ).getTime();
+      return aStart - bStart;
+    })
+    .slice(0, limit)
+    .map((event) => ({
+      id: `calendar-${event.id}`,
+      program: event.program,
+      title: formatCalendarEventTitle(event),
+      detail: event.timeLabel,
+      occurredAt:
+        event.startAt.length === 10
+          ? `${event.startAt}T08:00:00+08:00`
+          : event.startAt,
+      href: `${SWORD_DUELS_PUBLIC}/calendar`,
+      source: "scheduled" as const,
+    }));
+}
+
+export { nextCalendarEvent };
 
 function seasonPublicPath(slug: SeasonSlug): string {
   if (slug === "june_area") return "/june";
@@ -302,7 +355,8 @@ function mergeTimelineItems(
 export async function loadHomeEventTimeline(
   schedule: EventScheduleConfig,
   sdAreaSchedules?: SdAreaSchedulesConfig,
-  ncPhaseSchedules?: NcPhaseSchedulesConfig
+  ncPhaseSchedules?: NcPhaseSchedulesConfig,
+  eventsCalendar?: EventsCalendarConfig
 ): Promise<{
   upcoming: HomeTimelineItem[];
   recent: HomeTimelineItem[];
@@ -329,9 +383,13 @@ export async function loadHomeEventTimeline(
 
   const pastScheduled = pastScheduleToRecentItems(schedule);
 
+  const fromCalendar = eventsCalendar
+    ? upcomingFromEventsCalendar(eventsCalendar)
+    : [];
+
   return {
     upcoming: mergeTimelineItems(
-      [...manualUpcoming, ...fromAreas, ...fromNc],
+      [...manualUpcoming, ...fromAreas, ...fromNc, ...fromCalendar],
       8,
       true
     ),

@@ -30,6 +30,12 @@ import {
   type SdAreaSchedulesConfig,
 } from "@/lib/products/sword-duels/area-schedules";
 import {
+  DEFAULT_EVENTS_CALENDAR,
+  EVENTS_CALENDAR_SLUG,
+  parseEventsCalendarBody,
+  type EventsCalendarConfig,
+} from "@/lib/events-calendar";
+import {
   DEFAULT_NC_PHASE_SCHEDULES,
   NC_PHASE_SCHEDULES_SLUG,
   parseNcPhaseSchedulesBody,
@@ -152,5 +158,22 @@ export const getNcPhaseSchedules = cache(
 
     if (error || !data) return { ...DEFAULT_NC_PHASE_SCHEDULES };
     return parseNcPhaseSchedulesBody(data.body);
+  }
+);
+
+export const getEventsCalendar = cache(
+  async (): Promise<EventsCalendarConfig> => {
+    if (!isSupabaseServiceConfigured()) {
+      return { ...DEFAULT_EVENTS_CALENDAR };
+    }
+    const service = await createServiceClient();
+    const { data, error } = await service
+      .from("site_content")
+      .select("body")
+      .eq("slug", EVENTS_CALENDAR_SLUG)
+      .maybeSingle();
+
+    if (error || !data) return { ...DEFAULT_EVENTS_CALENDAR };
+    return parseEventsCalendarBody(data.body);
   }
 );

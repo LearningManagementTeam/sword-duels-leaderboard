@@ -127,6 +127,8 @@ export const ADMIN_SITE_HINTS = {
     "Chooses whether Sword Duels or National Competitions owns the large hero on the public home page.",
   saveEventSchedule:
     "Planned event dates on the home page Upcoming column. Past rows are removed on save. Recent results still come from published scores automatically.",
+  saveEventsCalendar:
+    "Full month calendar for Sword Duels — prep weeks, branch duels, selections, and July area/regional dates. Only published rows appear on /sword-duels/calendar.",
   saveNcPhaseSchedules:
     "Round dates for June, July, and The Nationals on the home Upcoming column until each round is published.",
   saveCompetitionMap:

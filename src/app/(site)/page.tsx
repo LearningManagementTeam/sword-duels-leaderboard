@@ -10,6 +10,7 @@ import {
   getBranding,
   getCompetitionMap,
   getEventSchedule,
+  getEventsCalendar,
   getNcPhaseSchedules,
   getSdAreaSchedules,
   getSiteHomeConfig,
@@ -54,11 +55,13 @@ export default async function HomePage() {
   const configured = isSupabaseConfigured();
   const siteUrl = getPublicSiteUrl();
   const mapConfig = await getCompetitionMap();
-  const [eventSchedule, sdAreaSchedules, ncPhaseSchedules] = await Promise.all([
-    getEventSchedule(),
-    getSdAreaSchedules(),
-    getNcPhaseSchedules(),
-  ]);
+  const [eventSchedule, sdAreaSchedules, ncPhaseSchedules, eventsCalendar] =
+    await Promise.all([
+      getEventSchedule(),
+      getSdAreaSchedules(),
+      getNcPhaseSchedules(),
+      getEventsCalendar(),
+    ]);
   const [branding, homeConfig, sdJourney, ncStatusLine, timeline] =
     await Promise.all([
       getBranding(),
@@ -67,7 +70,12 @@ export default async function HomePage() {
         ? loadPublicJourneyState().catch(() => null)
         : Promise.resolve(null),
       loadNcHomeStatusLine(mapConfig),
-      loadHomeEventTimeline(eventSchedule, sdAreaSchedules, ncPhaseSchedules),
+      loadHomeEventTimeline(
+        eventSchedule,
+        sdAreaSchedules,
+        ncPhaseSchedules,
+        eventsCalendar
+      ),
     ]);
 
   const featured = resolveFeaturedProgram(homeConfig, sdJourney);
