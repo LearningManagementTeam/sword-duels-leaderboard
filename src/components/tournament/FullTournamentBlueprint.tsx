@@ -29,44 +29,30 @@ const PROGRAM_TABS: {
 
 function BlueprintStep({
   step,
-  index,
   isLast,
 }: {
   step: TournamentBlueprintStep;
-  index: number;
   isLast: boolean;
 }) {
-  const content = (
-    <>
-      <div className="flex shrink-0 flex-col items-center">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400/25 via-emerald-400/20 to-fuchsia-400/20 text-xs font-bold text-cyan-100 ring-1 ring-cyan-400/35"
-          aria-hidden
-        >
-          {index + 1}
+  const card = (
+    <div
+      className={`sd-inset rounded-lg p-3 transition ${
+        isLast ? "" : "mb-2"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-white">{step.title}</p>
+          <p className="text-[11px] text-cyan-200/70">{step.subtitle}</p>
         </div>
-        {!isLast && (
-          <div
-            className="mt-1 w-0.5 flex-1 min-h-[1.25rem] bg-gradient-to-b from-cyan-400/40 to-emerald-400/15"
-            aria-hidden
-          />
+        {step.cutLine && (
+          <span className="shrink-0 rounded-md bg-lime-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-lime-200 ring-1 ring-lime-400/30">
+            Cut: {step.cutLine}
+          </span>
         )}
       </div>
-      <div className={`min-w-0 flex-1 ${isLast ? "" : "pb-4"}`}>
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <p className="text-sm font-semibold text-white">{step.title}</p>
-            <p className="text-[11px] text-cyan-200/70">{step.subtitle}</p>
-          </div>
-          {step.cutLine && (
-            <span className="shrink-0 rounded-full bg-lime-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-lime-200 ring-1 ring-lime-400/30">
-              Cut: {step.cutLine}
-            </span>
-          )}
-        </div>
-        <p className="mt-1.5 text-xs leading-relaxed text-sd-muted">{step.detail}</p>
-      </div>
-    </>
+      <p className="mt-1.5 text-xs leading-relaxed text-sd-muted">{step.detail}</p>
+    </div>
   );
 
   if (step.href) {
@@ -74,22 +60,18 @@ function BlueprintStep({
       <li>
         <Link
           href={step.href}
-          className="group flex items-start gap-3 rounded-xl p-2 transition hover:bg-emerald-500/5"
+          className="group block rounded-lg transition hover:ring-1 hover:ring-cyan-400/25"
         >
-          <div className="flex min-w-0 flex-1 gap-3">
-            {content}
-          </div>
-          <span className="mt-2 shrink-0 text-sd-muted/40 transition group-hover:text-cyan-300/80">
-            →
+          {card}
+          <span className="mt-1 block text-right text-[10px] text-sd-muted/50 transition group-hover:text-cyan-300/80">
+            View →
           </span>
         </Link>
       </li>
     );
   }
 
-  return (
-    <li className="flex gap-3 rounded-xl p-2">{content}</li>
-  );
+  return <li>{card}</li>;
 }
 
 function BlueprintPhaseColumn({
@@ -118,7 +100,6 @@ function BlueprintPhaseColumn({
           <BlueprintStep
             key={step.id}
             step={step}
-            index={i}
             isLast={i === phase.steps.length - 1}
           />
         ))}
@@ -205,7 +186,7 @@ export function FullTournamentBlueprint({
             key={tab.id}
             type="button"
             onClick={() => setProgram(tab.id)}
-            className={`rounded-full px-4 py-1.5 text-xs font-semibold ring-1 ring-inset transition ${
+            className={`rounded-lg px-4 py-1.5 text-xs font-semibold ring-1 ring-inset transition ${
               program === tab.id
                 ? "bg-gradient-to-r from-violet-400/25 to-cyan-400/20 text-white ring-violet-400/40"
                 : "sd-glass text-sd-muted hover:text-white"

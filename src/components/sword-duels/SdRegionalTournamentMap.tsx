@@ -11,22 +11,13 @@ import {
   sdAreaShortLabel,
   type SdRegionalMapColumn,
 } from "@/lib/products/sword-duels/regional-tournament-map";
+import type { Region } from "@/lib/scoring-config";
 
 interface Props {
-  /** Show R1 · R2 · R3 converging to national champion below the regional columns. */
   showChampion?: boolean;
   compact?: boolean;
   className?: string;
 }
-
-const REGION_TITLE_GRADIENT: Record<
-  SdRegionalMapColumn["region"],
-  string
-> = {
-  luzon: "from-emerald-400 via-teal-300 to-cyan-400",
-  ncr: "from-cyan-400 via-sky-300 to-fuchsia-400",
-  vismin: "from-lime-400 via-emerald-300 to-violet-400",
-};
 
 function areaHref(n: number): string {
   if (isSdWildcardSlot(n)) {
@@ -35,7 +26,7 @@ function areaHref(n: number): string {
   return `${SWORD_DUELS_PUBLIC}/${areaSlug(sdAreaFullName(n))}`;
 }
 
-function AreaNode({
+function AreaCard({
   areaNumber,
   compact,
 }: {
@@ -43,83 +34,103 @@ function AreaNode({
   compact?: boolean;
 }) {
   const wildcard = isSdWildcardSlot(areaNumber);
-  const size = compact ? "h-11 w-11 text-xs" : "h-12 w-12 text-sm";
 
   return (
     <Link
       href={areaHref(areaNumber)}
       title={sdAreaFullName(areaNumber)}
-      className={`flex ${size} shrink-0 items-center justify-center rounded-full font-bold text-sd-deep shadow-md ring-2 transition hover:scale-105 ${
+      className={`group flex min-w-0 flex-1 flex-col rounded-lg px-2 ring-1 ring-inset transition hover:scale-[1.02] ${
+        compact ? "py-1.5" : "py-2.5"
+      } ${
         wildcard
-          ? "bg-gradient-to-br from-violet-400 via-fuchsia-400 to-indigo-500 text-white ring-fuchsia-300/50 shadow-[0_0_16px_rgb(192_132_252/0.45)]"
-          : "bg-gradient-to-br from-emerald-300 via-teal-300 to-cyan-400 ring-emerald-200/40 shadow-[0_0_12px_rgb(52_211_153/0.35)]"
+          ? "bg-gradient-to-r from-violet-500/20 via-fuchsia-500/15 to-indigo-500/10 ring-fuchsia-400/35 hover:ring-fuchsia-300/50"
+          : "sd-glass ring-emerald-500/25 hover:ring-emerald-400/40"
       }`}
     >
-      {sdAreaShortLabel(areaNumber)}
+      <span
+        className={`font-bold tabular-nums text-white ${
+          compact ? "text-xs" : "text-sm"
+        }`}
+      >
+        {sdAreaShortLabel(areaNumber)}
+      </span>
+      <span
+        className={`truncate text-sd-muted transition group-hover:text-white/90 ${
+          compact ? "text-[9px]" : "text-[10px]"
+        }`}
+      >
+        {wildcard ? "Wild card" : sdAreaFullName(areaNumber)}
+      </span>
     </Link>
   );
 }
 
-function RegionalNode({
+function RegionalCard({
   label,
+  region,
   compact,
 }: {
   label: string;
+  region: Region;
   compact?: boolean;
 }) {
-  const size = compact ? "h-16 w-16 text-lg" : "h-[4.5rem] w-[4.5rem] text-xl";
   return (
     <div
-      className={`flex ${size} items-center justify-center rounded-full bg-gradient-to-br from-amber-300 via-orange-400 to-yellow-500 font-black text-sd-deep shadow-[0_0_24px_rgb(251_191_36/0.4)] ring-2 ring-amber-200/50`}
+      className={`w-full max-w-[9rem] rounded-xl bg-gradient-to-r from-amber-500/25 via-orange-500/20 to-yellow-500/15 px-3 text-center ring-1 ring-amber-400/40 ${
+        compact ? "py-2.5" : "py-3.5"
+      }`}
     >
-      {label}
+      <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-amber-200/75">
+        Regional
+      </p>
+      <p
+        className={`font-black text-white ${compact ? "text-lg" : "text-xl"}`}
+      >
+        {label}
+      </p>
+      <p className="mt-0.5 text-[9px] text-sd-muted/70">
+        {region === "luzon" ? "Luzon" : region === "ncr" ? "NCR" : "VisMin"}{" "}
+        funnel
+      </p>
     </div>
   );
 }
 
-function bracketPaths(column: SdRegionalMapColumn, width: number, height: number): string {
-  const pairCount = column.pairs.length;
-  const pairTop = 36;
-  const pairStep = pairCount === 3 ? 76 : 88;
-  const nodeY = (i: number) => pairTop + i * pairStep;
-  const leftX = width * 0.22;
-  const rightX = width * 0.78;
-  const busY = height - (compactHeightOffset(pairCount) + 56);
-  const regionalY = height - 28;
-  const centerX = width / 2;
+function PairMergeConnector({ pairCount }: { pairCount: number }) {
+  const width = 200;
+  const height = 36;
+  const centers =
+    pairCount === 3 ? [50, 100, 150] : pairCount === 2 ? [60, 140] : [100];
 
-  const mids = column.pairs.map((_, i) => ({
-    x: centerX,
-    y: nodeY(i) + 18,
-    top: nodeY(i),
-  }));
+  const busY = 18;
+  const bottomY = 34;
 
   const parts: string[] = [];
-
-  for (const mid of mids) {
-    parts.push(`M ${leftX} ${mid.top} L ${rightX} ${mid.top}`);
-    parts.push(`M ${mid.x} ${mid.top} L ${mid.x} ${mid.y}`);
-    parts.push(`M ${mid.x} ${mid.y} L ${mid.x} ${busY}`);
+  for (const x of centers) {
+    parts.push(`M ${x} 0 L ${x} ${busY}`);
   }
-
-  if (mids.length > 1) {
-    const leftBus = Math.min(...mids.map((m) => m.x));
-    const rightBus = Math.max(...mids.map((m) => m.x));
-    parts.push(`M ${leftBus} ${busY} L ${rightBus} ${busY}`);
+  if (centers.length > 1) {
+    parts.push(`M ${centers[0]} ${busY} L ${centers[centers.length - 1]} ${busY}`);
   }
+  const midX = (centers[0]! + centers[centers.length - 1]!) / 2;
+  parts.push(`M ${midX} ${busY} L ${midX} ${bottomY}`);
 
-  parts.push(`M ${centerX} ${busY} L ${centerX} ${regionalY}`);
-
-  return parts.join(" ");
-}
-
-function compactHeightOffset(pairCount: number): number {
-  return pairCount === 3 ? 72 : 64;
-}
-
-function columnHeight(pairCount: number, compact?: boolean): number {
-  const base = pairCount === 3 ? 300 : 260;
-  return compact ? base - 24 : base;
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="mx-auto h-9 w-full max-w-[12rem]"
+      aria-hidden
+    >
+      <path
+        d={parts.join(" ")}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        className="text-emerald-500/45"
+      />
+    </svg>
+  );
 }
 
 function RegionalColumn({
@@ -130,54 +141,34 @@ function RegionalColumn({
   compact?: boolean;
 }) {
   const accent = REGION_PLAYOFF_ACCENTS[column.region];
-  const height = columnHeight(column.pairs.length, compact);
-  const width = 176;
-  const pairTop = 36;
-  const pairStep = column.pairs.length === 3 ? 76 : 88;
 
   return (
-    <div className="flex flex-col items-center">
-      <h3
-        className={`mb-4 bg-gradient-to-r ${REGION_TITLE_GRADIENT[column.region]} bg-clip-text text-center font-black tracking-wide text-transparent ${
-          compact ? "text-lg" : "text-xl sm:text-2xl"
-        }`}
-      >
-        {column.label}
-      </h3>
-
-      <div className="relative w-full max-w-[11rem]" style={{ height }}>
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="absolute inset-0 h-full w-full"
-          aria-hidden
+    <div className="sd-glass-strong flex flex-col rounded-2xl p-4 ring-1 ring-emerald-500/10 sm:p-5">
+      <header className="mb-4 border-b border-emerald-500/10 pb-3 text-center">
+        <span
+          className={`inline-block rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] ring-1 ring-inset ${accent.badge}`}
         >
-          <path
-            d={bracketPaths(column, width, height)}
-            fill="none"
-            className={accent.connector}
-            strokeWidth="2"
-            strokeLinecap="round"
-            opacity="0.75"
-          />
-        </svg>
+          {column.label}
+        </span>
+      </header>
 
-        {column.pairs.map((pair, i) => (
-          <div
-            key={`${pair[0]}-${pair[1]}`}
-            className="absolute left-0 right-0 flex items-center justify-center gap-5 sm:gap-6"
-            style={{ top: pairTop + i * pairStep }}
-          >
-            <AreaNode areaNumber={pair[0]} compact={compact} />
-            <AreaNode areaNumber={pair[1]} compact={compact} />
+      <div className="flex flex-col gap-2">
+        {column.pairs.map((pair) => (
+          <div key={`${pair[0]}-${pair[1]}`} className="flex gap-2">
+            <AreaCard areaNumber={pair[0]} compact={compact} />
+            <AreaCard areaNumber={pair[1]} compact={compact} />
           </div>
         ))}
+      </div>
 
-        <div
-          className="absolute left-1/2 -translate-x-1/2"
-          style={{ bottom: 0 }}
-        >
-          <RegionalNode label={column.regionalNode.label} compact={compact} />
-        </div>
+      <PairMergeConnector pairCount={column.pairs.length} />
+
+      <div className="flex justify-center">
+        <RegionalCard
+          label={column.regionalNode.label}
+          region={column.region}
+          compact={compact}
+        />
       </div>
     </div>
   );
@@ -188,50 +179,52 @@ function ChampionConvergence({ compact }: { compact?: boolean }) {
     <div className="mt-8 space-y-5 border-t border-emerald-500/15 pt-8">
       <svg
         viewBox="0 0 400 72"
-        className="mx-auto h-14 w-full max-w-xl"
+        className="mx-auto h-14 w-full max-w-xl text-emerald-500/50"
         aria-hidden
       >
         <path
           d="M 66 8 C 66 40, 200 44, 200 64"
           fill="none"
-          stroke="#34d399"
+          stroke="currentColor"
           strokeWidth="2"
-          opacity="0.6"
+          className="text-emerald-400/55"
         />
         <path
           d="M 200 8 L 200 64"
           fill="none"
-          stroke="#e879f9"
+          stroke="currentColor"
           strokeWidth="2"
-          opacity="0.6"
+          className="text-fuchsia-400/55"
         />
         <path
           d="M 334 8 C 334 40, 200 44, 200 64"
           fill="none"
-          stroke="#a3e635"
+          stroke="currentColor"
           strokeWidth="2"
-          opacity="0.6"
+          className="text-lime-400/55"
         />
       </svg>
 
-      <div className="flex flex-col items-center gap-3 text-center">
+      <div className="mx-auto flex max-w-sm flex-col items-center gap-3 text-center">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-200/80">
           National finals
         </p>
         <div
-          className={`flex items-center justify-center rounded-full bg-gradient-to-br from-sd-gold via-amber-300 to-yellow-400 font-black text-sd-deep shadow-[0_0_32px_rgb(250_204_21/0.45)] ring-2 ring-amber-200/60 ${
-            compact ? "h-20 w-20 text-base" : "h-24 w-24 text-lg"
+          className={`sd-neon-panel w-full rounded-xl bg-gradient-to-r from-sd-gold/20 via-amber-400/15 to-yellow-500/10 px-4 ring-1 ring-amber-400/35 ${
+            compact ? "py-4" : "py-5"
           }`}
         >
-          ★
+          <span className="text-2xl" aria-hidden>
+            ★
+          </span>
+          <p className="mt-2 text-sm font-semibold text-white">
+            National champion
+          </p>
+          <p className="mt-1.5 text-xs leading-relaxed text-sd-muted">
+            R1, R2, and R3 feed the knockout bracket — Area 1 vs Area 2 through
+            Area 15 vs Wild card — until one branch holds the crown.
+          </p>
         </div>
-        <p className="max-w-md text-sm font-semibold text-white">
-          National champion
-        </p>
-        <p className="max-w-lg text-xs text-sd-muted">
-          R1, R2, and R3 winners join the knockout bracket — Area 1 vs Area 2
-          through Area 15 vs Wild card — until one branch holds the crown.
-        </p>
         <Link href={`${SWORD_DUELS_PUBLIC}/nationals`} className="sd-link text-sm">
           View nationals bracket →
         </Link>
@@ -263,24 +256,24 @@ export function SdRegionalTournamentMap({
         </p>
       </header>
 
-      <div className="rounded-2xl bg-gradient-to-b from-sd-deep/30 to-sd-panel/40 p-4 ring-1 ring-emerald-500/10 sm:p-6">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
+      <div className="sd-inset rounded-2xl p-3 sm:p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-3">
           {SD_REGIONAL_TOURNAMENT_COLUMNS.map((column) => (
             <RegionalColumn key={column.region} column={column} compact={compact} />
           ))}
         </div>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-4 text-[10px] text-sd-muted/80">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full bg-gradient-to-br from-emerald-300 to-cyan-400" />
+        <div className="mt-5 flex flex-wrap justify-center gap-3 text-[10px] text-sd-muted/80">
+          <span className="inline-flex items-center gap-1.5 rounded-md sd-glass px-2 py-1 ring-1 ring-emerald-500/20">
+            <span className="h-2.5 w-4 rounded-sm bg-emerald-500/40" />
             Area rep
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full bg-gradient-to-br from-violet-400 to-fuchsia-500" />
+          <span className="inline-flex items-center gap-1.5 rounded-md sd-glass px-2 py-1 ring-1 ring-fuchsia-500/20">
+            <span className="h-2.5 w-4 rounded-sm bg-fuchsia-500/40" />
             Wild card (A16)
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-full bg-gradient-to-br from-amber-300 to-orange-400" />
+          <span className="inline-flex items-center gap-1.5 rounded-md sd-glass px-2 py-1 ring-1 ring-amber-500/20">
+            <span className="h-2.5 w-4 rounded-sm bg-amber-500/40" />
             Regional node
           </span>
         </div>
