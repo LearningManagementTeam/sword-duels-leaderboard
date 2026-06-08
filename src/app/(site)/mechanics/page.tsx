@@ -1,4 +1,5 @@
 import { MechanicsPageContent } from "@/components/MechanicsPageContent";
+import Link from "next/link";
 import { ProgramRulesCrossLink } from "@/components/ProgramRulesCrossLink";
 import { getMechanicsContent } from "@/lib/data/content-queries";
 import { getBranchCount } from "@/lib/data/queries";
@@ -23,6 +24,11 @@ export default async function MechanicsPage() {
         </p>
       </div>
       <ProgramRulesCrossLink variant="national-competitions" />
+      <p className="text-sm text-sd-muted">
+        <Link href="/tournament-journey" className="sd-link">
+          View the full tournament map (every phase through finals) →
+        </Link>
+      </p>
       <MechanicsPageContent content={content} branchCount={branchCount} />
     </div>
   );

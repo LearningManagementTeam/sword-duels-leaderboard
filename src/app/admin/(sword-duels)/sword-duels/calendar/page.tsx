@@ -3,6 +3,7 @@ import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { getEventsCalendar } from "@/lib/data/content-queries";
 import { SWORD_DUELS_ADMIN } from "@/lib/admin-routes";
 import { buildDefaultEventsCalendar2026 } from "@/lib/events-calendar";
+import { sortAreasByNumber } from "@/lib/products/sword-duels/area-groups";
 import { getSdAreaBrackets, getSdEvent } from "@/lib/products/sword-duels/queries";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,8 @@ export default async function SwordDuelsCalendarPage() {
   if (areas.length === 0) {
     areas = Array.from({ length: 15 }, (_, i) => `Area ${i + 1}`);
   }
+
+  areas = sortAreasByNumber(areas);
 
   return (
     <div className="space-y-6">

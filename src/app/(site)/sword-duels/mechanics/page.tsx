@@ -28,6 +28,11 @@ export default function SwordDuelsMechanicsPage() {
       </div>
 
       <ProgramRulesCrossLink variant="sword-duels" />
+      <p className="text-sm text-sd-muted">
+        <Link href="/tournament-journey" className="sd-link">
+          View the full tournament map (areas through nationals finals) →
+        </Link>
+      </p>
 
       <section className="sd-neon-panel space-y-3 p-5">
         <ul className="list-disc space-y-2 pl-5 text-sm text-sd-muted">

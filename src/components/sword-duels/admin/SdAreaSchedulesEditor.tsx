@@ -11,6 +11,7 @@ import {
   parseSdAreaSchedulesCsv,
   SD_AREA_SCHEDULE_CSV_TEMPLATE,
 } from "@/lib/products/sword-duels/sd-area-schedules-csv";
+import { sortAreasByNumber } from "@/lib/products/sword-duels/area-groups";
 import { SdButton } from "@/components/ui/SdButton";
 
 interface Props {
@@ -44,7 +45,7 @@ export function SdAreaSchedulesEditor({ areas, initial }: Props) {
   const [showCsv, setShowCsv] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const sortedAreas = useMemo(() => [...areas].sort(), [areas]);
+  const sortedAreas = useMemo(() => sortAreasByNumber(areas), [areas]);
 
   function updateArea(area: string, patch: Partial<SdAreaScheduleDates>) {
     setConfig((c) => ({

@@ -18,11 +18,11 @@ export async function CollapsibleCompetitionMap({
       <summary className="cursor-pointer list-none px-5 py-4 text-center sm:px-6 sm:text-left [&::-webkit-details-marker]:hidden">
         <span className="flex items-center justify-between gap-3">
           <span className="min-w-0 flex-1">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-sd-muted/70">
-              Season journey
+            <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-300/70">
+              Live season quest
             </span>
             <span className="mt-0.5 block text-base font-medium text-sd-glow">
-              Show the path to the crown
+              Where we are now — updates with published scores
             </span>
           </span>
           <span

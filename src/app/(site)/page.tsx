@@ -3,6 +3,7 @@ import { HomeFeaturedHero } from "@/components/home/HomeFeaturedHero";
 import { HomeProgramsStrip } from "@/components/home/HomeProgramsStrip";
 import { SdPublicJourneyBar } from "@/components/sword-duels/SdPublicJourneyBar";
 import { CollapsibleCompetitionMap } from "@/components/home/CollapsibleCompetitionMap";
+import { CollapsibleFullTournamentMap } from "@/components/home/CollapsibleFullTournamentMap";
 import { HomeCarouselSection } from "@/components/home/HomeCarouselSection";
 import { SetupBanner } from "@/components/SetupBanner";
 import { ShareCard } from "@/components/ShareCard";
@@ -130,6 +131,7 @@ export default async function HomePage() {
           mapConfig={mapConfig}
           defaultOpen={featured === "national_competitions"}
         />
+        <CollapsibleFullTournamentMap featured={featured} />
         <ShareCard
           url={shareUrl}
           title={shareTitle}

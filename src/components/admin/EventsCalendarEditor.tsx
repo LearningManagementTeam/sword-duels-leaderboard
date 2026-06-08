@@ -1,10 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AdminActionRow } from "@/components/admin/AdminActionHint";
 import { EventsCalendarInteractive } from "@/components/events-calendar/EventsCalendarInteractive";
 import { saveEventsCalendarForm } from "@/lib/actions/sword-duels-admin";
 import { ADMIN_SITE_HINTS } from "@/lib/admin-action-hints";
+import {
+  buildEventsCalendarCsvTemplate,
+  eventsCalendarToCsv,
+  importEventsCalendarCsv,
+  sortCalendarEvents,
+  EVENTS_CALENDAR_CSV_TEMPLATE,
+} from "@/lib/events-calendar-csv";
 import {
   buildDefaultEventsCalendar2026,
   CALENDAR_KIND_LABELS,
@@ -13,6 +20,7 @@ import {
   type CalendarEventKind,
   type EventsCalendarConfig,
 } from "@/lib/events-calendar";
+import { sortAreasByNumber } from "@/lib/products/sword-duels/area-groups";
 import type { EventScheduleProgram } from "@/lib/event-schedule";
 
 interface Props {
@@ -41,10 +49,25 @@ function toDatetimeLocal(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function downloadCsv(filename: string, content: string) {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function EventsCalendarEditor({ initial, areas }: Props) {
+  const sortedAreas = useMemo(() => sortAreasByNumber(areas), [areas]);
   const [config, setConfig] = useState(initial);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [csvError, setCsvError] = useState("");
+  const [csvText, setCsvText] = useState("");
+  const [showCsv, setShowCsv] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(
     initial.events[0]?.id ?? null
   );
@@ -53,13 +76,13 @@ export function EventsCalendarEditor({ initial, areas }: Props) {
   const selected = config.events.find((e) => e.id === selectedId) ?? null;
 
   const filteredEvents = useMemo(() => {
+    let list = config.events;
     if (filter === "macro") {
-      return config.events.filter((e) => !e.areas?.length);
+      list = list.filter((e) => !e.areas?.length);
+    } else if (filter === "area") {
+      list = list.filter((e) => e.areas?.length);
     }
-    if (filter === "area") {
-      return config.events.filter((e) => e.areas?.length);
-    }
-    return config.events;
+    return sortCalendarEvents(list);
   }, [config.events, filter]);
 
   function updateEvent(id: string, patch: Partial<CalendarEvent>) {
@@ -116,6 +139,41 @@ export function EventsCalendarEditor({ initial, areas }: Props) {
     }));
   }
 
+  function handleCsvImport() {
+    setCsvError("");
+    const { config: imported, errors } = importEventsCalendarCsv(csvText);
+    if (errors.length > 0) {
+      setCsvError(errors.join(" "));
+      return;
+    }
+    if (imported.events.length === 0) {
+      setCsvError("No valid rows found in CSV.");
+      return;
+    }
+    if (
+      config.events.length > 0 &&
+      !window.confirm(
+        `Replace all ${config.events.length} event(s) with ${imported.events.length} imported row(s)?`
+      )
+    ) {
+      return;
+    }
+    setConfig(imported);
+    setSelectedId(imported.events[0]?.id ?? null);
+    setMessage(`Imported ${imported.events.length} event(s). Review and save.`);
+    setCsvText("");
+    setShowCsv(false);
+  }
+
+  function handleCsvFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCsvText(String(reader.result ?? ""));
+      setShowCsv(true);
+    };
+    reader.readAsText(file);
+  }
+
   return (
     <div className="space-y-6">
       <section className="sd-neon-panel space-y-4 p-5">
@@ -167,6 +225,105 @@ export function EventsCalendarEditor({ initial, areas }: Props) {
         {message && (
           <p className="text-sm text-lime-200/90" role="status">
             {message}
+          </p>
+        )}
+      </section>
+
+      <section className="sd-neon-panel space-y-4 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-white">CSV import</h2>
+            <p className="mt-1 max-w-2xl text-sm text-sd-muted">
+              Download the template, fill it in Excel, then upload or paste.
+              Columns:{" "}
+              <code className="text-fuchsia-200/80">kind</code>,{" "}
+              <code className="text-fuchsia-200/80">title</code>,{" "}
+              <code className="text-fuchsia-200/80">start_date</code>,{" "}
+              <code className="text-fuchsia-200/80">end_date</code>,{" "}
+              <code className="text-fuchsia-200/80">start_time</code>,{" "}
+              <code className="text-fuchsia-200/80">time_label</code>,{" "}
+              <code className="text-fuchsia-200/80">area</code>,{" "}
+              <code className="text-fuchsia-200/80">set_label</code>,{" "}
+              <code className="text-fuchsia-200/80">published</code>,{" "}
+              <code className="text-fuchsia-200/80">program</code>.
+              Import replaces all events in the editor — save to publish.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(
+                  "sword-duels-calendar-template-2026.csv",
+                  buildEventsCalendarCsvTemplate()
+                )
+              }
+              className="sd-glass rounded-lg px-3 py-1.5 text-sm text-cyan-200 hover:text-white"
+            >
+              Download template
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(
+                  "sword-duels-calendar-export.csv",
+                  eventsCalendarToCsv(config)
+                )
+              }
+              className="sd-glass rounded-lg px-3 py-1.5 text-sm text-sd-muted hover:text-white"
+            >
+              Export current
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCsv((v) => !v)}
+              className="sd-glass rounded-lg px-3 py-1.5 text-sm text-sd-muted hover:text-white"
+            >
+              {showCsv ? "Hide CSV" : "Paste CSV"}
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="sd-glass rounded-lg px-3 py-1.5 text-sm text-sd-muted hover:text-white"
+            >
+              Upload file
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleCsvFile(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
+        </div>
+
+        {showCsv && (
+          <div className="space-y-3">
+            <textarea
+              value={csvText}
+              onChange={(e) => setCsvText(e.target.value)}
+              rows={8}
+              placeholder={EVENTS_CALENDAR_CSV_TEMPLATE.slice(0, 500) + "…"}
+              className="block w-full rounded sd-input px-3 py-2 font-mono text-xs"
+            />
+            <button
+              type="button"
+              disabled={!csvText.trim()}
+              onClick={handleCsvImport}
+              className="sd-glass rounded-lg px-3 py-1.5 text-sm text-lime-200 hover:text-white disabled:opacity-50"
+            >
+              Import CSV
+            </button>
+          </div>
+        )}
+        {csvError && (
+          <p className="text-sm text-red-300" role="alert">
+            {csvError}
           </p>
         )}
       </section>
@@ -386,7 +543,7 @@ export function EventsCalendarEditor({ initial, areas }: Props) {
                   }
                 >
                   <option value="">— All / macro event —</option>
-                  {areas.map((a) => (
+                  {sortedAreas.map((a) => (
                     <option key={a} value={a}>
                       {a}
                     </option>

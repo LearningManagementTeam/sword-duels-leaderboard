@@ -28,12 +28,14 @@ export function CompetitionMapDisplay({ config, remaining }: Props) {
     <div className="sd-neon-panel mx-auto max-w-4xl space-y-6 p-5 sm:p-8">
       <header className="space-y-2 text-center sm:text-left">
         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-fuchsia-300/80">
-          Season quest
+          Live season quest
         </p>
         <h2 className="text-xl font-bold text-white sm:text-2xl">
-          The path to the crown
+          Where we are now
         </h2>
-        <p className="text-sm leading-relaxed text-sd-muted">{SEASON_JOURNEY_LINE}</p>
+        <p className="text-sm leading-relaxed text-sd-muted">
+          {SEASON_JOURNEY_LINE} This map moves as admins publish scores.
+        </p>
       </header>
 
       <div className="relative overflow-hidden rounded-2xl sd-glass-strong px-5 py-4 text-center sm:text-left">

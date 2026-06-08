@@ -98,6 +98,25 @@ export function areaSlug(area: string): string {
   return encodeURIComponent(area.trim());
 }
 
+/** Numeric order for labels like "Area 1" … "Area 15" (not lexicographic). */
+export function parseAreaNumber(area: string): number | null {
+  const m = /area\s*(\d+)/i.exec(area.trim());
+  return m ? Number.parseInt(m[1]!, 10) : null;
+}
+
+export function compareAreaNames(a: string, b: string): number {
+  const na = parseAreaNumber(a);
+  const nb = parseAreaNumber(b);
+  if (na != null && nb != null) return na - nb;
+  if (na != null) return -1;
+  if (nb != null) return 1;
+  return a.localeCompare(b, undefined, { numeric: true });
+}
+
+export function sortAreasByNumber(areas: string[]): string[] {
+  return [...areas].sort(compareAreaNames);
+}
+
 export function decodeAreaSlug(slug: string): string {
   return decodeURIComponent(slug);
 }

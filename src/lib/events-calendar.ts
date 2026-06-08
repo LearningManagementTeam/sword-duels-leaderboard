@@ -1,4 +1,5 @@
 import type { EventScheduleProgram } from "@/lib/event-schedule";
+import { compareAreaNames } from "@/lib/products/sword-duels/area-groups";
 
 export const EVENTS_CALENDAR_SLUG = "events_calendar";
 
@@ -189,7 +190,16 @@ export function eventsOnDate(
 ): CalendarEvent[] {
   return events
     .filter((e) => eventOccursOnDate(e, day))
-    .sort((a, b) => eventSortTime(a) - eventSortTime(b));
+    .sort((a, b) => {
+      const timeCmp = eventSortTime(a) - eventSortTime(b);
+      if (timeCmp !== 0) return timeCmp;
+      const aArea = a.areas?.[0];
+      const bArea = b.areas?.[0];
+      if (aArea && bArea) return compareAreaNames(aArea, bArea);
+      if (aArea && !bArea) return 1;
+      if (!aArea && bArea) return -1;
+      return a.title.localeCompare(b.title);
+    });
 }
 
 function eventSortTime(event: CalendarEvent): number {
@@ -409,32 +419,43 @@ export function buildDefaultEventsCalendar2026(): EventsCalendarConfig {
   ];
 
   const areaEvents: CalendarEvent[] = [];
+  const scheduleByArea = new Map<
+    string,
+    (typeof BRANCH_SCHEDULE_GROUPS)[number]
+  >();
   for (const group of BRANCH_SCHEDULE_GROUPS) {
     for (const area of group.areas) {
-      const slug = area.toLowerCase().replace(/\s+/g, "-");
-      areaEvents.push({
-        id: `${slug}-sets`,
-        kind: "branch_duels",
-        title: "Set 1 & 2",
-        setLabel: "SET 1 & 2",
-        startAt: group.setsAt,
-        timeLabel: group.setsTimeLabel,
-        areas: [area],
-        published: true,
-        program: "sword_duels",
-      });
-      areaEvents.push({
-        id: `${slug}-selection`,
-        kind: "branch_selection",
-        title: "Area Selection",
-        setLabel: "AREA SELECTION",
-        startAt: group.selectionAt,
-        timeLabel: group.selectionTimeLabel,
-        areas: [area],
-        published: true,
-        program: "sword_duels",
-      });
+      scheduleByArea.set(area, group);
     }
+  }
+
+  for (let n = 1; n <= 15; n++) {
+    const area = `Area ${n}`;
+    const group = scheduleByArea.get(area);
+    if (!group) continue;
+    const slug = area.toLowerCase().replace(/\s+/g, "-");
+    areaEvents.push({
+      id: `${slug}-sets`,
+      kind: "branch_duels",
+      title: "Set 1 & 2",
+      setLabel: "SET 1 & 2",
+      startAt: group.setsAt,
+      timeLabel: group.setsTimeLabel,
+      areas: [area],
+      published: true,
+      program: "sword_duels",
+    });
+    areaEvents.push({
+      id: `${slug}-selection`,
+      kind: "branch_selection",
+      title: "Area Selection",
+      setLabel: "AREA SELECTION",
+      startAt: group.selectionAt,
+      timeLabel: group.selectionTimeLabel,
+      areas: [area],
+      published: true,
+      program: "sword_duels",
+    });
   }
 
   return { events: [...macro, ...areaEvents] };
