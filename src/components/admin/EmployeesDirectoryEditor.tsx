@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { EmployeePhotoEditor } from "@/components/admin/EmployeePhotoEditor";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
 import { RepAvatar } from "@/components/ui/RepAvatar";
@@ -10,11 +10,13 @@ import {
   createEmployeeAction,
   saveEmployeeProfileAction,
   setEmployeeEmploymentStatusAction,
+  uploadEmployeePhotoAction,
 } from "@/lib/actions/admin";
 import { nationalCompetitionsPath } from "@/lib/admin-routes";
 import type { EmployeeAdminRow, EmploymentStatus } from "@/lib/employee-types";
 import { employmentStatusLabel } from "@/lib/employee-types";
 import { resolveEmployeePhotoUrl } from "@/lib/employee-photo-storage";
+import { normalizeAllCapsText } from "@/lib/text-format";
 
 interface Props {
   employees: EmployeeAdminRow[];
@@ -41,6 +43,7 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
   const [editDraft, setEditDraft] = useState<EditState>(emptyNewEmployee());
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEmployee, setNewEmployee] = useState<EditState>(emptyNewEmployee());
+  const [newEmployeePhoto, setNewEmployeePhoto] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
@@ -82,7 +85,12 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
     setMessage("");
     setError(false);
     try {
-      const result = await saveEmployeeProfileAction(editingId, editDraft);
+      const result = await saveEmployeeProfileAction(editingId, {
+        ...editDraft,
+        full_name: normalizeAllCapsText(editDraft.full_name),
+        position: normalizeAllCapsText(editDraft.position),
+        notes: normalizeAllCapsText(editDraft.notes),
+      });
       if (!result.ok) throw new Error("Save failed");
       setMessage("Employee profile updated.");
       setEditingId(null);
@@ -92,6 +100,17 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
       setMessage(e instanceof Error ? e.message : "Save failed.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function applyCapsOnBlur<K extends keyof EditState>(
+    value: string,
+    setter: Dispatch<SetStateAction<EditState>>,
+    field: K
+  ) {
+    const normalized = normalizeAllCapsText(value);
+    if (normalized !== value) {
+      setter((s) => ({ ...s, [field]: normalized }));
     }
   }
 
@@ -105,10 +124,40 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
     setMessage("");
     setError(false);
     try {
-      const result = await createEmployeeAction(newEmployee);
+      const payload = {
+        employee_no: newEmployee.employee_no,
+        full_name: normalizeAllCapsText(newEmployee.full_name),
+        position: normalizeAllCapsText(newEmployee.position),
+        notes: normalizeAllCapsText(newEmployee.notes),
+      };
+      const result = await createEmployeeAction(payload);
       if (!result.ok) throw new Error("Create failed");
-      setMessage("Employee created.");
+
+      if (newEmployeePhoto) {
+        const formData = new FormData();
+        formData.set("file", newEmployeePhoto);
+        const photoResult = await uploadEmployeePhotoAction(
+          result.employee.id,
+          formData
+        );
+        if (!photoResult.ok) {
+          setError(true);
+          setMessage(
+            `Employee created, but photo upload failed: ${photoResult.error}`
+          );
+          setNewEmployee(emptyNewEmployee());
+          setNewEmployeePhoto(null);
+          setShowAddForm(false);
+          router.refresh();
+          return;
+        }
+      }
+
+      setMessage(
+        newEmployeePhoto ? "Employee created with photo." : "Employee created."
+      );
       setNewEmployee(emptyNewEmployee());
+      setNewEmployeePhoto(null);
       setShowAddForm(false);
       router.refresh();
     } catch (e) {
@@ -179,7 +228,13 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
         <button
           type="button"
           onClick={() => {
-            setShowAddForm((v) => !v);
+            setShowAddForm((v) => {
+              if (v) {
+                setNewEmployee(emptyNewEmployee());
+                setNewEmployeePhoto(null);
+              }
+              return !v;
+            });
             setEditingId(null);
           }}
           className="sd-btn-ghost rounded-lg px-4 py-2 text-sm"
@@ -190,6 +245,18 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
 
       {showAddForm && (
         <div className="sd-inset grid gap-3 rounded-lg p-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <EmployeePhotoEditor
+              name={newEmployee.full_name || "New employee"}
+              draftFile={newEmployeePhoto}
+              onDraftFileChange={setNewEmployeePhoto}
+              disabled={loading}
+              onMessage={(msg, err) => {
+                setMessage(msg);
+                setError(!!err);
+              }}
+            />
+          </div>
           <label className="block text-sm sm:col-span-1">
             <span className="text-sd-muted">Employee no.</span>
             <input
@@ -207,6 +274,9 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
               onChange={(e) =>
                 setNewEmployee((s) => ({ ...s, full_name: e.target.value }))
               }
+              onBlur={(e) =>
+                applyCapsOnBlur(e.target.value, setNewEmployee, "full_name")
+              }
               className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
             />
           </label>
@@ -217,6 +287,9 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
               onChange={(e) =>
                 setNewEmployee((s) => ({ ...s, position: e.target.value }))
               }
+              onBlur={(e) =>
+                applyCapsOnBlur(e.target.value, setNewEmployee, "position")
+              }
               className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
             />
           </label>
@@ -226,6 +299,9 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
               value={newEmployee.notes}
               onChange={(e) =>
                 setNewEmployee((s) => ({ ...s, notes: e.target.value }))
+              }
+              onBlur={(e) =>
+                applyCapsOnBlur(e.target.value, setNewEmployee, "notes")
               }
               className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
             />
@@ -308,6 +384,13 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                                 full_name: e.target.value,
                               }))
                             }
+                            onBlur={(e) =>
+                              applyCapsOnBlur(
+                                e.target.value,
+                                setEditDraft,
+                                "full_name"
+                              )
+                            }
                             className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
                           />
                         </label>
@@ -321,6 +404,13 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                                 position: e.target.value,
                               }))
                             }
+                            onBlur={(e) =>
+                              applyCapsOnBlur(
+                                e.target.value,
+                                setEditDraft,
+                                "position"
+                              )
+                            }
                             className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
                           />
                         </label>
@@ -333,6 +423,9 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                                 ...s,
                                 notes: e.target.value,
                               }))
+                            }
+                            onBlur={(e) =>
+                              applyCapsOnBlur(e.target.value, setEditDraft, "notes")
                             }
                             className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
                           />

@@ -6,6 +6,7 @@ import type {
 } from "@/lib/employee-types";
 import type { RepresentativeSavePayload } from "@/lib/representative-fields";
 import { createServiceClient } from "@/lib/supabase/server";
+import { normalizeAllCapsText } from "@/lib/text-format";
 
 export type {
   Employee,
@@ -77,8 +78,8 @@ export async function upsertEmployeeFromRepSlot(
     const { data, error } = await service
       .from("employees")
       .update({
-        full_name: input.full_name.trim(),
-        position: input.position.trim() || null,
+        full_name: normalizeAllCapsText(input.full_name.trim()),
+        position: normalizeAllCapsText(input.position.trim()) || null,
         updated_at: now,
       })
       .eq("id", existing.id)
@@ -95,8 +96,8 @@ export async function upsertEmployeeFromRepSlot(
     .from("employees")
     .insert({
       employee_no: employeeNo,
-      full_name: input.full_name.trim(),
-      position: input.position.trim() || null,
+      full_name: normalizeAllCapsText(input.full_name.trim()),
+      position: normalizeAllCapsText(input.position.trim()) || null,
       employment_status: "active",
       updated_at: now,
     })
@@ -351,9 +352,12 @@ export async function updateEmployeeProfile(
     .from("employees")
     .update({
       employee_no: employeeNo,
-      full_name: fields.full_name.trim(),
-      position: fields.position.trim() || null,
-      notes: fields.notes?.trim() || null,
+      full_name: normalizeAllCapsText(fields.full_name.trim()),
+      position:
+        normalizeAllCapsText(fields.position.trim()) || null,
+      notes: fields.notes?.trim()
+        ? normalizeAllCapsText(fields.notes.trim()) || null
+        : null,
       updated_at: now,
     })
     .eq("id", employeeId)
@@ -377,9 +381,13 @@ export async function createEmployeeRecord(fields: {
     .from("employees")
     .insert({
       employee_no: normalizeEmployeeNo(fields.employee_no),
-      full_name: fields.full_name.trim(),
-      position: fields.position?.trim() || null,
-      notes: fields.notes?.trim() || null,
+      full_name: normalizeAllCapsText(fields.full_name.trim()),
+      position: fields.position?.trim()
+        ? normalizeAllCapsText(fields.position.trim()) || null
+        : null,
+      notes: fields.notes?.trim()
+        ? normalizeAllCapsText(fields.notes.trim()) || null
+        : null,
       employment_status: "active",
       updated_at: now,
     })
