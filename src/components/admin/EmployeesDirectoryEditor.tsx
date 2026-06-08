@@ -8,6 +8,7 @@ import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge"
 import { RepAvatar } from "@/components/ui/RepAvatar";
 import {
   createEmployeeAction,
+  deleteEmployeeAction,
   saveEmployeeProfileAction,
   setEmployeeEmploymentStatusAction,
   uploadEmployeePhotoAction,
@@ -33,6 +34,20 @@ function emptyNewEmployee(): EditState {
   return { employee_no: "", full_name: "", position: "", notes: "" };
 }
 
+function closeForms(setters: {
+  setEditingId: (id: string | null) => void;
+  setShowAddForm: (open: boolean) => void;
+  setEditDraft: Dispatch<SetStateAction<EditState>>;
+  setNewEmployee: Dispatch<SetStateAction<EditState>>;
+  setNewEmployeePhoto: (file: File | null) => void;
+}) {
+  setters.setEditingId(null);
+  setters.setShowAddForm(false);
+  setters.setEditDraft(emptyNewEmployee());
+  setters.setNewEmployee(emptyNewEmployee());
+  setters.setNewEmployeePhoto(null);
+}
+
 export function EmployeesDirectoryEditor({ employees }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -47,6 +62,7 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -68,6 +84,24 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
     });
   }, [employees, search, statusFilter]);
 
+  function resetForms() {
+    closeForms({
+      setEditingId,
+      setShowAddForm,
+      setEditDraft,
+      setNewEmployee,
+      setNewEmployeePhoto,
+    });
+    setDeleteConfirmId(null);
+  }
+
+  function startAdd() {
+    resetForms();
+    setShowAddForm(true);
+    setMessage("");
+    setError(false);
+  }
+
   function startEdit(row: EmployeeAdminRow) {
     setEditingId(row.id);
     setEditDraft({
@@ -77,10 +111,33 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
       notes: row.notes ?? "",
     });
     setShowAddForm(false);
+    setDeleteConfirmId(null);
+    setMessage("");
+    setError(false);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditDraft(emptyNewEmployee());
+    setMessage("");
+    setError(false);
+  }
+
+  function cancelAdd() {
+    setShowAddForm(false);
+    setNewEmployee(emptyNewEmployee());
+    setNewEmployeePhoto(null);
+    setMessage("");
+    setError(false);
   }
 
   async function handleSaveEdit() {
     if (!editingId) return;
+    if (!editDraft.employee_no.trim() || !editDraft.full_name.trim()) {
+      setError(true);
+      setMessage("Employee number and full name are required.");
+      return;
+    }
     setLoading(true);
     setMessage("");
     setError(false);
@@ -91,9 +148,10 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
         position: normalizeAllCapsText(editDraft.position),
         notes: normalizeAllCapsText(editDraft.notes),
       });
-      if (!result.ok) throw new Error("Save failed");
-      setMessage("Employee profile updated.");
+      if (!result.ok) throw new Error(result.error);
+      setMessage("Employee updated.");
       setEditingId(null);
+      setEditDraft(emptyNewEmployee());
       router.refresh();
     } catch (e) {
       setError(true);
@@ -131,7 +189,7 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
         notes: normalizeAllCapsText(newEmployee.notes),
       };
       const result = await createEmployeeAction(payload);
-      if (!result.ok) throw new Error("Create failed");
+      if (!result.ok) throw new Error(result.error);
 
       if (newEmployeePhoto) {
         const formData = new FormData();
@@ -145,9 +203,7 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
           setMessage(
             `Employee created, but photo upload failed: ${photoResult.error}`
           );
-          setNewEmployee(emptyNewEmployee());
-          setNewEmployeePhoto(null);
-          setShowAddForm(false);
+          resetForms();
           router.refresh();
           return;
         }
@@ -156,15 +212,32 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
       setMessage(
         newEmployeePhoto ? "Employee created with photo." : "Employee created."
       );
-      setNewEmployee(emptyNewEmployee());
-      setNewEmployeePhoto(null);
-      setShowAddForm(false);
+      resetForms();
       router.refresh();
     } catch (e) {
       setError(true);
       setMessage(e instanceof Error ? e.message : "Create failed.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete(employeeId: string, fullName: string) {
+    setLoading(true);
+    setMessage("");
+    setError(false);
+    try {
+      const result = await deleteEmployeeAction(employeeId);
+      if (!result.ok) throw new Error(result.error);
+      setMessage(`${fullName} removed from the directory.`);
+      resetForms();
+      router.refresh();
+    } catch (e) {
+      setError(true);
+      setMessage(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setLoading(false);
+      setDeleteConfirmId(null);
     }
   }
 
@@ -177,7 +250,7 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
     setError(false);
     try {
       const result = await setEmployeeEmploymentStatusAction(employeeId, status);
-      if (!result.ok) throw new Error("Status update failed");
+      if (!result.ok) throw new Error(result.error ?? "Status update failed");
       setMessage(`Marked as ${employmentStatusLabel(status).toLowerCase()}.`);
       router.refresh();
     } catch (e) {
@@ -227,86 +300,82 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
         </select>
         <button
           type="button"
-          onClick={() => {
-            setShowAddForm((v) => {
-              if (v) {
-                setNewEmployee(emptyNewEmployee());
-                setNewEmployeePhoto(null);
-              }
-              return !v;
-            });
-            setEditingId(null);
-          }}
-          className="sd-btn-ghost rounded-lg px-4 py-2 text-sm"
+          onClick={() => (showAddForm ? cancelAdd() : startAdd())}
+          className="sd-btn-primary rounded-lg px-4 py-2 text-sm"
         >
           {showAddForm ? "Cancel add" : "Add employee"}
         </button>
       </div>
 
       {showAddForm && (
-        <div className="sd-inset grid gap-3 rounded-lg p-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <EmployeePhotoEditor
-              name={newEmployee.full_name || "New employee"}
-              draftFile={newEmployeePhoto}
-              onDraftFileChange={setNewEmployeePhoto}
-              disabled={loading}
-              onMessage={(msg, err) => {
+        <div className="sd-inset space-y-4 rounded-lg p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-violet-200/80">
+            New employee
+          </p>
+          <EmployeePhotoEditor
+            name={newEmployee.full_name || "New employee"}
+            draftFile={newEmployeePhoto}
+            onDraftFileChange={setNewEmployeePhoto}
+            disabled={loading}
+            onMessage={(msg, err) => {
+              if (msg) {
                 setMessage(msg);
                 setError(!!err);
-              }}
-            />
+              }
+            }}
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm sm:col-span-1">
+              <span className="text-sd-muted">Employee no.</span>
+              <input
+                value={newEmployee.employee_no}
+                onChange={(e) =>
+                  setNewEmployee((s) => ({ ...s, employee_no: e.target.value }))
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-sm sm:col-span-1">
+              <span className="text-sd-muted">Full name</span>
+              <input
+                value={newEmployee.full_name}
+                onChange={(e) =>
+                  setNewEmployee((s) => ({ ...s, full_name: e.target.value }))
+                }
+                onBlur={(e) =>
+                  applyCapsOnBlur(e.target.value, setNewEmployee, "full_name")
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-sm sm:col-span-1">
+              <span className="text-sd-muted">Position</span>
+              <input
+                value={newEmployee.position}
+                onChange={(e) =>
+                  setNewEmployee((s) => ({ ...s, position: e.target.value }))
+                }
+                onBlur={(e) =>
+                  applyCapsOnBlur(e.target.value, setNewEmployee, "position")
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-sm sm:col-span-2">
+              <span className="text-sd-muted">Notes</span>
+              <input
+                value={newEmployee.notes}
+                onChange={(e) =>
+                  setNewEmployee((s) => ({ ...s, notes: e.target.value }))
+                }
+                onBlur={(e) =>
+                  applyCapsOnBlur(e.target.value, setNewEmployee, "notes")
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
+              />
+            </label>
           </div>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Employee no.</span>
-            <input
-              value={newEmployee.employee_no}
-              onChange={(e) =>
-                setNewEmployee((s) => ({ ...s, employee_no: e.target.value }))
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Full name</span>
-            <input
-              value={newEmployee.full_name}
-              onChange={(e) =>
-                setNewEmployee((s) => ({ ...s, full_name: e.target.value }))
-              }
-              onBlur={(e) =>
-                applyCapsOnBlur(e.target.value, setNewEmployee, "full_name")
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Position</span>
-            <input
-              value={newEmployee.position}
-              onChange={(e) =>
-                setNewEmployee((s) => ({ ...s, position: e.target.value }))
-              }
-              onBlur={(e) =>
-                applyCapsOnBlur(e.target.value, setNewEmployee, "position")
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-2">
-            <span className="text-sd-muted">Notes</span>
-            <input
-              value={newEmployee.notes}
-              onChange={(e) =>
-                setNewEmployee((s) => ({ ...s, notes: e.target.value }))
-              }
-              onBlur={(e) =>
-                applyCapsOnBlur(e.target.value, setNewEmployee, "notes")
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <div className="sm:col-span-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={loading}
@@ -314,6 +383,14 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
               className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
             >
               {loading ? "Saving…" : "Create employee"}
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={cancelAdd}
+              className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+            >
+              Cancel
             </button>
           </div>
         </div>
@@ -348,19 +425,22 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                     className="border-b border-emerald-500/10 bg-sd-deep/30"
                   >
                     <td colSpan={7} className="px-2 py-3">
-                      <div className="mb-4">
-                        <EmployeePhotoEditor
-                          employeeId={row.id}
-                          name={editDraft.full_name || row.full_name}
-                          photoPath={row.photo_path}
-                          disabled={loading}
-                          onMessage={(msg, err) => {
+                      <p className="mb-3 text-xs font-medium uppercase tracking-wide text-violet-200/80">
+                        Edit employee
+                      </p>
+                      <EmployeePhotoEditor
+                        employeeId={row.id}
+                        name={editDraft.full_name || row.full_name}
+                        photoPath={row.photo_path}
+                        disabled={loading}
+                        onMessage={(msg, err) => {
+                          if (msg) {
                             setMessage(msg);
                             setError(!!err);
-                          }}
-                        />
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
+                          }
+                        }}
+                      />
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
                         <label className="block text-xs">
                           <span className="text-sd-muted">Employee no.</span>
                           <input
@@ -437,11 +517,12 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                             onClick={() => void handleSaveEdit()}
                             className="sd-btn-primary rounded-lg px-3 py-1.5 text-sm"
                           >
-                            Save
+                            {loading ? "Saving…" : "Save changes"}
                           </button>
                           <button
                             type="button"
-                            onClick={() => setEditingId(null)}
+                            disabled={loading}
+                            onClick={cancelEdit}
                             className="sd-btn-ghost rounded-lg px-3 py-1.5 text-sm"
                           >
                             Cancel
@@ -473,9 +554,6 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                     </td>
                     <td className="px-2 py-2">
                       <EmploymentStatusBadge status={row.employment_status} />
-                      {row.employment_status === "active" && (
-                        <span className="text-xs text-sd-muted">Active</span>
-                      )}
                     </td>
                     <td className="px-2 py-2 text-xs text-sd-muted">
                       {row.rep_assignments.length === 0 ? (
@@ -491,51 +569,98 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                       )}
                     </td>
                     <td className="px-2 py-2 text-right">
-                      <div className="flex flex-wrap justify-end gap-1">
-                        <button
-                          type="button"
-                          disabled={loading}
-                          onClick={() => startEdit(row)}
-                          className="sd-btn-ghost rounded px-2 py-1 text-xs"
-                        >
-                          Edit
-                        </button>
-                        {row.employment_status !== "active" && (
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex flex-wrap justify-end gap-1">
                           <button
                             type="button"
                             disabled={loading}
-                            onClick={() =>
-                              void handleStatusChange(row.id, "active")
-                            }
+                            onClick={() => startEdit(row)}
                             className="sd-btn-ghost rounded px-2 py-1 text-xs"
                           >
-                            Mark active
+                            Edit
                           </button>
-                        )}
-                        {row.employment_status !== "on_leave" && (
-                          <button
-                            type="button"
-                            disabled={loading}
-                            onClick={() =>
-                              void handleStatusChange(row.id, "on_leave")
-                            }
-                            className="sd-btn-ghost rounded px-2 py-1 text-xs"
-                          >
-                            On leave
-                          </button>
-                        )}
-                        {row.employment_status !== "resigned" && (
-                          <button
-                            type="button"
-                            disabled={loading}
-                            onClick={() =>
-                              void handleStatusChange(row.id, "resigned")
-                            }
-                            className="rounded px-2 py-1 text-xs text-rose-200 hover:bg-rose-500/10"
-                          >
-                            Resigned
-                          </button>
-                        )}
+                          {deleteConfirmId === row.id ? (
+                            <div className="max-w-[14rem] space-y-1 text-right">
+                              {row.rep_assignments.length > 0 && (
+                                <p className="text-[10px] leading-snug text-amber-200/90">
+                                  Also clears {row.rep_assignments.length} branch rep
+                                  slot(s).
+                                </p>
+                              )}
+                              <div className="flex flex-wrap justify-end gap-1">
+                                <button
+                                  type="button"
+                                  disabled={loading}
+                                  onClick={() =>
+                                    void handleDelete(row.id, row.full_name)
+                                  }
+                                  className="rounded bg-rose-500/20 px-2 py-1 text-xs text-rose-100 ring-1 ring-rose-400/40"
+                                >
+                                  Confirm delete
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={loading}
+                                  onClick={() => setDeleteConfirmId(null)}
+                                  className="sd-btn-ghost rounded px-2 py-1 text-xs"
+                                >
+                                  Keep
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={loading}
+                              onClick={() => {
+                                setDeleteConfirmId(row.id);
+                                setEditingId(null);
+                                setShowAddForm(false);
+                              }}
+                              className="rounded px-2 py-1 text-xs text-rose-200 hover:bg-rose-500/10"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-1">
+                          {row.employment_status !== "active" && (
+                            <button
+                              type="button"
+                              disabled={loading}
+                              onClick={() =>
+                                void handleStatusChange(row.id, "active")
+                              }
+                              className="sd-btn-ghost rounded px-2 py-1 text-xs"
+                            >
+                              Mark active
+                            </button>
+                          )}
+                          {row.employment_status !== "on_leave" && (
+                            <button
+                              type="button"
+                              disabled={loading}
+                              onClick={() =>
+                                void handleStatusChange(row.id, "on_leave")
+                              }
+                              className="sd-btn-ghost rounded px-2 py-1 text-xs"
+                            >
+                              On leave
+                            </button>
+                          )}
+                          {row.employment_status !== "resigned" && (
+                            <button
+                              type="button"
+                              disabled={loading}
+                              onClick={() =>
+                                void handleStatusChange(row.id, "resigned")
+                              }
+                              className="sd-btn-ghost rounded px-2 py-1 text-xs"
+                            >
+                              Resigned
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -548,7 +673,13 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
 
       {message && (
         <p
-          className={`text-sm ${error ? "text-red-300" : "text-emerald-300"}`}
+          role="status"
+          aria-live="polite"
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            error
+              ? "border-rose-400/35 bg-rose-500/10 text-rose-100"
+              : "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
+          }`}
         >
           {message}
         </p>

@@ -42,10 +42,7 @@ export default async function HrisEmployeesPage() {
 
       {!configured && <SetupBanner />}
 
-      <EmployeesDirectoryEditor
-        key={`employees-${employees.length}`}
-        employees={employees}
-      />
+      <EmployeesDirectoryEditor employees={employees} />
     </div>
   );
 }

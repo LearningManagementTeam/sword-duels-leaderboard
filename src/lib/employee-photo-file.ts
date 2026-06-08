@@ -82,3 +82,28 @@ export async function normalizeEmployeePhotoFile(
   const normalized = new File([file], `${label}-${source}.${ext}`, { type: mime });
   return { file: normalized, ext, mime };
 }
+
+/** Server-side normalization from raw upload bytes (no File API required). */
+export function normalizeEmployeePhotoBuffer(
+  buffer: Buffer,
+  fileName: string,
+  mimeHint: string
+): { ext: EmployeePhotoExt; mime: string } | { error: string } {
+  if (buffer.length === 0) {
+    return { error: "Choose a photo to upload." };
+  }
+  if (buffer.length > EMPLOYEE_PHOTO_MAX_BYTES) {
+    return { error: "Photo must be 2MB or smaller." };
+  }
+
+  const ext =
+    mimeToEmployeePhotoExt(mimeHint) ??
+    employeePhotoExtFromName(fileName) ??
+    detectEmployeePhotoExtFromBytes(new Uint8Array(buffer.subarray(0, 12)));
+
+  if (!ext) {
+    return { error: "Use PNG, JPG, or WebP." };
+  }
+
+  return { ext, mime: EXT_TO_MIME[ext] };
+}

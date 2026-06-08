@@ -37,7 +37,7 @@ import {
   type BrandingConfig,
 } from "@/lib/branding";
 import { revalidateBrandingPublicPaths } from "@/lib/branding-revalidate";
-import { normalizeEmployeePhotoFile } from "@/lib/employee-photo-file";
+import { normalizeEmployeePhotoBuffer } from "@/lib/employee-photo-file";
 import {
   COMPETITION_MAP_SLUG,
   type CompetitionMapConfig,
@@ -471,19 +471,26 @@ export async function saveEmployeeProfileAction(
     notes?: string;
   }
 ) {
-  const { email } = await requireAdmin();
-  const { updateEmployeeProfile, syncBranchRepTextFromEmployee } = await import(
-    "@/lib/employees"
-  );
+  try {
+    const { email } = await requireAdmin();
+    const { updateEmployeeProfile, syncBranchRepTextFromEmployee } = await import(
+      "@/lib/employees"
+    );
 
-  const employee = await updateEmployeeProfile(employeeId, fields);
-  await syncBranchRepTextFromEmployee(employee.id);
+    const employee = await updateEmployeeProfile(employeeId, fields);
+    await syncBranchRepTextFromEmployee(employee.id);
 
-  await logAudit(email, "update_employee", "employee", employeeId, {
-    employee_no: employee.employee_no,
-  });
-  revalidateEmployeePaths();
-  return { ok: true as const, employee };
+    await logAudit(email, "update_employee", "employee", employeeId, {
+      employee_no: employee.employee_no,
+    });
+    revalidateEmployeePaths();
+    return { ok: true as const, employee };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Save failed.",
+    };
+  }
 }
 
 export async function createEmployeeAction(fields: {
@@ -492,30 +499,64 @@ export async function createEmployeeAction(fields: {
   position?: string;
   notes?: string;
 }) {
-  const { email } = await requireAdmin();
-  const { createEmployeeRecord } = await import("@/lib/employees");
+  try {
+    const { email } = await requireAdmin();
+    const { createEmployeeRecord } = await import("@/lib/employees");
 
-  const employee = await createEmployeeRecord(fields);
-  await logAudit(email, "create_employee", "employee", employee.id, {
-    employee_no: employee.employee_no,
-  });
-  revalidateEmployeePaths();
-  return { ok: true as const, employee };
+    const employee = await createEmployeeRecord(fields);
+    await logAudit(email, "create_employee", "employee", employee.id, {
+      employee_no: employee.employee_no,
+    });
+    revalidateEmployeePaths();
+    return { ok: true as const, employee };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Create failed.",
+    };
+  }
+}
+
+export async function deleteEmployeeAction(employeeId: string) {
+  try {
+    const { email } = await requireAdmin();
+    const { deleteEmployeeRecord } = await import("@/lib/employees");
+
+    const deleted = await deleteEmployeeRecord(employeeId);
+    await logAudit(email, "delete_employee", "employee", employeeId, {
+      employee_no: deleted.employee_no,
+      full_name: deleted.full_name,
+    });
+    revalidateEmployeePaths();
+    return { ok: true as const, deleted };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Delete failed.",
+    };
+  }
 }
 
 export async function setEmployeeEmploymentStatusAction(
   employeeId: string,
   status: import("@/lib/employees").EmploymentStatus
 ) {
-  const { email } = await requireAdmin();
-  const { setEmployeeEmploymentStatus } = await import("@/lib/employees");
+  try {
+    const { email } = await requireAdmin();
+    const { setEmployeeEmploymentStatus } = await import("@/lib/employees");
 
-  const employee = await setEmployeeEmploymentStatus(employeeId, status);
-  await logAudit(email, "set_employee_status", "employee", employeeId, {
-    status,
-  });
-  revalidateEmployeePaths();
-  return { ok: true as const, employee };
+    const employee = await setEmployeeEmploymentStatus(employeeId, status);
+    await logAudit(email, "set_employee_status", "employee", employeeId, {
+      status,
+    });
+    revalidateEmployeePaths();
+    return { ok: true as const, employee };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Status update failed.",
+    };
+  }
 }
 
 async function removeEmployeePhotoFiles(
@@ -535,69 +576,88 @@ export async function uploadEmployeePhotoAction(
   employeeId: string,
   formData: FormData
 ) {
-  const { email } = await requireAdmin();
-  const service = await createServiceClient();
-  const file = formData.get("file");
-  const { employeePhotoStoragePath, employeePhotoUrl } = await import(
-    "@/lib/employee-photo-storage"
-  );
+  try {
+    const { email } = await requireAdmin();
+    const service = await createServiceClient();
+    const entry = formData.get("file");
+    const { employeePhotoStoragePath, employeePhotoUrl } = await import(
+      "@/lib/employee-photo-storage"
+    );
 
-  if (!(file instanceof File)) {
-    return { ok: false as const, error: "Choose a photo to upload." };
-  }
+    if (!(entry instanceof Blob) || entry.size === 0) {
+      return { ok: false as const, error: "Choose a photo to upload." };
+    }
 
-  const normalized = await normalizeEmployeePhotoFile(file, employeeId, "upload");
-  if ("error" in normalized) {
-    return { ok: false as const, error: normalized.error };
-  }
+    const buffer = Buffer.from(await entry.arrayBuffer());
+    const fileName = entry instanceof File ? entry.name : "upload";
+    const normalized = normalizeEmployeePhotoBuffer(
+      buffer,
+      fileName,
+      entry.type || ""
+    );
+    if ("error" in normalized) {
+      return { ok: false as const, error: normalized.error };
+    }
 
-  const path = employeePhotoStoragePath(employeeId, normalized.ext);
-  const buffer = Buffer.from(await normalized.file.arrayBuffer());
-  await removeEmployeePhotoFiles(service, employeeId);
+    const path = employeePhotoStoragePath(employeeId, normalized.ext);
+    await removeEmployeePhotoFiles(service, employeeId);
 
-  const { error: uploadErr } = await service.storage
-    .from("employee-photos")
-    .upload(path, buffer, {
-      contentType: normalized.mime,
-      upsert: true,
+    const { error: uploadErr } = await service.storage
+      .from("employee-photos")
+      .upload(path, buffer, {
+        contentType: normalized.mime,
+        upsert: true,
+      });
+    if (uploadErr) {
+      return { ok: false as const, error: uploadErr.message };
+    }
+
+    const now = new Date().toISOString();
+    const { error } = await service
+      .from("employees")
+      .update({ photo_path: path, updated_at: now })
+      .eq("id", employeeId);
+    if (error) {
+      return { ok: false as const, error: error.message };
+    }
+
+    await logAudit(email, "upload_employee_photo", "employee", employeeId, {
+      photo_path: path,
     });
-  if (uploadErr) {
-    return { ok: false as const, error: uploadErr.message };
+    revalidateEmployeePaths();
+    return { ok: true as const, photoUrl: employeePhotoUrl(path) };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Photo upload failed.",
+    };
   }
-
-  const now = new Date().toISOString();
-  const { error } = await service
-    .from("employees")
-    .update({ photo_path: path, updated_at: now })
-    .eq("id", employeeId);
-  if (error) {
-    return { ok: false as const, error: error.message };
-  }
-
-  await logAudit(email, "upload_employee_photo", "employee", employeeId, {
-    photo_path: path,
-  });
-  revalidateEmployeePaths();
-  return { ok: true as const, photoUrl: employeePhotoUrl(path) };
 }
 
 export async function removeEmployeePhotoAction(employeeId: string) {
-  const { email } = await requireAdmin();
-  const service = await createServiceClient();
+  try {
+    const { email } = await requireAdmin();
+    const service = await createServiceClient();
 
-  await removeEmployeePhotoFiles(service, employeeId);
-  const now = new Date().toISOString();
-  const { error } = await service
-    .from("employees")
-    .update({ photo_path: null, updated_at: now })
-    .eq("id", employeeId);
-  if (error) {
-    return { ok: false as const, error: error.message };
+    await removeEmployeePhotoFiles(service, employeeId);
+    const now = new Date().toISOString();
+    const { error } = await service
+      .from("employees")
+      .update({ photo_path: null, updated_at: now })
+      .eq("id", employeeId);
+    if (error) {
+      return { ok: false as const, error: error.message };
+    }
+
+    await logAudit(email, "remove_employee_photo", "employee", employeeId, {});
+    revalidateEmployeePaths();
+    return { ok: true as const };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Photo remove failed.",
+    };
   }
-
-  await logAudit(email, "remove_employee_photo", "employee", employeeId, {});
-  revalidateEmployeePaths();
-  return { ok: true as const };
 }
 
 function revalidateBranchRosterPaths() {

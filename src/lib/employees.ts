@@ -477,3 +477,67 @@ export async function findEmployeeByEmployeeNo(
 
   return (data as Employee) ?? null;
 }
+
+export async function deleteEmployeeRecord(employeeId: string): Promise<{
+  full_name: string;
+  employee_no: string;
+}> {
+  const service = await createServiceClient();
+  const { data: employee, error: fetchErr } = await service
+    .from("employees")
+    .select("id, full_name, employee_no, photo_path")
+    .eq("id", employeeId)
+    .maybeSingle();
+
+  if (fetchErr || !employee) {
+    throw new Error(fetchErr?.message ?? "Employee not found.");
+  }
+
+  const now = new Date().toISOString();
+  const { data: linkedBranches } = await service
+    .from("branches")
+    .select("id, representative_1_employee_id, representative_2_employee_id")
+    .or(
+      `representative_1_employee_id.eq.${employeeId},representative_2_employee_id.eq.${employeeId}`
+    );
+
+  for (const branch of linkedBranches ?? []) {
+    const patch: Record<string, string | null> = {
+      representatives_updated_at: now,
+    };
+    if (branch.representative_1_employee_id === employeeId) {
+      Object.assign(patch, {
+        representative_1: null,
+        representative_1_employee_no: null,
+        representative_1_position: null,
+        representative_1_employee_id: null,
+      });
+    }
+    if (branch.representative_2_employee_id === employeeId) {
+      Object.assign(patch, {
+        representative_2: null,
+        representative_2_employee_no: null,
+        representative_2_position: null,
+        representative_2_employee_id: null,
+      });
+    }
+    await service.from("branches").update(patch).eq("id", branch.id);
+  }
+
+  await service.storage
+    .from("employee-photos")
+    .remove([
+      `${employeeId}.png`,
+      `${employeeId}.jpg`,
+      `${employeeId}.webp`,
+      ...(employee.photo_path ? [employee.photo_path] : []),
+    ]);
+
+  const { error } = await service.from("employees").delete().eq("id", employeeId);
+  if (error) throw new Error(error.message);
+
+  return {
+    full_name: employee.full_name,
+    employee_no: employee.employee_no,
+  };
+}

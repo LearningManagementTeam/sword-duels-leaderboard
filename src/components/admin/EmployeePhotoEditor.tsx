@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { RepAvatar } from "@/components/ui/RepAvatar";
 import {
   removeEmployeePhotoAction,
@@ -44,6 +44,7 @@ export function EmployeePhotoEditor(props: Props) {
   const isDraft = !("employeeId" in props && props.employeeId);
 
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const pasteZoneRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
@@ -128,7 +129,7 @@ export function EmployeePhotoEditor(props: Props) {
           source === "paste" ? "Photo pasted and saved." : "Photo uploaded.",
           "success"
         );
-        router.refresh();
+        startTransition(() => router.refresh());
       } catch (e) {
         setFeedback(
           e instanceof Error ? e.message : "Upload failed.",
@@ -140,7 +141,7 @@ export function EmployeePhotoEditor(props: Props) {
         if (inputRef.current) inputRef.current.value = "";
       }
     },
-    [fileLabel, isDraft, onDraftFileChange, router, savedEmployeeId, setFeedback]
+    [fileLabel, isDraft, onDraftFileChange, router, savedEmployeeId, setFeedback, startTransition]
   );
 
   const applyFileRef = useRef(applyFile);
@@ -223,7 +224,7 @@ export function EmployeePhotoEditor(props: Props) {
         const result = await removeEmployeePhotoAction(props.employeeId);
         if (!result.ok) throw new Error(result.error);
         setFeedback("Photo removed.", "success");
-        router.refresh();
+        startTransition(() => router.refresh());
       } catch (e) {
         setFeedback(
           e instanceof Error ? e.message : "Remove failed.",
