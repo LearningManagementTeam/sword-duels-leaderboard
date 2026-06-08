@@ -546,6 +546,54 @@ export async function deleteEmployeeAction(employeeId: string) {
   }
 }
 
+export async function deleteEmployeesAction(employeeIds: string[]) {
+  try {
+    const { email } = await requireAdmin();
+    const { deleteEmployeeRecord } = await import("@/lib/employees");
+
+    const uniqueIds = [...new Set(employeeIds.map((id) => id.trim()).filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return { ok: false as const, error: "No employees selected." };
+    }
+
+    let deletedCount = 0;
+    const errors: string[] = [];
+
+    for (const employeeId of uniqueIds) {
+      try {
+        const deleted = await deleteEmployeeRecord(employeeId);
+        deletedCount += 1;
+        await logAudit(email, "delete_employee", "employee", employeeId, {
+          employee_no: deleted.employee_no,
+          full_name: deleted.full_name,
+          bulk: true,
+        });
+      } catch (e) {
+        errors.push(e instanceof Error ? e.message : "Delete failed.");
+      }
+    }
+
+    if (deletedCount === 0) {
+      return {
+        ok: false as const,
+        error: errors[0] ?? "Delete failed.",
+      };
+    }
+
+    revalidateEmployeePaths();
+    return {
+      ok: true as const,
+      deletedCount,
+      errors,
+    };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Delete failed.",
+    };
+  }
+}
+
 export async function setEmployeeEmploymentStatusAction(
   employeeId: string,
   status: import("@/lib/employees").EmploymentStatus

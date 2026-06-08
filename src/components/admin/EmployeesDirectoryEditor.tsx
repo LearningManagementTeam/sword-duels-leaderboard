@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { EmployeeProfileModal } from "@/components/admin/EmployeeProfileModal";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
 import { RepAvatar } from "@/components/ui/RepAvatar";
+import { deleteEmployeesAction } from "@/lib/actions/admin";
 import { nationalCompetitionsPath } from "@/lib/admin-routes";
 import type { EmployeeAdminRow, EmploymentStatus, HrisBranchOption } from "@/lib/employee-types";
 import { resolveEmployeePhotoUrl } from "@/lib/employee-photo-storage";
@@ -20,11 +23,16 @@ interface Props {
 }
 
 export function EmployeesDirectoryEditor({ employees, branches }: Props) {
+  const router = useRouter();
+  const selectAllRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<EmploymentStatus | "all">(
     "all"
   );
   const [modal, setModal] = useState<ModalState>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
 
@@ -50,6 +58,33 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
     });
   }, [employees, search, statusFilter]);
 
+  const filteredIds = useMemo(
+    () => new Set(filtered.map((row) => row.id)),
+    [filtered]
+  );
+
+  const selectedInView = useMemo(
+    () => filtered.filter((row) => selectedIds.has(row.id)),
+    [filtered, selectedIds]
+  );
+
+  const allFilteredSelected =
+    filtered.length > 0 && selectedInView.length === filtered.length;
+  const someFilteredSelected =
+    selectedInView.length > 0 && selectedInView.length < filtered.length;
+
+  useEffect(() => {
+    const el = selectAllRef.current;
+    if (el) el.indeterminate = someFilteredSelected;
+  }, [someFilteredSelected]);
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const next = new Set([...prev].filter((id) => filteredIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filteredIds]);
+
   const selectedEmployee =
     modal?.mode === "edit"
       ? employees.find((e) => e.id === modal.employeeId) ?? null
@@ -70,6 +105,73 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
   function closeModal() {
     setModal(null);
   }
+
+  function toggleRow(id: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll(checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const row of filtered) {
+        if (checked) next.add(row.id);
+        else next.delete(row.id);
+      }
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    const ids = selectedInView.map((row) => row.id);
+    if (ids.length === 0) return;
+
+    setBulkDeleting(true);
+    setMessage("");
+    setError(false);
+    try {
+      const result = await deleteEmployeesAction(ids);
+      if (!result.ok) throw new Error(result.error);
+
+      const repSlots = selectedInView.reduce(
+        (sum, row) => sum + row.rep_assignments.length,
+        0
+      );
+
+      let msg = `${result.deletedCount} employee${
+        result.deletedCount === 1 ? "" : "s"
+      } removed.`;
+      if (repSlots > 0) {
+        msg += ` Cleared ${repSlots} competition rep slot(s).`;
+      }
+      if (result.errors.length > 0) {
+        msg += ` ${result.errors.length} could not be deleted.`;
+        setError(true);
+      }
+
+      setMessage(msg);
+      setSelectedIds(new Set());
+      setShowBulkDeleteConfirm(false);
+      if (modal?.mode === "edit" && ids.includes(modal.employeeId)) {
+        setModal(null);
+      }
+      router.refresh();
+    } catch (e) {
+      setError(true);
+      setMessage(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
+  const bulkRepSlots = selectedInView.reduce(
+    (sum, row) => sum + row.rep_assignments.length,
+    0
+  );
 
   return (
     <section className="sd-neon-panel space-y-5 p-5">
@@ -115,7 +217,38 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
         >
           Add employee
         </button>
+        {selectedInView.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowBulkDeleteConfirm(true)}
+            className="rounded-lg px-4 py-2 text-sm text-rose-100 ring-1 ring-rose-400/35 hover:bg-rose-500/10"
+          >
+            Delete selected ({selectedInView.length})
+          </button>
+        )}
       </div>
+
+      {showBulkDeleteConfirm && selectedInView.length > 0 && (
+        <AdminConfirmPanel
+          title={`Delete ${selectedInView.length} employee${
+            selectedInView.length === 1 ? "" : "s"
+          }?`}
+          tone="danger"
+          confirmLabel={`Delete ${selectedInView.length}`}
+          busy={bulkDeleting}
+          onConfirm={() => void handleBulkDelete()}
+          onCancel={() => setShowBulkDeleteConfirm(false)}
+        >
+          {bulkRepSlots > 0 ? (
+            <p>
+              This permanently removes the selected profiles and clears{" "}
+              {bulkRepSlots} competition rep slot(s) on the Representatives page.
+            </p>
+          ) : (
+            <p>This permanently removes the selected employee profiles.</p>
+          )}
+        </AdminConfirmPanel>
+      )}
 
       {employees.length === 0 ? (
         <p className="text-sm text-sd-muted">
@@ -126,9 +259,19 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
         <p className="text-sm text-sd-muted">No employees match your filters.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[44rem] text-left text-sm">
+          <table className="w-full min-w-[46rem] text-left text-sm">
             <thead>
               <tr className="border-b border-emerald-500/15 text-xs uppercase tracking-wide text-sd-muted">
+                <th className="w-10 px-2 py-2">
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={(e) => toggleSelectAll(e.target.checked)}
+                    aria-label="Select all visible employees"
+                    className="rounded border-emerald-500/30 bg-sd-deep text-emerald-400"
+                  />
+                </th>
                 <th className="px-2 py-2">Photo</th>
                 <th className="px-2 py-2">Employee no.</th>
                 <th className="px-2 py-2">Name</th>
@@ -139,55 +282,76 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row) => (
-                <tr
-                  key={row.id}
-                  className="cursor-pointer border-b border-emerald-500/10 align-top transition hover:bg-sd-deep/20"
-                  onClick={() => openEdit(row.id)}
-                >
-                  <td className="px-2 py-2">
-                    <RepAvatar
-                      name={row.full_name}
-                      photoUrl={resolveEmployeePhotoUrl(row.photo_path)}
-                      size="sm"
-                    />
-                  </td>
-                  <td className="px-2 py-2 font-mono text-xs text-emerald-100">
-                    {row.employee_no}
-                  </td>
-                  <td className="px-2 py-2 font-medium text-white">
-                    {row.full_name}
-                  </td>
-                  <td className="px-2 py-2 text-sd-muted">
-                    {row.position || "—"}
-                  </td>
-                  <td className="px-2 py-2 text-xs text-sd-muted">
-                    {row.home_branch_code ? (
-                      <>
-                        <span className="text-emerald-100">{row.home_branch_code}</span>
-                        {row.home_branch_name ? ` · ${row.home_branch_name}` : ""}
-                      </>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="px-2 py-2">
-                    <EmploymentStatusBadge status={row.employment_status} />
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEdit(row.id);
-                      }}
-                      className="sd-btn-ghost rounded px-2 py-1 text-xs"
+              {filtered.map((row) => {
+                const checked = selectedIds.has(row.id);
+                return (
+                  <tr
+                    key={row.id}
+                    className={`cursor-pointer border-b border-emerald-500/10 align-top transition hover:bg-sd-deep/20 ${
+                      checked ? "bg-sd-deep/25" : ""
+                    }`}
+                    onClick={() => openEdit(row.id)}
+                  >
+                    <td
+                      className="px-2 py-2"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      View profile
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => toggleRow(row.id, e.target.checked)}
+                        aria-label={`Select ${row.full_name}`}
+                        className="rounded border-emerald-500/30 bg-sd-deep text-emerald-400"
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <RepAvatar
+                        name={row.full_name}
+                        photoUrl={resolveEmployeePhotoUrl(row.photo_path)}
+                        size="sm"
+                      />
+                    </td>
+                    <td className="px-2 py-2 font-mono text-xs text-emerald-100">
+                      {row.employee_no}
+                    </td>
+                    <td className="px-2 py-2 font-medium text-white">
+                      {row.full_name}
+                    </td>
+                    <td className="px-2 py-2 text-sd-muted">
+                      {row.position || "—"}
+                    </td>
+                    <td className="px-2 py-2 text-xs text-sd-muted">
+                      {row.home_branch_code ? (
+                        <>
+                          <span className="text-emerald-100">
+                            {row.home_branch_code}
+                          </span>
+                          {row.home_branch_name
+                            ? ` · ${row.home_branch_name}`
+                            : ""}
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-2 py-2">
+                      <EmploymentStatusBadge status={row.employment_status} />
+                    </td>
+                    <td className="px-2 py-2 text-right">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(row.id);
+                        }}
+                        className="sd-btn-ghost rounded px-2 py-1 text-xs"
+                      >
+                        View profile
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
