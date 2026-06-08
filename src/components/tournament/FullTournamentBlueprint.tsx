@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { SdRegionalTournamentMap } from "@/components/sword-duels/SdRegionalTournamentMap";
 import type {
   TournamentBlueprintModel,
   TournamentBlueprintPhase,
@@ -215,7 +216,21 @@ export function FullTournamentBlueprint({
         ))}
       </div>
 
-      <BlueprintPanel model={active} />
+      {program === "sword_duels" ? (
+        <>
+          <SdRegionalTournamentMap showChampion compact={compact} />
+          <details className="sd-glass rounded-xl p-4">
+            <summary className="cursor-pointer text-sm font-semibold text-white">
+              Set-by-set detail (Group A → B → final → nationals)
+            </summary>
+            <div className="mt-4">
+              <BlueprintPanel model={active} />
+            </div>
+          </details>
+        </>
+      ) : (
+        <BlueprintPanel model={active} />
+      )}
 
       <p className="text-center text-xs text-sd-muted sm:text-left">
         <Link href="/tournament-journey" className="sd-link">

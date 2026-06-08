@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ProgramRulesCrossLink } from "@/components/ProgramRulesCrossLink";
+import { SdRegionalTournamentMap } from "@/components/sword-duels/SdRegionalTournamentMap";
 import {
   SD_MECHANICS_SUMMARY,
   SD_NATIONALS_PHASES,
@@ -33,6 +34,8 @@ export default function SwordDuelsMechanicsPage() {
           View the full tournament map (areas through nationals finals) →
         </Link>
       </p>
+
+      <SdRegionalTournamentMap compact />
 
       <section className="sd-neon-panel space-y-3 p-5">
         <ul className="list-disc space-y-2 pl-5 text-sm text-sd-muted">

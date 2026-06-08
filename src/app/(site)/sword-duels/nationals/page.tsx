@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
 import { NationalsKnockoutSection } from "@/components/sword-duels/NationalsKnockoutSection";
 import { NationalsWildcardMap } from "@/components/sword-duels/NationalsWildcardMap";
+import { SdRegionalTournamentMap } from "@/components/sword-duels/SdRegionalTournamentMap";
 import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { loadNationalsPublicView } from "@/lib/products/sword-duels/load-nationals-public-view";
 import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
@@ -90,6 +91,8 @@ export default async function SwordDuelsNationalsPage() {
           </Link>
         </p>
       </div>
+
+      <SdRegionalTournamentMap />
 
       <section id="wildcard" className="scroll-mt-24">
         <NationalsWildcardMap
