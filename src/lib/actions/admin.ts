@@ -37,6 +37,7 @@ import {
   type BrandingConfig,
 } from "@/lib/branding";
 import { revalidateBrandingPublicPaths } from "@/lib/branding-revalidate";
+import { normalizeEmployeePhotoFile } from "@/lib/employee-photo-file";
 import {
   COMPETITION_MAP_SLUG,
   type CompetitionMapConfig,
@@ -517,13 +518,6 @@ export async function setEmployeeEmploymentStatusAction(
   return { ok: true as const, employee };
 }
 
-const EMPLOYEE_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
-const EMPLOYEE_PHOTO_MIME: Record<string, "png" | "jpg" | "webp"> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/webp": "webp",
-};
-
 async function removeEmployeePhotoFiles(
   service: Awaited<ReturnType<typeof createServiceClient>>,
   employeeId: string
@@ -548,25 +542,23 @@ export async function uploadEmployeePhotoAction(
     "@/lib/employee-photo-storage"
   );
 
-  if (!(file instanceof File) || file.size === 0) {
+  if (!(file instanceof File)) {
     return { ok: false as const, error: "Choose a photo to upload." };
   }
-  if (file.size > EMPLOYEE_PHOTO_MAX_BYTES) {
-    return { ok: false as const, error: "Photo must be 2MB or smaller." };
-  }
-  const ext = EMPLOYEE_PHOTO_MIME[file.type];
-  if (!ext) {
-    return { ok: false as const, error: "Use PNG, JPG, or WebP." };
+
+  const normalized = await normalizeEmployeePhotoFile(file, employeeId, "upload");
+  if ("error" in normalized) {
+    return { ok: false as const, error: normalized.error };
   }
 
-  const path = employeePhotoStoragePath(employeeId, ext);
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const path = employeePhotoStoragePath(employeeId, normalized.ext);
+  const buffer = Buffer.from(await normalized.file.arrayBuffer());
   await removeEmployeePhotoFiles(service, employeeId);
 
   const { error: uploadErr } = await service.storage
     .from("employee-photos")
     .upload(path, buffer, {
-      contentType: file.type,
+      contentType: normalized.mime,
       upsert: true,
     });
   if (uploadErr) {

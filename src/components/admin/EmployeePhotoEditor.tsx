@@ -1,16 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RepAvatar } from "@/components/ui/RepAvatar";
 import {
   removeEmployeePhotoAction,
   uploadEmployeePhotoAction,
 } from "@/lib/actions/admin";
+import {
+  imageFileFromClipboardApi,
+  imageFileFromDataTransfer,
+  isEditablePasteTarget,
+} from "@/lib/clipboard-image";
 import { resolveEmployeePhotoUrl } from "@/lib/employee-photo-storage";
+import { normalizeEmployeePhotoFile } from "@/lib/employee-photo-file";
 
-const ACCEPTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
-const MAX_BYTES = 2 * 1024 * 1024;
+type PhotoStatus = "idle" | "reading" | "uploading" | "removing" | "success" | "error";
 
 type CommonProps = {
   name: string;
@@ -34,45 +39,6 @@ type DraftProps = CommonProps & {
 
 type Props = SavedProps | DraftProps;
 
-function normalizeImageFile(
-  file: File,
-  label: string,
-  source: string
-): File {
-  let type = file.type;
-  if (type === "image/jpg") type = "image/jpeg";
-  if (!ACCEPTED_TYPES.has(type)) {
-    type = "image/png";
-  }
-  const ext =
-    type === "image/jpeg" ? "jpg" : type === "image/webp" ? "webp" : "png";
-  return new File([file], `${label}-${source}.${ext}`, { type });
-}
-
-function imageFromClipboard(
-  data: DataTransfer | null,
-  label: string
-): File | null {
-  if (!data) return null;
-
-  for (const item of data.items) {
-    if (item.kind !== "file" || !item.type.startsWith("image/")) continue;
-    const blob = item.getAsFile();
-    if (!blob) continue;
-    return normalizeImageFile(blob, label, "paste");
-  }
-
-  return null;
-}
-
-function validatePhotoFile(file: File): string | null {
-  if (file.size === 0) return "Choose a photo to upload.";
-  if (file.size > MAX_BYTES) return "Photo must be 2MB or smaller.";
-  const type = file.type === "image/jpg" ? "image/jpeg" : file.type;
-  if (!ACCEPTED_TYPES.has(type)) return "Use PNG, JPG, or WebP.";
-  return null;
-}
-
 export function EmployeePhotoEditor(props: Props) {
   const { name, disabled = false, onMessage } = props;
   const isDraft = !("employeeId" in props && props.employeeId);
@@ -82,6 +48,8 @@ export function EmployeePhotoEditor(props: Props) {
   const pasteZoneRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [pasteFocused, setPasteFocused] = useState(false);
+  const [status, setStatus] = useState<PhotoStatus>("idle");
+  const [statusMessage, setStatusMessage] = useState("");
 
   const savedPhotoUrl = !isDraft
     ? resolveEmployeePhotoUrl(props.photoPath)
@@ -100,74 +68,168 @@ export function EmployeePhotoEditor(props: Props) {
   const photoUrl = isDraft ? draftPreviewUrl : savedPhotoUrl;
   const fileLabel = isDraft ? "new-employee" : props.employeeId;
 
-  async function handleSavedFile(file: File, source: "upload" | "paste") {
-    if (isDraft) return;
+  const setFeedback = useCallback(
+    (message: string, nextStatus: PhotoStatus, error = false) => {
+      setStatus(nextStatus);
+      setStatusMessage(message);
+      onMessage(message, error);
+    },
+    [onMessage]
+  );
 
-    setBusy(true);
+  const clearFeedback = useCallback(() => {
+    setStatus("idle");
+    setStatusMessage("");
     onMessage("");
-    try {
-      const formData = new FormData();
-      formData.set("file", file);
-      const result = await uploadEmployeePhotoAction(props.employeeId, formData);
-      if (!result.ok) throw new Error(result.error);
-      onMessage(source === "paste" ? "Photo pasted." : "Photo updated.");
-      router.refresh();
-    } catch (e) {
-      onMessage(e instanceof Error ? e.message : "Upload failed.", true);
-    } finally {
-      setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
+  }, [onMessage]);
+
+  useEffect(() => {
+    if (status !== "success") return;
+    const timer = window.setTimeout(() => {
+      setStatus("idle");
+      setStatusMessage("");
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [status]);
+
+  const onDraftFileChange = isDraft ? props.onDraftFileChange : undefined;
+  const savedEmployeeId = !isDraft ? props.employeeId : undefined;
+
+  const applyFile = useCallback(
+    async (rawFile: File, source: "upload" | "paste") => {
+      const result = await normalizeEmployeePhotoFile(rawFile, fileLabel, source);
+      if ("error" in result) {
+        setFeedback(result.error, "error", true);
+        return;
+      }
+
+      if (isDraft && onDraftFileChange) {
+        onDraftFileChange(result.file);
+        setFeedback(
+          source === "paste"
+            ? "Photo pasted — it will save when you create the employee."
+            : "Photo selected — it will save when you create the employee.",
+          "success"
+        );
+        if (inputRef.current) inputRef.current.value = "";
+        return;
+      }
+
+      if (!savedEmployeeId) return;
+
+      setBusy(true);
+      setFeedback("Uploading photo…", "uploading");
+      try {
+        const formData = new FormData();
+        formData.set("file", result.file);
+        const upload = await uploadEmployeePhotoAction(savedEmployeeId, formData);
+        if (!upload.ok) throw new Error(upload.error);
+        setFeedback(
+          source === "paste" ? "Photo pasted and saved." : "Photo uploaded.",
+          "success"
+        );
+        router.refresh();
+      } catch (e) {
+        setFeedback(
+          e instanceof Error ? e.message : "Upload failed.",
+          "error",
+          true
+        );
+      } finally {
+        setBusy(false);
+        if (inputRef.current) inputRef.current.value = "";
+      }
+    },
+    [fileLabel, isDraft, onDraftFileChange, router, savedEmployeeId, setFeedback]
+  );
+
+  const applyFileRef = useRef(applyFile);
+  applyFileRef.current = applyFile;
+
+  const handlePasteFromEvent = useCallback(
+    async (data: DataTransfer | null) => {
+      if (disabled || busy) return false;
+
+      setFeedback("Reading clipboard…", "reading");
+      const file = await imageFileFromDataTransfer(data, fileLabel);
+      if (!file) {
+        setFeedback(
+          "No image on clipboard. Copy a screenshot or image first, then try again.",
+          "error",
+          true
+        );
+        return false;
+      }
+
+      await applyFileRef.current(file, "paste");
+      return true;
+    },
+    [busy, disabled, fileLabel, setFeedback]
+  );
+
+  useEffect(() => {
+    if (disabled) return;
+
+    function onWindowPaste(e: ClipboardEvent) {
+      if (isEditablePasteTarget(e.target)) return;
+      void handlePasteFromEvent(e.clipboardData).then((handled) => {
+        if (handled) e.preventDefault();
+      });
     }
+
+    window.addEventListener("paste", onWindowPaste);
+    return () => window.removeEventListener("paste", onWindowPaste);
+  }, [disabled, handlePasteFromEvent]);
+
+  function handleFileInput(file: File | null) {
+    if (!file) return;
+    void applyFile(file, "upload");
   }
 
-  function handleFile(file: File | null, source: "upload" | "paste") {
-    if (!file) return;
-
-    const normalized = normalizeImageFile(file, fileLabel, source);
-    const validationError = validatePhotoFile(normalized);
-    if (validationError) {
-      onMessage(validationError, true);
-      return;
-    }
-
-    if (isDraft && props.onDraftFileChange) {
-      props.onDraftFileChange(normalized);
-      onMessage(
-        source === "paste" ? "Photo ready to save." : "Photo selected."
-      );
-      if (inputRef.current) inputRef.current.value = "";
-      return;
-    }
-
-    void handleSavedFile(normalized, source);
-  }
-
-  function handlePaste(e: React.ClipboardEvent) {
-    if (disabled || busy) return;
-    const file = imageFromClipboard(e.clipboardData, fileLabel);
-    if (!file) return;
+  function handlePasteOnZone(e: React.ClipboardEvent) {
     e.preventDefault();
-    handleFile(file, "paste");
+    void handlePasteFromEvent(e.clipboardData);
+  }
+
+  async function handlePasteButton() {
+    if (disabled || busy) return;
+
+    setFeedback("Reading clipboard…", "reading");
+    const file = await imageFileFromClipboardApi(fileLabel);
+    if (file) {
+      await applyFile(file, "paste");
+      return;
+    }
+
+    pasteZoneRef.current?.focus();
+    setFeedback(
+      "Press Ctrl+V / ⌘V to paste your copied image.",
+      "reading"
+    );
   }
 
   function handleRemove() {
     if (isDraft && props.onDraftFileChange) {
       props.onDraftFileChange(null);
-      onMessage("Photo removed.");
+      setFeedback("Photo removed.", "success");
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
 
     setBusy(true);
-    onMessage("");
+    setFeedback("Removing photo…", "removing");
     void (async () => {
       try {
         const result = await removeEmployeePhotoAction(props.employeeId);
         if (!result.ok) throw new Error(result.error);
-        onMessage("Photo removed.");
+        setFeedback("Photo removed.", "success");
         router.refresh();
       } catch (e) {
-        onMessage(e instanceof Error ? e.message : "Remove failed.", true);
+        setFeedback(
+          e instanceof Error ? e.message : "Remove failed.",
+          "error",
+          true
+        );
       } finally {
         setBusy(false);
       }
@@ -175,74 +237,108 @@ export function EmployeePhotoEditor(props: Props) {
   }
 
   const inactive = disabled || busy;
+  const showStatus = status !== "idle" && statusMessage;
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <div
-        ref={pasteZoneRef}
-        tabIndex={inactive ? -1 : 0}
-        role="button"
-        aria-label={`Photo for ${name}. Click to focus, then paste an image from the clipboard.`}
-        onPaste={handlePaste}
-        onFocus={() => setPasteFocused(true)}
-        onBlur={() => setPasteFocused(false)}
-        className={`rounded-xl outline-none transition ${
-          pasteFocused
-            ? "ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-sd-deep"
-            : "ring-1 ring-transparent"
-        } ${inactive ? "opacity-60" : "cursor-pointer"}`}
-      >
-        <RepAvatar name={name} photoUrl={photoUrl} size="lg" />
-      </div>
-      <div className="space-y-1.5">
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          className="hidden"
-          disabled={inactive}
-          onChange={(e) =>
-            handleFile(e.target.files?.[0] ?? null, "upload")
-          }
-        />
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={inactive}
-            onClick={() => inputRef.current?.click()}
-            className="sd-btn-ghost rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
-          >
-            {busy
-              ? "Uploading…"
-              : photoUrl
-                ? "Replace photo"
-                : "Upload photo"}
-          </button>
-          <button
-            type="button"
-            disabled={inactive}
-            onClick={() => pasteZoneRef.current?.focus()}
-            className="sd-btn-ghost rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
-          >
-            Paste photo
-          </button>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <div
+          ref={pasteZoneRef}
+          tabIndex={inactive ? -1 : 0}
+          role="button"
+          aria-label={`Photo for ${name}. Paste an image with Ctrl+V or ⌘V.`}
+          onPaste={handlePasteOnZone}
+          onFocus={() => setPasteFocused(true)}
+          onBlur={() => setPasteFocused(false)}
+          onClick={() => {
+            if (!inactive) pasteZoneRef.current?.focus();
+          }}
+          className={`rounded-xl outline-none transition ${
+            pasteFocused || status === "reading"
+              ? "ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-sd-deep"
+              : "ring-1 ring-transparent"
+          } ${inactive ? "opacity-60" : "cursor-pointer"}`}
+        >
+          <RepAvatar name={name} photoUrl={photoUrl} size="lg" />
         </div>
-        {photoUrl && (
-          <button
-            type="button"
+        <div className="space-y-1.5">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
             disabled={inactive}
-            onClick={handleRemove}
-            className="block text-xs text-rose-300/80 hover:text-rose-200 disabled:opacity-50"
-          >
-            Remove photo
-          </button>
-        )}
-        <p className="text-[10px] text-sd-muted/70">
-          PNG, JPG, or WebP · max 2 MB · click avatar or Paste photo, then
-          Ctrl+V / ⌘V
-          {isDraft ? " · saved when you create the employee" : ""}
-        </p>
+            onChange={(e) => {
+              handleFileInput(e.target.files?.[0] ?? null);
+              clearFeedback();
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={inactive}
+              onClick={() => {
+                clearFeedback();
+                inputRef.current?.click();
+              }}
+              className="sd-btn-ghost rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
+            >
+              {status === "uploading"
+                ? "Uploading…"
+                : photoUrl
+                  ? "Replace photo"
+                  : "Upload photo"}
+            </button>
+            <button
+              type="button"
+              disabled={inactive}
+              onClick={() => void handlePasteButton()}
+              className="sd-btn-ghost rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
+            >
+              {status === "reading" ? "Reading…" : "Paste photo"}
+            </button>
+          </div>
+          {photoUrl && (
+            <button
+              type="button"
+              disabled={inactive}
+              onClick={handleRemove}
+              className="block text-xs text-rose-300/80 hover:text-rose-200 disabled:opacity-50"
+            >
+              {status === "removing" ? "Removing…" : "Remove photo"}
+            </button>
+          )}
+          <p className="text-[10px] text-sd-muted/70">
+            PNG, JPG, or WebP · max 2 MB · paste anywhere on this form with
+            Ctrl+V / ⌘V
+            {isDraft ? " · saved when you create the employee" : ""}
+          </p>
+        </div>
       </div>
+
+      {showStatus && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${
+            status === "error"
+              ? "border-rose-400/35 bg-rose-500/10 text-rose-100"
+              : status === "success"
+                ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
+                : "border-cyan-400/35 bg-cyan-500/10 text-cyan-100"
+          }`}
+        >
+          {(status === "reading" ||
+            status === "uploading" ||
+            status === "removing") && (
+            <span
+              className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+              aria-hidden
+            />
+          )}
+          <span>{statusMessage}</span>
+        </div>
+      )}
     </div>
   );
 }
