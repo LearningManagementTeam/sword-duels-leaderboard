@@ -446,18 +446,19 @@ export async function saveBranchRepresentatives(
     count: updates.length,
   });
   revalidatePath("/admin/national-competitions/representatives");
-  revalidatePath("/admin/national-competitions/employees");
+  revalidatePath("/admin/hris/employees");
   revalidatePath("/admin/sword-duels/representatives");
   revalidatePath("/sword-duels");
   return { ok: true as const, count: updates.length };
 }
 
 function revalidateEmployeePaths() {
-  revalidatePath("/admin/national-competitions/employees");
+  revalidatePath("/admin/hris/employees");
+  revalidatePath("/admin/hris/branches");
   revalidatePath("/admin/national-competitions/representatives");
-  revalidatePath("/admin/national-competitions/branches");
   revalidatePath("/admin/sword-duels/representatives");
-  revalidatePath("/sword-duels");
+  revalidatePath("/sword-duels", "layout");
+  revalidatePath("/", "layout");
 }
 
 export async function saveEmployeeProfileAction(
@@ -516,8 +517,99 @@ export async function setEmployeeEmploymentStatusAction(
   return { ok: true as const, employee };
 }
 
+const EMPLOYEE_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+const EMPLOYEE_PHOTO_MIME: Record<string, "png" | "jpg" | "webp"> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+};
+
+async function removeEmployeePhotoFiles(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  employeeId: string
+) {
+  await service.storage
+    .from("employee-photos")
+    .remove([
+      `${employeeId}.png`,
+      `${employeeId}.jpg`,
+      `${employeeId}.webp`,
+    ]);
+}
+
+export async function uploadEmployeePhotoAction(
+  employeeId: string,
+  formData: FormData
+) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const file = formData.get("file");
+  const { employeePhotoStoragePath, employeePhotoUrl } = await import(
+    "@/lib/employee-photo-storage"
+  );
+
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false as const, error: "Choose a photo to upload." };
+  }
+  if (file.size > EMPLOYEE_PHOTO_MAX_BYTES) {
+    return { ok: false as const, error: "Photo must be 2MB or smaller." };
+  }
+  const ext = EMPLOYEE_PHOTO_MIME[file.type];
+  if (!ext) {
+    return { ok: false as const, error: "Use PNG, JPG, or WebP." };
+  }
+
+  const path = employeePhotoStoragePath(employeeId, ext);
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await removeEmployeePhotoFiles(service, employeeId);
+
+  const { error: uploadErr } = await service.storage
+    .from("employee-photos")
+    .upload(path, buffer, {
+      contentType: file.type,
+      upsert: true,
+    });
+  if (uploadErr) {
+    return { ok: false as const, error: uploadErr.message };
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await service
+    .from("employees")
+    .update({ photo_path: path, updated_at: now })
+    .eq("id", employeeId);
+  if (error) {
+    return { ok: false as const, error: error.message };
+  }
+
+  await logAudit(email, "upload_employee_photo", "employee", employeeId, {
+    photo_path: path,
+  });
+  revalidateEmployeePaths();
+  return { ok: true as const, photoUrl: employeePhotoUrl(path) };
+}
+
+export async function removeEmployeePhotoAction(employeeId: string) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+
+  await removeEmployeePhotoFiles(service, employeeId);
+  const now = new Date().toISOString();
+  const { error } = await service
+    .from("employees")
+    .update({ photo_path: null, updated_at: now })
+    .eq("id", employeeId);
+  if (error) {
+    return { ok: false as const, error: error.message };
+  }
+
+  await logAudit(email, "remove_employee_photo", "employee", employeeId, {});
+  revalidateEmployeePaths();
+  return { ok: true as const };
+}
+
 function revalidateBranchRosterPaths() {
-  revalidatePath("/admin/national-competitions/branches");
+  revalidatePath("/admin/hris/branches");
   revalidatePath("/admin/national-competitions/representatives");
   revalidatePath("/admin/sword-duels/representatives");
   revalidatePath("/admin/sword-duels");
@@ -746,7 +838,7 @@ export async function importRepresentativesFromCsv(csvText: string) {
     row_count: rows.length,
   });
   revalidatePath("/admin/national-competitions/representatives");
-  revalidatePath("/admin/national-competitions/employees");
+  revalidatePath("/admin/hris/employees");
 
   if (updated === 0) {
     return { ok: false as const, errors: resultErrors };

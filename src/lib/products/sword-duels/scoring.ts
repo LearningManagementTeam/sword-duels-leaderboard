@@ -20,6 +20,7 @@ export interface ScoredBranch {
   active_representative_slot?: 1 | 2;
   active_representative_employee_no?: string | null;
   active_representative_position?: string | null;
+  active_representative_photo_url?: string | null;
 }
 
 function scoreMap(scores: SdSetScore[]): Map<string, SdSetScore> {
@@ -64,6 +65,7 @@ export function computeSetResults(
           active_employee_no: s.active_employee_no,
           active_employee_position: s.active_employee_position,
           active_employee_status: s.active_employee_status,
+          active_employee_photo_path: s.active_employee_photo_path,
         }
       : null;
     const profile = resolveActiveRepresentativeProfile(p, activeSlot, snapshot);
@@ -80,6 +82,7 @@ export function computeSetResults(
       active_representative_slot: activeSlot,
       active_representative_employee_no: profile.employeeNo,
       active_representative_position: profile.position,
+      active_representative_photo_url: profile.photoUrl,
     };
   });
 

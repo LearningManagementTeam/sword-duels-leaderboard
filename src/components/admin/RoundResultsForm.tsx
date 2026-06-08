@@ -637,7 +637,7 @@ export function RoundResultsForm({
                 </SdButtonLink>
               ) : (
                 <SdButtonLink
-                  href="/admin/national-competitions/branches"
+                  href="/admin/hris/branches"
                   variant="ghost"
                   className="px-3 py-1.5 text-sm"
                 >

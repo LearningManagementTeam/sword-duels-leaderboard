@@ -25,6 +25,7 @@ export function buildKnockoutEntrantsFromModel(
       branchCode: loser?.branchCode ?? "",
       employeeNo: loser?.employeeNo ?? null,
       position: loser?.position ?? null,
+      photoUrl: model.wildcardRep.photoUrl ?? loser?.photoUrl ?? null,
       isWildcard: true,
       areaFinalScore: model.wildcardRep.areaFinalScore,
     });

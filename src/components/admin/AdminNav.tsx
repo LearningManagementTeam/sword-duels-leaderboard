@@ -40,12 +40,10 @@ const NAV_GROUPS: NavGroup[] = [
     id: "roster",
     label: "Roster",
     links: [
-      { href: nationalCompetitionsPath("branches"), label: "Branches" },
       {
         href: nationalCompetitionsPath("representatives"),
         label: "Representatives",
       },
-      { href: nationalCompetitionsPath("employees"), label: "Employees" },
     ],
   },
   {

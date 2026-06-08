@@ -39,6 +39,7 @@ export interface PlayoffSlot {
   representative_1?: string | null;
   employee_no?: string | null;
   position?: string | null;
+  photo_url?: string | null;
   roundScore: number | null;
   isChampion?: boolean;
   isPlaceholder?: boolean;

@@ -1,9 +1,15 @@
 import Link from "next/link";
+import { AdminGlobalLinks } from "@/components/admin/AdminGlobalLinks";
 import { SwordDuelsAdminNav } from "@/components/admin/SwordDuelsAdminNav";
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
 import { signOut } from "@/lib/actions/admin";
 import { requireAdminLayoutAccess } from "@/lib/admin-layout-auth";
-import { ADMIN_HUB, SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
+import {
+  ADMIN_HUB,
+  REVALIDA_HUB,
+  SWORD_DUELS_ADMIN,
+  SWORD_DUELS_PUBLIC,
+} from "@/lib/admin-routes";
 
 export const dynamic = "force-dynamic";
 
@@ -32,13 +38,20 @@ export default async function SwordDuelsAdminLayout({
                 Admin · Sword Duels
               </Link>
               <Link
+                href={REVALIDA_HUB}
+                className="rounded-lg bg-sd-panel/80 px-2.5 py-1 text-xs text-sd-muted ring-1 ring-cyan-500/20 hover:text-white"
+              >
+                Revalida menu
+              </Link>
+              <Link
                 href={ADMIN_HUB}
                 className="rounded-lg bg-sd-panel/80 px-2.5 py-1 text-xs text-sd-muted ring-1 ring-cyan-500/20 hover:text-white"
               >
                 Main menu
               </Link>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <AdminGlobalLinks />
               <Link
                 href={SWORD_DUELS_PUBLIC}
                 className="text-sm text-sd-muted/80 hover:text-cyan-200"

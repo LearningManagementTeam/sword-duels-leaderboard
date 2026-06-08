@@ -1,3 +1,4 @@
+import { resolveEmployeePhotoUrl } from "./employee-photo-storage";
 import type { EmploymentStatus } from "./employee-types";
 import type { BranchRepresentativeFields } from "./representative-fields";
 
@@ -8,6 +9,7 @@ export interface ActiveRepresentativeProfile {
   employeeNo: string | null;
   position: string | null;
   employmentStatus?: EmploymentStatus | null;
+  photoUrl?: string | null;
 }
 
 export interface RepScoreSnapshot {
@@ -16,11 +18,14 @@ export interface RepScoreSnapshot {
   active_employee_no?: string | null;
   active_employee_position?: string | null;
   active_employee_status?: EmploymentStatus | null;
+  active_employee_photo_path?: string | null;
 }
 
 export interface BranchRepEmployeeFields {
   representative_1_employment_status?: EmploymentStatus | null;
   representative_2_employment_status?: EmploymentStatus | null;
+  representative_1_photo_path?: string | null;
+  representative_2_photo_path?: string | null;
 }
 
 export function normalizeActiveRepresentative(
@@ -57,6 +62,7 @@ export function resolveActiveRepresentativeProfile(
       employeeNo: snapshot.active_employee_no?.trim() || null,
       position: snapshot.active_employee_position?.trim() || null,
       employmentStatus: snapshot.active_employee_status ?? null,
+      photoUrl: resolveEmployeePhotoUrl(snapshot.active_employee_photo_path),
     };
   }
 
@@ -67,6 +73,7 @@ export function resolveActiveRepresentativeProfile(
       employeeNo: fields.representative_2_employee_no?.trim() || null,
       position: fields.representative_2_position?.trim() || null,
       employmentStatus: fields.representative_2_employment_status ?? null,
+      photoUrl: resolveEmployeePhotoUrl(fields.representative_2_photo_path),
     };
   }
   return {
@@ -74,5 +81,6 @@ export function resolveActiveRepresentativeProfile(
     employeeNo: fields.representative_1_employee_no?.trim() || null,
     position: fields.representative_1_position?.trim() || null,
     employmentStatus: fields.representative_1_employment_status ?? null,
+    photoUrl: resolveEmployeePhotoUrl(fields.representative_1_photo_path),
   };
 }

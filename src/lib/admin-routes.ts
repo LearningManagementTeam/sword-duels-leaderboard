@@ -1,5 +1,19 @@
-/** Admin hub landing — product picker. */
+/** Admin hub landing — HRIS vs Revalida picker. */
 export const ADMIN_HUB = "/admin";
+
+/** HRIS — branches and employee profiles (org structure). */
+export const HRIS_ADMIN = "/admin/hris";
+
+/** Revalida — competition operations hub. */
+export const REVALIDA_HUB = "/admin/revalida";
+
+/** Global admin reference — auto-synced from repo. */
+export const ADMIN_SYSTEM = "/admin/system";
+export const ADMIN_DOCS = "/admin/docs";
+
+export function adminDocsPath(slug?: string): string {
+  return slug ? `${ADMIN_DOCS}/${slug}` : ADMIN_DOCS;
+}
 
 /** National Competitions — June → July → The Nationals. */
 export const NATIONAL_COMPETITIONS_ADMIN = "/admin/national-competitions";
@@ -13,6 +27,11 @@ export const ADMIN_PRODUCTS = {
   nationalCompetitions: NATIONAL_COMPETITIONS_ADMIN,
   generalQuiz: `${ADMIN_HUB}/general-quiz`,
 } as const;
+
+export function hrisPath(...segments: string[]): string {
+  const suffix = segments.filter(Boolean).join("/");
+  return suffix ? `${HRIS_ADMIN}/${suffix}` : HRIS_ADMIN;
+}
 
 export function nationalCompetitionsPath(...segments: string[]): string {
   const suffix = segments.filter(Boolean).join("/");
@@ -33,7 +52,6 @@ export const SWORD_DUELS_PUBLIC = "/sword-duels";
 export const LEGACY_ADMIN_PANEL_PATHS = [
   "rounds",
   "advancement",
-  "branches",
   "representatives",
   "competition",
   "mechanics",
@@ -41,5 +59,4 @@ export const LEGACY_ADMIN_PANEL_PATHS = [
   "preview",
   "audit",
   "export",
-  "system",
 ] as const;

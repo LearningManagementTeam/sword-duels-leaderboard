@@ -53,6 +53,7 @@ function toSlot(
       row.active_representative_name ?? row.representative_1,
     employee_no: row.active_representative_employee_no,
     position: row.active_representative_position,
+    photo_url: row.active_representative_photo_url,
     roundScore: row.points,
     isChampion: opts?.isAreaChampion,
     eliminatedInRound: opts?.eliminated ? 1 : null,
@@ -65,9 +66,21 @@ function draftFieldSlot(
   scores: SdSetScore[]
 ): PlayoffSlot {
   const score = scores.find((s) => s.branch_id === b.branch_id);
+  const snapshot: import("@/lib/representative-active").RepScoreSnapshot | null =
+    score
+      ? {
+          active_employee_id: score.active_employee_id,
+          active_employee_name: score.active_employee_name,
+          active_employee_no: score.active_employee_no,
+          active_employee_position: score.active_employee_position,
+          active_employee_status: score.active_employee_status,
+          active_employee_photo_path: score.active_employee_photo_path,
+        }
+      : null;
   const profile = resolveActiveRepresentativeProfile(
     b,
-    score?.active_representative
+    score?.active_representative,
+    snapshot
   );
   return {
     branch_id: b.branch_id,
@@ -78,6 +91,7 @@ function draftFieldSlot(
     representative_1: profile.name,
     employee_no: profile.employeeNo,
     position: profile.position,
+    photo_url: profile.photoUrl,
     roundScore: score?.points ?? null,
   };
 }
@@ -102,6 +116,7 @@ function slotFromBranch(
     representative_1: profile.name,
     employee_no: profile.employeeNo,
     position: profile.position,
+    photo_url: profile.photoUrl,
     roundScore: opts.roundScore,
     isChampion: opts.isChampion,
   };

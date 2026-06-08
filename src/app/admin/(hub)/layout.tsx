@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminGlobalLinks } from "@/components/admin/AdminGlobalLinks";
 import { signOut } from "@/lib/actions/admin";
 import { requireAdminLayoutAccess } from "@/lib/admin-layout-auth";
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
@@ -22,9 +23,10 @@ export default async function AdminHubLayout({
         />
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4">
           <Link href="/admin" className="font-semibold text-sd-glow">
-            Admin · Operations
+            Admin
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-4">
+            <AdminGlobalLinks />
             <Link href="/" className="text-sm text-sd-muted hover:text-white">
               Public site
             </Link>

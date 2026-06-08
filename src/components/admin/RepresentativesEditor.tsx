@@ -78,8 +78,8 @@ function RepBlock({
       </div>
       {status === "resigned" && row[nameField].trim() && (
         <p className="text-xs text-amber-200/90">
-          This employee is marked resigned. Update their status on the Employees
-          page if they are competing again.
+          This employee is marked resigned. Update their status in HRIS → Employee
+          directory if they are competing again.
         </p>
       )}
       <label className="block text-xs">
@@ -226,7 +226,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
   if (branches.length === 0) {
     return (
       <p className="text-sd-glow">
-        Import participating branches first (Admin → Branches), then return here.
+        Import participating branches first in HRIS → Branches, then return here.
       </p>
     );
   }

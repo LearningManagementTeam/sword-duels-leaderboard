@@ -180,7 +180,7 @@ export async function getSdSetScores(setIds: string[]): Promise<SdSetScore[]> {
   const { data } = await service
     .from("sd_set_scores")
     .select(
-      "branch_id, points, hearts_remaining, is_eliminated, active_representative, active_employee_id, set_id"
+      "branch_id, points, hearts_remaining, is_eliminated, active_representative, active_employee_id, active_employee_photo_path, set_id"
     )
     .in("set_id", setIds);
 
@@ -209,6 +209,10 @@ export async function getSdSetScores(setIds: string[]): Promise<SdSetScore[]> {
       active_employee_no: employee?.employee_no ?? null,
       active_employee_position: employee?.position ?? null,
       active_employee_status: employee?.employment_status ?? null,
+      active_employee_photo_path:
+        (row.active_employee_photo_path as string | null) ??
+        employee?.photo_path ??
+        null,
       set_id: row.set_id as string,
     };
   }) as (SdSetScore & { set_id: string })[];

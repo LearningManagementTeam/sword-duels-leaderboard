@@ -272,6 +272,21 @@ export async function saveSdSetScores(
     )
     .in("id", branchIds);
   const branchById = new Map((branchRows ?? []).map((b) => [b.id, b]));
+  const employeeIds = [
+    ...new Set(
+      scores
+        .map((row) => {
+          const slot = row.active_representative === 2 ? 2 : 1;
+          const branch = branchById.get(row.branch_id);
+          return slot === 2
+            ? branch?.representative_2_employee_id
+            : branch?.representative_1_employee_id;
+        })
+        .filter((id): id is string => Boolean(id))
+    ),
+  ];
+  const { loadEmployeesByIds } = await import("@/lib/employees");
+  const employeesById = await loadEmployeesByIds(employeeIds);
 
   for (const row of scores) {
     const slot = row.active_representative === 2 ? 2 : 1;
@@ -280,6 +295,9 @@ export async function saveSdSetScores(
       slot === 2
         ? branch?.representative_2_employee_id ?? null
         : branch?.representative_1_employee_id ?? null;
+    const employee = activeEmployeeId
+      ? employeesById.get(activeEmployeeId)
+      : null;
 
     const { error } = await service.from("sd_set_scores").upsert(
       {
@@ -290,6 +308,7 @@ export async function saveSdSetScores(
         is_eliminated: row.is_eliminated ?? false,
         active_representative: slot,
         active_employee_id: activeEmployeeId,
+        active_employee_photo_path: employee?.photo_path ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "set_id,branch_id" }

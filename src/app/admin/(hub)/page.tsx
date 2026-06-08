@@ -1,4 +1,4 @@
-import { AdminMainMenu } from "@/components/admin/AdminMainMenu";
+import { AdminHubMenu } from "@/components/admin/AdminHubMenu";
 import { SetupBanner } from "@/components/SetupBanner";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -8,16 +8,17 @@ export default async function AdminHubPage() {
   return (
     <div className="space-y-8">
       <div className="sd-page-header">
-        <h1>Operations hub</h1>
+        <h1>Admin</h1>
         <p>
-          Choose a program to run. Each product has its own admin dashboard and
-          workflows.
+          Two systems: <strong className="text-white">HRIS</strong> for branches
+          and employee profiles; <strong className="text-white">Revalida</strong>{" "}
+          for running competitions and events.
         </p>
       </div>
 
       {!configured && <SetupBanner />}
 
-      <AdminMainMenu />
+      <AdminHubMenu />
     </div>
   );
 }

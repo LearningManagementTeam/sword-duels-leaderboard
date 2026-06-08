@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { EmployeePhotoEditor } from "@/components/admin/EmployeePhotoEditor";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
+import { RepAvatar } from "@/components/ui/RepAvatar";
 import {
   createEmployeeAction,
   saveEmployeeProfileAction,
@@ -12,6 +14,7 @@ import {
 import { nationalCompetitionsPath } from "@/lib/admin-routes";
 import type { EmployeeAdminRow, EmploymentStatus } from "@/lib/employee-types";
 import { employmentStatusLabel } from "@/lib/employee-types";
+import { resolveEmployeePhotoUrl } from "@/lib/employee-photo-storage";
 
 interface Props {
   employees: EmployeeAdminRow[];
@@ -141,7 +144,8 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
       <div>
         <h2 className="text-lg font-semibold text-white">Employee directory</h2>
         <p className="mt-1 text-sm text-sd-muted">
-          Competition rep profiles keyed by employee number. Assign reps on the{" "}
+          Competition rep profiles keyed by employee number — including photos
+          shown on Sword Duels brackets and nationals. Assign reps on the{" "}
           <Link
             href={nationalCompetitionsPath("representatives")}
             className="sd-link"
@@ -251,6 +255,7 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
           <table className="w-full min-w-[52rem] text-left text-sm">
             <thead>
               <tr className="border-b border-emerald-500/15 text-xs uppercase tracking-wide text-sd-muted">
+                <th className="px-2 py-2">Photo</th>
                 <th className="px-2 py-2">Employee no.</th>
                 <th className="px-2 py-2">Name</th>
                 <th className="px-2 py-2">Position</th>
@@ -266,7 +271,19 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                     key={row.id}
                     className="border-b border-emerald-500/10 bg-sd-deep/30"
                   >
-                    <td colSpan={6} className="px-2 py-3">
+                    <td colSpan={7} className="px-2 py-3">
+                      <div className="mb-4">
+                        <EmployeePhotoEditor
+                          employeeId={row.id}
+                          name={editDraft.full_name || row.full_name}
+                          photoPath={row.photo_path}
+                          disabled={loading}
+                          onMessage={(msg, err) => {
+                            setMessage(msg);
+                            setError(!!err);
+                          }}
+                        />
+                      </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <label className="block text-xs">
                           <span className="text-sd-muted">Employee no.</span>
@@ -345,6 +362,13 @@ export function EmployeesDirectoryEditor({ employees }: Props) {
                     key={row.id}
                     className="border-b border-emerald-500/10 align-top"
                   >
+                    <td className="px-2 py-2">
+                      <RepAvatar
+                        name={row.full_name}
+                        photoUrl={resolveEmployeePhotoUrl(row.photo_path)}
+                        size="sm"
+                      />
+                    </td>
                     <td className="px-2 py-2 font-mono text-xs text-emerald-100">
                       {row.employee_no}
                     </td>

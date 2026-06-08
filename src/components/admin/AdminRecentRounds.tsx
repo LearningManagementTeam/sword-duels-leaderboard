@@ -59,7 +59,7 @@ export function AdminRecentRounds({ rounds }: Props) {
           detail="Load the branch roster, then score June Round 1 — fans will see ranks as soon as you publish."
           action={
             <SdButtonLink
-              href="/admin/national-competitions/branches"
+              href="/admin/hris/branches"
               className="px-3 py-1.5 text-sm"
             >
               Load roster

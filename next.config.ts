@@ -14,15 +14,56 @@ const legacyAdminRedirects = LEGACY_ADMIN_PANEL_PATHS.flatMap((segment) => [
   },
 ]);
 
+const hrisRedirects = [
+  {
+    source: "/admin/branches",
+    destination: "/admin/hris/branches",
+    permanent: false,
+  },
+  {
+    source: "/admin/branches/:path*",
+    destination: "/admin/hris/branches/:path*",
+    permanent: false,
+  },
+  {
+    source: "/admin/national-competitions/branches",
+    destination: "/admin/hris/branches",
+    permanent: false,
+  },
+  {
+    source: "/admin/national-competitions/branches/:path*",
+    destination: "/admin/hris/branches/:path*",
+    permanent: false,
+  },
+  {
+    source: "/admin/national-competitions/employees",
+    destination: "/admin/hris/employees",
+    permanent: false,
+  },
+  {
+    source: "/admin/national-competitions/employees/:path*",
+    destination: "/admin/hris/employees/:path*",
+    permanent: false,
+  },
+  {
+    source: "/admin/national-competitions/system",
+    destination: "/admin/system",
+    permanent: false,
+  },
+];
+
 const nextConfig: NextConfig = {
   async redirects() {
-    return legacyAdminRedirects;
+    return [...legacyAdminRedirects, ...hrisRedirects];
   },
   images: {
     // Next.js 16: local /api branding URLs use ?v= cache-bust (see branding-storage.ts)
     localPatterns: [
       {
         pathname: "/api/branding/storage/**",
+      },
+      {
+        pathname: "/api/hris/storage/**",
       },
     ],
     remotePatterns: [

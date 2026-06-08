@@ -1,3 +1,4 @@
+import { RepAvatar } from "@/components/ui/RepAvatar";
 import type { WildcardLoser } from "@/lib/products/sword-duels/wildcard-selection";
 import { pickWildcardRoundWinner } from "@/lib/products/sword-duels/wildcard-selection";
 
@@ -7,14 +8,6 @@ interface Props {
   tiedScore: number | null;
   confirmedId?: string;
   tvMode?: boolean;
-}
-
-function initials(name: string): string {
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
 }
 
 export function WildcardRoundArena({
@@ -94,9 +87,12 @@ export function WildcardRoundArena({
               >
                 {index + 1}
               </span>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-fuchsia-950/40 text-[10px] font-bold text-fuchsia-100">
-                {initials(c.repName)}
-              </span>
+              <RepAvatar
+                name={c.repName}
+                photoUrl={c.photoUrl}
+                size="md"
+                wildcard
+              />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-white">
                   {c.repName}

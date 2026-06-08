@@ -1,3 +1,4 @@
+import { RepAvatar } from "@/components/ui/RepAvatar";
 import type { PlayoffSlot } from "@/lib/playoff-map";
 
 export type SdBracketSlotRole = "field" | "spot" | "final" | "champion" | "placeholder";
@@ -14,15 +15,6 @@ interface Props {
 function displayName(slot: PlayoffSlot): string {
   if (slot.isPlaceholder) return slot.branch_name;
   return slot.representative_1?.trim() || slot.branch_name;
-}
-
-function initials(slot: PlayoffSlot): string {
-  const name = displayName(slot);
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
 }
 
 const ROLE_SHELL: Record<SdBracketSlotRole, string> = {
@@ -87,21 +79,23 @@ export function SdBracketSlot({
         highlighted && role === "spot" ? "sd-bracket-spot-ready" : ""
       } ${isWinner && !isPlaceholder ? "hover:scale-[1.015]" : ""}`}
     >
-      <span
-        className={`flex shrink-0 items-center justify-center rounded font-bold tabular-nums ${
-          isAreaChampion
-            ? "h-7 w-7 bg-sd-deep/20 text-sd-deep text-xs"
-            : role === "spot" || role === "final"
-              ? "h-6 w-6 bg-emerald-950/40 text-lime-200 text-[10px]"
-              : eliminated
-                ? "h-6 w-6 bg-zinc-800/60 text-zinc-500 text-[10px]"
-                : "h-6 w-6 bg-emerald-950/50 text-emerald-200/90 text-[10px]"
-        } ${tvMode ? "h-8 w-8 text-xs" : ""} ${
-          isSetWinner ? "ring-1 ring-lime-300/50" : ""
-        }`}
-      >
-        {isAreaChampion ? "★" : initials(slot)}
-      </span>
+      {isAreaChampion ? (
+        <span
+          className={`flex shrink-0 items-center justify-center rounded font-bold tabular-nums bg-sd-deep/20 text-sd-deep text-xs ${
+            tvMode ? "h-8 w-8" : "h-7 w-7"
+          }`}
+        >
+          ★
+        </span>
+      ) : (
+        <RepAvatar
+          name={display}
+          photoUrl={slot.photo_url}
+          size={tvMode ? "md" : "xs"}
+          champion={false}
+          muted={eliminated}
+        />
+      )}
       <div className={`min-w-0 flex-1 ${side === "b" ? "items-end" : ""}`}>
         <p
           className={`truncate font-semibold leading-tight ${

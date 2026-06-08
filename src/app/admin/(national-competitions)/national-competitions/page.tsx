@@ -1,5 +1,6 @@
 import { AdminPhaseStatusStrip } from "@/components/admin/AdminPhaseStatusStrip";
 import { AdminRecentRounds } from "@/components/admin/AdminRecentRounds";
+import { AdminRosterCards } from "@/components/admin/AdminRosterCards";
 import { AdminWorkflowCards } from "@/components/admin/AdminWorkflowCards";
 import { SetupBanner } from "@/components/SetupBanner";
 import { getAdminDashboard } from "@/lib/data/admin-queries";
@@ -38,6 +39,8 @@ export default async function AdminDashboardPage() {
         advanceRound={latestPublishedRoundForAdvances}
         nextDraftRound={nextDraftRound}
       />
+
+      <AdminRosterCards />
 
       <AdminRecentRounds rounds={recentRounds} />
     </div>

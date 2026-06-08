@@ -185,7 +185,7 @@ async function buildDashboardPhaseStatuses(
       if (branchCount > 0 && branchCount < TARGET_BRANCH_COUNT) {
         needsAttention = true;
         attentionMessage = `${branchCount} of ${TARGET_BRANCH_COUNT} branches loaded`;
-        attentionHref = "/admin/national-competitions/branches";
+        attentionHref = "/admin/hris/branches";
       } else if (!round3Published && round3Round) {
         needsAttention = true;
         attentionMessage = "Publish June Round 3 before locking the phase";

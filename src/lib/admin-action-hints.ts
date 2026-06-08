@@ -1,25 +1,35 @@
 import {
   ADMIN_HUB,
+  HRIS_ADMIN,
+  REVALIDA_HUB,
+  hrisPath,
   nationalCompetitionsPath,
 } from "@/lib/admin-routes";
 
 /** Operator-facing hints for admin buttons and nav — plain language, when-to-use. */
 
+export const HRIS_NAV_HINTS: Record<string, string> = {
+  [HRIS_ADMIN]:
+    "HRIS home: shortcuts to branches and the employee directory.",
+  [hrisPath("branches")]:
+    "Master branch list: add or edit branches, deactivate closed ones, or bulk-import CSV.",
+  [hrisPath("employees")]:
+    "Employee directory: search reps by number, edit profiles, and set active / on leave / resigned status.",
+};
+
 export const ADMIN_NAV_HINTS: Record<string, string> = {
   [ADMIN_HUB]:
-    "Pick a program: Quiz Day, Sword Duels, National Competitions, or General Quiz.",
+    "Choose HRIS (org data) or Revalida System (competitions and events).",
+  [REVALIDA_HUB]:
+    "Pick a competition: Sword Duels, National Competitions, Quiz Day, or General Quiz.",
   [nationalCompetitionsPath()]:
     "Start here each week: see phase status (June / July / Nationals), shortcuts to score or lock, and what published last.",
   [nationalCompetitionsPath("rounds")]:
     "Enter branch scores for the current round. Save draft while checking; Save & publish when fans should see new ranks.",
   [nationalCompetitionsPath("advancement")]:
     "End of June or July: after Round 3 is live everywhere, lock the phase to seed survivors into the next stage (24 → July, 3 → Nationals).",
-  [nationalCompetitionsPath("branches")]:
-    "Master branch list: add or edit one branch, deactivate closed branches, or bulk-import CSV before June Round 1.",
   [nationalCompetitionsPath("representatives")]:
-    "Add or fix branch champion names anytime — for the public board and TV display.",
-  [nationalCompetitionsPath("employees")]:
-    "Competition rep profiles by employee number — track active, on leave, or resigned status.",
+    "Assign Rep 1 and Rep 2 per branch for competitions — profiles sync to HRIS.",
   [nationalCompetitionsPath("competition")]:
     "Update the home page journey map (“you are here”) after major beats — not needed for every score change.",
   [nationalCompetitionsPath("mechanics")]:
@@ -45,6 +55,14 @@ export const ADMIN_WORKFLOW_HINTS = {
     "After a big beat (new round live, phase change, finals week): set the home map milestone so fans know where the event is.",
   phaseLock:
     "Once June or July Round 3 is published in all regions: lock to send 24 survivors to July or 3 champions to Nationals.",
+  employeeDirectory:
+    "Use this for employee numbers, job titles, and resigned/on-leave status — not for entering round scores.",
+  representatives:
+    "Pick which person competes as Rep 1 or Rep 2 for each branch. Profiles sync to the employee directory.",
+  branches:
+    "Master list of ~135 branches: codes, areas, regions, and active/inactive status.",
+  hrisSetup:
+    "HRIS owns branches and employee profiles. Use Revalida only to assign reps and score events.",
 };
 
 export const ADMIN_ROUND_HINTS = {

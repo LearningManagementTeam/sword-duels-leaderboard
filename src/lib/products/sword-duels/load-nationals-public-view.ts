@@ -48,6 +48,9 @@ export async function loadNationalsPublicView(
             model.losers.find((l) => l.id === model.wildcardRep!.id)?.employeeNo,
           position:
             model.losers.find((l) => l.id === model.wildcardRep!.id)?.position,
+          photoUrl:
+            model.wildcardRep.photoUrl ??
+            model.losers.find((l) => l.id === model.wildcardRep!.id)?.photoUrl,
         })
       : null;
 

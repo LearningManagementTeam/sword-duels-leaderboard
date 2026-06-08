@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { RepresentativesEditor } from "@/components/admin/RepresentativesEditor";
 import { SetupBanner } from "@/components/SetupBanner";
 import { getBranchesForRepresentatives } from "@/lib/data/admin-queries";
+import { hrisPath } from "@/lib/admin-routes";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
-import Link from "next/link";
 
 export default async function RepresentativesPage() {
   const configured = isSupabaseConfigured();
@@ -15,15 +16,14 @@ export default async function RepresentativesPage() {
       <div className="sd-page-header">
         <h1>Branch representatives</h1>
         <p>
-          Edit names in the table below anytime. For bulk setup, use the{" "}
-          <strong>combined CSV</strong> on{" "}
-          <Link href="/admin/national-competitions/branches" className="sd-link">
-            Admin → Branches
-          </Link>{" "}
-          (same file includes branch_code, branch_name, area, region, and
-          representative columns). Employee profiles and status live on{" "}
-          <Link href="/admin/national-competitions/employees" className="sd-link">
-            Admin → Employees
+          Assign Rep 1 and Rep 2 per branch for competitions. For bulk branch
+          setup use the combined CSV on{" "}
+          <Link href={hrisPath("branches")} className="sd-link">
+            HRIS → Branches
+          </Link>
+          . Employee numbers and employment status are managed in{" "}
+          <Link href={hrisPath("employees")} className="sd-link">
+            HRIS → Employee directory
           </Link>
           .
         </p>

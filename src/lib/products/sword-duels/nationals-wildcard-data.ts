@@ -20,6 +20,7 @@ export interface NationalsAreaRep {
   branchId: string;
   employeeNo: string | null;
   position: string | null;
+  photoUrl?: string | null;
   finalScore: number;
 }
 
@@ -82,6 +83,7 @@ export function buildNationalsRosterFromContext(
               active_employee_no: winnerScore.active_employee_no,
               active_employee_position: winnerScore.active_employee_position,
               active_employee_status: winnerScore.active_employee_status,
+              active_employee_photo_path: winnerScore.active_employee_photo_path,
             }
           : null
       );
@@ -97,6 +99,7 @@ export function buildNationalsRosterFromContext(
         branchId: winnerRow.branch_id,
         employeeNo: profile.employeeNo,
         position: profile.position,
+        photoUrl: profile.photoUrl,
         finalScore: winnerRow.points,
       });
     }
@@ -112,6 +115,7 @@ export function buildNationalsRosterFromContext(
               active_employee_no: loserScore.active_employee_no,
               active_employee_position: loserScore.active_employee_position,
               active_employee_status: loserScore.active_employee_status,
+              active_employee_photo_path: loserScore.active_employee_photo_path,
             }
           : null
       );
@@ -127,6 +131,7 @@ export function buildNationalsRosterFromContext(
         branchCode: loserRow.branch_code,
         employeeNo: profile.employeeNo,
         position: profile.position,
+        photoUrl: profile.photoUrl,
         areaFinalScore: loserRow.points,
       });
     }

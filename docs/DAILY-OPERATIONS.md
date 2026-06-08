@@ -2,6 +2,26 @@
 
 No technical steps. Use any laptop with internet and your admin bookmark.
 
+## HRIS vs Revalida (two admin systems)
+
+After sign-in at `/admin`, you choose **one of two systems**:
+
+| System | Open from | Use for |
+|--------|-----------|---------|
+| **HRIS** | Admin → **HRIS** | Master **branch list**, **employee directory** (employee no., position, active / resigned / on leave) |
+| **Revalida** | Admin → **Revalida System** | Run **competitions** — National Competitions, Sword Duels, Quiz Day |
+
+**Rule of thumb:** update branches and employee profiles in **HRIS** first; assign Rep 1 / Rep 2 and score rounds in **Revalida**.
+
+| Task | Where |
+|------|--------|
+| Import or edit branches | HRIS → Branches |
+| Edit employee number or employment status | HRIS → Employee directory |
+| Assign competition reps per branch | Revalida → National Competitions → Representatives |
+| Enter and publish round scores | Revalida → National Competitions → Rounds |
+
+Old bookmarks to National Competitions → Branches or Employees still work — they redirect to HRIS.
+
 ## Admin pages (quick map)
 
 | Page | Use for |
@@ -11,7 +31,7 @@ No technical steps. Use any laptop with internet and your admin bookmark.
 | **Mechanics** | Edit public “How it works” intro and announcements (rule tables auto-update) |
 | **Competition map** | Set “you are here” on the home page journey + caption |
 | **Branding** | Hero logo, home photo carousel (4 slots), **partner logos** (3 slots), header icon |
-| **System & stack** | Tech setup, migrations, architecture (IT / troubleshooting) |
+| **System & stack** | Tech stack, migrations, env vars (auto-synced) |
 
 Public mechanics: **How it works** on the site header → `/mechanics`
 

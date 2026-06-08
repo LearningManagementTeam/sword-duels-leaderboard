@@ -44,8 +44,8 @@ export default async function SwordDuelsDashboardPage() {
 
       <div className="sd-alert-info text-sm">
         <strong className="text-white">Branch import</strong> lives under{" "}
-        <Link href="/admin/national-competitions/branches" className="sd-link">
-          National Competitions → Branches
+        <Link href="/admin/hris/branches" className="sd-link">
+          HRIS → Branches
         </Link>
         . Score area battles here — not on the June/July/August round editor.
         See{" "}

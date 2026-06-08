@@ -12,7 +12,7 @@ import {
   type BranchRosterUpdate,
 } from "@/lib/actions/admin";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
-import { nationalCompetitionsPath } from "@/lib/admin-routes";
+import { hrisPath } from "@/lib/admin-routes";
 import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
 import { normalizeBranchCode } from "@/lib/branch-roster";
 import { REGIONS, REGION_LABELS, type Region } from "@/lib/scoring-config";
@@ -503,7 +503,7 @@ export function BranchesRosterEditor({
                         </div>
                       )}
                       <Link
-                        href={nationalCompetitionsPath("employees")}
+                        href={hrisPath("employees")}
                         className="sd-link text-[10px]"
                       >
                         Employee directory →

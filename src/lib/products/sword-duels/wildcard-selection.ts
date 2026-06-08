@@ -2,6 +2,7 @@ export interface WildcardLoser {
   id: string;
   area: string;
   repName: string;
+  photoUrl?: string | null;
   areaFinalScore: number;
 }
 

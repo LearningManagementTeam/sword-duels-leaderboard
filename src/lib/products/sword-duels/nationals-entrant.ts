@@ -12,6 +12,7 @@ export interface NationalsEntrant {
   branchCode: string;
   employeeNo: string | null;
   position: string | null;
+  photoUrl?: string | null;
   isWildcard?: boolean;
   areaFinalScore?: number;
 }
@@ -27,6 +28,7 @@ export function entrantFromAreaRep(rep: NationalsAreaRep): NationalsEntrant {
     branchCode: rep.branchCode,
     employeeNo: rep.employeeNo,
     position: rep.position,
+    photoUrl: rep.photoUrl,
     areaFinalScore: rep.finalScore,
   };
 }
@@ -40,6 +42,7 @@ export function entrantFromWildcard(input: {
   branchCode?: string;
   employeeNo?: string | null;
   position?: string | null;
+  photoUrl?: string | null;
 }): NationalsEntrant {
   return {
     id: input.branchId,
@@ -51,6 +54,7 @@ export function entrantFromWildcard(input: {
     branchCode: input.branchCode ?? "",
     employeeNo: input.employeeNo ?? null,
     position: input.position ?? null,
+    photoUrl: input.photoUrl ?? null,
     isWildcard: true,
   };
 }

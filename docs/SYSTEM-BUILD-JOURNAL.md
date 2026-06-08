@@ -220,4 +220,15 @@ When new work ships, add a dated section here (or ask the agent to, using the **
 
 **In one sentence:** Reps now have stable employee profiles so roster changes do not rewrite published competition history.
 
+### Follow-up — HRIS vs Revalida admin split
+
+| What we built | What it does for you |
+|---------------|----------------------|
+| **Two-system home** | `/admin` shows HRIS and Revalida System — no more hunting through one flat menu |
+| **HRIS module** | `/admin/hris` — branches and employee directory with violet-themed nav |
+| **Revalida hub** | `/admin/revalida` — pick Sword Duels, National Competitions, Quiz Day, or General Quiz |
+| **Redirects** | Old NC Branches/Employees URLs forward to HRIS automatically |
+
+**In one sentence:** Org data (branches, people) lives in HRIS; competition week work lives in Revalida.
+
 Last updated: **2 June 2026**

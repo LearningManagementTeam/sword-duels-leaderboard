@@ -22,7 +22,7 @@ export interface RepSlotInput {
 }
 
 const EMPLOYEE_COLUMNS =
-  "id, employee_no, full_name, position, employment_status, resigned_at, notes, created_at, updated_at";
+  "id, employee_no, full_name, position, employment_status, resigned_at, notes, photo_path, created_at, updated_at";
 
 export function normalizeEmployeeNo(value: string): string {
   return value.trim();
@@ -227,6 +227,8 @@ export async function enrichBranchesWithRepEmployees<
   (T & {
     representative_1_employment_status?: EmploymentStatus | null;
     representative_2_employment_status?: EmploymentStatus | null;
+    representative_1_photo_path?: string | null;
+    representative_2_photo_path?: string | null;
   })[]
 > {
   const ids = branches.flatMap((b) => [
@@ -248,6 +250,8 @@ export async function enrichBranchesWithRepEmployees<
       ...b,
       representative_1_employment_status: e1?.employment_status ?? null,
       representative_2_employment_status: e2?.employment_status ?? null,
+      representative_1_photo_path: e1?.photo_path ?? null,
+      representative_2_photo_path: e2?.photo_path ?? null,
     };
   });
 }

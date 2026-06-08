@@ -1,3 +1,4 @@
+import { RepAvatar } from "@/components/ui/RepAvatar";
 import { REGION_LABELS, type Region } from "@/lib/scoring-config";
 import type { NationalsEntrant } from "@/lib/products/sword-duels/nationals-entrant";
 
@@ -16,14 +17,6 @@ interface Props {
   highlight?: boolean;
   /** Hover scale + glow for knockout duels */
   interactive?: boolean;
-}
-
-function initials(name: string): string {
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.slice(0, 2).toUpperCase();
 }
 
 export function NationalsParticipantCard({
@@ -66,15 +59,13 @@ export function NationalsParticipantCard({
         </span>
       )}
       <div className="flex items-start gap-2">
-        <span
-          className={`flex shrink-0 items-center justify-center rounded font-bold ${
-            wildcard
-              ? "bg-fuchsia-950/50 text-fuchsia-100"
-              : "bg-emerald-950/50 text-emerald-200/90"
-          } ${tvMode ? "h-8 w-8 text-xs" : compact ? "h-6 w-6 text-[9px]" : "h-7 w-7 text-[10px]"}`}
-        >
-          {initials(entrant.repName)}
-        </span>
+        <RepAvatar
+          name={entrant.repName}
+          photoUrl={entrant.photoUrl}
+          size={tvMode ? "md" : compact ? "xs" : "sm"}
+          wildcard={wildcard}
+          muted={muted}
+        />
         <div className="min-w-0 flex-1">
           <p
             className={`truncate font-semibold leading-tight text-white ${

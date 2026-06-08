@@ -1,13 +1,19 @@
+import Link from "next/link";
 import { BranchesRosterEditor } from "@/components/admin/BranchesRosterEditor";
 import { ImportParticipatingBranches } from "@/components/admin/ImportParticipatingBranches";
 import { ImportBranchesButton } from "@/components/admin/ImportBranchesButton";
 import { SetupBanner } from "@/components/SetupBanner";
+import {
+  REVALIDA_HUB,
+  hrisPath,
+  nationalCompetitionsPath,
+} from "@/lib/admin-routes";
 import { getBranchesForRosterAdmin } from "@/lib/data/admin-queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminBranchesPage() {
+export default async function HrisBranchesPage() {
   const configured = isSupabaseConfigured();
   const roster = configured
     ? await getBranchesForRosterAdmin()
@@ -16,10 +22,25 @@ export default async function AdminBranchesPage() {
   return (
     <div className="space-y-8">
       <div className="sd-page-header">
-        <h1>Branches & participants</h1>
+        <h1>Branches</h1>
         <p>
-          Manage the master branch list, import in bulk, or edit representatives
-          on the next page.
+          Master branch list for all programs. Import or edit here before
+          competition setup in{" "}
+          <Link href={REVALIDA_HUB} className="sd-link">
+            Revalida
+          </Link>
+          . Assign rep slots on{" "}
+          <Link
+            href={nationalCompetitionsPath("representatives")}
+            className="sd-link"
+          >
+            Representatives
+          </Link>
+          ; employee profiles on{" "}
+          <Link href={hrisPath("employees")} className="sd-link">
+            Employee directory
+          </Link>
+          .
         </p>
       </div>
 

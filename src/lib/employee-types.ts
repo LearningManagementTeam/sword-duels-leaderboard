@@ -8,6 +8,7 @@ export interface Employee {
   employment_status: EmploymentStatus;
   resigned_at: string | null;
   notes: string | null;
+  photo_path: string | null;
   created_at: string;
   updated_at: string;
 }
