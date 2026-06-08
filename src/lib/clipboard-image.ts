@@ -61,6 +61,21 @@ export async function imageFileFromClipboardApi(
   return null;
 }
 
+export function clipboardHasImage(data: DataTransfer | null): boolean {
+  if (!data) return false;
+
+  for (const item of data.items) {
+    if (item.kind !== "file") continue;
+    if (item.type.startsWith("image/") || item.type === "") return true;
+  }
+
+  for (const file of data.files) {
+    if (file.type.startsWith("image/") || file.type === "") return true;
+  }
+
+  return false;
+}
+
 export function isEditablePasteTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return Boolean(

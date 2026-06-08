@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { RepAvatar } from "@/components/ui/RepAvatar";
 import {
+  clipboardHasImage,
   imageFileFromClipboardApi,
   imageFileFromDataTransfer,
   isEditablePasteTarget,
@@ -11,7 +12,14 @@ import {
 import { resolveEmployeePhotoUrl } from "@/lib/employee-photo-storage";
 import { normalizeEmployeePhotoFile } from "@/lib/employee-photo-file";
 
-type PhotoStatus = "idle" | "reading" | "uploading" | "removing" | "success" | "error";
+type PhotoStatus =
+  | "idle"
+  | "reading"
+  | "hint"
+  | "uploading"
+  | "removing"
+  | "success"
+  | "error";
 
 type CommonProps = {
   name: string;
@@ -78,6 +86,7 @@ export function EmployeePhotoEditor(props: Props) {
   const [, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const pasteZoneRef = useRef<HTMLDivElement>(null);
+  const pasteProcessingRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const [pasteFocused, setPasteFocused] = useState(false);
   const [status, setStatus] = useState<PhotoStatus>("idle");
@@ -125,11 +134,12 @@ export function EmployeePhotoEditor(props: Props) {
   }, [onMessage]);
 
   useEffect(() => {
-    if (status !== "success") return;
+    if (status !== "success" && status !== "hint") return;
+    const delay = status === "hint" ? 12000 : 4000;
     const timer = window.setTimeout(() => {
       setStatus("idle");
       setStatusMessage("");
-    }, 4000);
+    }, delay);
     return () => window.clearTimeout(timer);
   }, [status]);
 
@@ -205,21 +215,26 @@ export function EmployeePhotoEditor(props: Props) {
 
   const handlePasteFromEvent = useCallback(
     async (data: DataTransfer | null) => {
-      if (disabled || busy) return false;
+      if (disabled || busy || pasteProcessingRef.current) return false;
 
+      pasteProcessingRef.current = true;
       setFeedback("Reading clipboard…", "reading");
-      const file = await imageFileFromDataTransfer(data, fileLabel);
-      if (!file) {
-        setFeedback(
-          "No image on clipboard. Copy a screenshot or image first, then try again.",
-          "error",
-          true
-        );
-        return false;
-      }
+      try {
+        const file = await imageFileFromDataTransfer(data, fileLabel);
+        if (!file) {
+          setFeedback(
+            "No image on clipboard. Copy a screenshot or image first, then try again.",
+            "error",
+            true
+          );
+          return false;
+        }
 
-      await applyFileRef.current(file, "paste");
-      return true;
+        await applyFileRef.current(file, "paste");
+        return true;
+      } finally {
+        pasteProcessingRef.current = false;
+      }
     },
     [busy, disabled, fileLabel, setFeedback]
   );
@@ -228,8 +243,9 @@ export function EmployeePhotoEditor(props: Props) {
     if (disabled) return;
 
     function onWindowPaste(e: ClipboardEvent) {
-      if (isEditablePasteTarget(e.target)) return;
-      void handlePasteFromEvent(e.clipboardData).then((handled) => {
+      const data = e.clipboardData;
+      if (!clipboardHasImage(data) && isEditablePasteTarget(e.target)) return;
+      void handlePasteFromEvent(data).then((handled) => {
         if (handled) e.preventDefault();
       });
     }
@@ -261,7 +277,7 @@ export function EmployeePhotoEditor(props: Props) {
     pasteZoneRef.current?.focus();
     setFeedback(
       "Press Ctrl+V / ⌘V to paste your copied image.",
-      "reading"
+      "hint"
     );
   }
 
@@ -300,7 +316,7 @@ export function EmployeePhotoEditor(props: Props) {
       <p className="text-xs font-medium uppercase tracking-wide text-sd-muted">
         Photo
       </p>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-start gap-4">
         <div
           ref={pasteZoneRef}
           tabIndex={inactive ? -1 : 0}
@@ -313,12 +329,12 @@ export function EmployeePhotoEditor(props: Props) {
             if (!inactive) pasteZoneRef.current?.focus();
           }}
           className={`rounded-xl outline-none transition ${
-            pasteFocused || status === "reading"
+            pasteFocused || status === "reading" || status === "hint"
               ? "ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-sd-deep"
               : "ring-1 ring-transparent"
           } ${inactive ? "opacity-60" : "cursor-pointer"}`}
         >
-          <RepAvatar name={name} photoUrl={photoUrl} size="lg" />
+          <RepAvatar name={name} photoUrl={photoUrl} size="xl" />
         </div>
         <div className="space-y-1.5">
           <input
@@ -354,7 +370,11 @@ export function EmployeePhotoEditor(props: Props) {
               onClick={() => void handlePasteButton()}
               className="sd-btn-ghost rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
             >
-              {status === "reading" ? "Reading…" : "Paste photo"}
+              {status === "reading"
+                ? "Reading…"
+                : status === "hint"
+                  ? "Paste now"
+                  : "Paste photo"}
             </button>
           </div>
           {photoUrl && (
@@ -384,7 +404,9 @@ export function EmployeePhotoEditor(props: Props) {
               ? "border-rose-400/35 bg-rose-500/10 text-rose-100"
               : status === "success"
                 ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-100"
-                : "border-cyan-400/35 bg-cyan-500/10 text-cyan-100"
+                : status === "hint"
+                  ? "border-cyan-400/25 bg-cyan-500/5 text-cyan-100"
+                  : "border-cyan-400/35 bg-cyan-500/10 text-cyan-100"
           }`}
         >
           {(status === "reading" ||

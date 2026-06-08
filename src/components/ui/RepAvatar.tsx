@@ -11,7 +11,7 @@ function initialsFromName(name: string): string {
 interface Props {
   name: string;
   photoUrl?: string | null;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   className?: string;
   wildcard?: boolean;
   champion?: boolean;
@@ -23,6 +23,7 @@ const SIZE_CLASS: Record<NonNullable<Props["size"]>, string> = {
   sm: "h-7 w-7 text-[10px]",
   md: "h-8 w-8 text-xs",
   lg: "h-10 w-10 text-sm",
+  xl: "h-20 w-20 text-lg",
 };
 
 export function RepAvatar({
@@ -54,7 +55,15 @@ export function RepAvatar({
           fill
           unoptimized
           className="object-cover"
-          sizes={size === "lg" ? "40px" : size === "md" ? "32px" : "28px"}
+          sizes={
+            size === "xl"
+              ? "80px"
+              : size === "lg"
+                ? "40px"
+                : size === "md"
+                  ? "32px"
+                  : "28px"
+          }
         />
       </span>
     );
