@@ -1,25 +1,108 @@
 import {
+  mergeRosterDirectoryRows,
   parseVisionRosterJson,
   ROSTER_VISION_SYSTEM_PROMPT,
   visionRosterToDirectoryRows,
 } from "@/lib/employee-roster-vision";
 import type { EmployeeDirectoryCsvRow } from "@/lib/employees-csv";
 
-const DEFAULT_MODEL = "gpt-4o-mini";
+const DEFAULT_MODEL = "gemini-2.0-flash";
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_BULK_FILES = 10;
+
+export type RosterImageInput = {
+  blob: Blob;
+  mimeType: string;
+  fileName?: string;
+};
+
+export type RosterBulkExtractionResult = {
+  rows: EmployeeDirectoryCsvRow[];
+  warnings: string[];
+  errors: string[];
+  processedFiles: number;
+  failedFiles: Array<{ fileName: string; error: string }>;
+};
 
 function rosterVisionModel(): string {
-  return process.env.OPENAI_ROSTER_MODEL?.trim() || DEFAULT_MODEL;
+  return (
+    process.env.GEMINI_ROSTER_MODEL?.trim() ||
+    process.env.GOOGLE_ROSTER_MODEL?.trim() ||
+    DEFAULT_MODEL
+  );
 }
 
-function openAiApiKey(): string {
-  const key = process.env.OPENAI_API_KEY?.trim();
+function geminiApiKey(): string {
+  const key =
+    process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
   if (!key) {
     throw new Error(
-      "OPENAI_API_KEY is not configured. Add it to your environment to use roster screenshot import."
+      "GEMINI_API_KEY is not configured. Add it to your environment to use roster screenshot import."
     );
   }
   return key;
+}
+
+async function callGeminiVision(
+  mimeType: string,
+  base64: string
+): Promise<string> {
+  const model = rosterVisionModel();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiApiKey())}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: ROSTER_VISION_SYSTEM_PROMPT }],
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: "Extract all employee records from this branch rep roster screenshot.",
+            },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: base64,
+              },
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0,
+        responseMimeType: "application/json",
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(
+      `Gemini extraction failed (${response.status}). ${detail.slice(0, 240)}`
+    );
+  }
+
+  const payload = (await response.json()) as {
+    candidates?: Array<{
+      content?: { parts?: Array<{ text?: string }> };
+    }>;
+  };
+
+  const text = payload.candidates?.[0]?.content?.parts
+    ?.map((part) => part.text ?? "")
+    .join("")
+    .trim();
+
+  if (!text) {
+    throw new Error("Gemini returned an empty response.");
+  }
+
+  return text;
 }
 
 export async function extractRosterEmployeesFromImage(
@@ -30,101 +113,117 @@ export async function extractRosterEmployeesFromImage(
   warnings: string[];
   errors: string[];
 }> {
-  if (file.size > MAX_IMAGE_BYTES) {
-    return {
-      rows: [],
-      warnings: [],
-      errors: ["Image is too large. Use a screenshot under 8 MB."],
-    };
-  }
+  const bulk = await extractRosterEmployeesFromImages([
+    { blob: file, mimeType },
+  ]);
 
-  if (!mimeType.startsWith("image/")) {
-    return {
-      rows: [],
-      warnings: [],
-      errors: ["Upload a PNG or JPG screenshot."],
-    };
-  }
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const base64 = buffer.toString("base64");
-  const dataUrl = `data:${mimeType};base64,${base64}`;
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openAiApiKey()}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: rosterVisionModel(),
-      temperature: 0,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: ROSTER_VISION_SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract all employee records from this branch rep roster screenshot.",
-            },
-            {
-              type: "image_url",
-              image_url: { url: dataUrl, detail: "high" },
-            },
-          ],
-        },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    return {
-      rows: [],
-      warnings: [],
-      errors: [
-        `Vision extraction failed (${response.status}). ${detail.slice(0, 200)}`,
-      ],
-    };
-  }
-
-  const payload = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string | null } }>;
+  return {
+    rows: bulk.rows,
+    warnings: bulk.warnings,
+    errors: bulk.errors,
   };
+}
 
-  const content = payload.choices?.[0]?.message?.content;
-  if (!content?.trim()) {
+export async function extractRosterEmployeesFromImages(
+  files: RosterImageInput[]
+): Promise<RosterBulkExtractionResult> {
+  if (!files.length) {
     return {
       rows: [],
       warnings: [],
-      errors: ["Vision model returned an empty response."],
+      errors: ["Choose at least one roster screenshot."],
+      processedFiles: 0,
+      failedFiles: [],
     };
   }
 
-  try {
-    const extraction = parseVisionRosterJson(content);
-    const { rows, warnings } = visionRosterToDirectoryRows(extraction);
+  if (files.length > MAX_BULK_FILES) {
+    return {
+      rows: [],
+      warnings: [],
+      errors: [`Upload at most ${MAX_BULK_FILES} screenshots at a time.`],
+      processedFiles: 0,
+      failedFiles: [],
+    };
+  }
 
-    if (!rows.length) {
-      return {
-        rows: [],
-        warnings,
-        errors: [
-          "No employees found in screenshot. Use a clear image of the Varsity 1/2 roster table.",
-        ],
-      };
+  const rowGroups: EmployeeDirectoryCsvRow[][] = [];
+  const batchWarnings: string[] = [];
+  const failedFiles: Array<{ fileName: string; error: string }> = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const { blob, mimeType, fileName } = files[i]!;
+    const label = fileName?.trim() || `Screenshot ${i + 1}`;
+
+    if (blob.size > MAX_IMAGE_BYTES) {
+      failedFiles.push({
+        fileName: label,
+        error: "Image is too large (max 8 MB).",
+      });
+      continue;
     }
 
-    return { rows, warnings, errors: [] };
-  } catch (e) {
+    if (!mimeType.startsWith("image/")) {
+      failedFiles.push({
+        fileName: label,
+        error: "File must be a PNG or JPG image.",
+      });
+      continue;
+    }
+
+    try {
+      const buffer = Buffer.from(await blob.arrayBuffer());
+      const base64 = buffer.toString("base64");
+      const content = await callGeminiVision(mimeType, base64);
+      const extraction = parseVisionRosterJson(content);
+      const { rows, warnings } = visionRosterToDirectoryRows(extraction);
+
+      if (!rows.length) {
+        failedFiles.push({
+          fileName: label,
+          error: "No employees found in this screenshot.",
+        });
+        continue;
+      }
+
+      rowGroups.push(rows);
+      if (warnings.length) {
+        batchWarnings.push(`${label}: ${warnings.join(" ")}`);
+      }
+    } catch (e) {
+      failedFiles.push({
+        fileName: label,
+        error: e instanceof Error ? e.message : "Extraction failed.",
+      });
+    }
+  }
+
+  if (!rowGroups.length) {
     return {
       rows: [],
-      warnings: [],
-      errors: [
-        e instanceof Error ? e.message : "Could not parse vision extraction.",
-      ],
+      warnings: batchWarnings,
+      errors: failedFiles.length
+        ? failedFiles.map((f) => `${f.fileName}: ${f.error}`)
+        : ["No employees could be extracted from the uploaded screenshots."],
+      processedFiles: 0,
+      failedFiles,
     };
   }
+
+  const merged = mergeRosterDirectoryRows(rowGroups);
+  const warnings = [...batchWarnings, ...merged.warnings];
+
+  if (failedFiles.length) {
+    warnings.push(
+      `${failedFiles.length} screenshot${failedFiles.length === 1 ? "" : "s"} could not be read — see details below.`
+    );
+  }
+
+  return {
+    rows: merged.rows,
+    warnings,
+    errors: [],
+    processedFiles: rowGroups.length,
+    failedFiles,
+  };
 }

@@ -1,37 +1,61 @@
 import { NextResponse } from "next/server";
 import { AdminAuthError, requireAdminEmail } from "@/lib/admin-auth";
-import { extractRosterEmployeesFromImage } from "@/lib/extract-roster-vision";
+import { extractRosterEmployeesFromImages } from "@/lib/extract-roster-vision";
+
+function filesFromFormData(formData: FormData) {
+  const fromArray = formData
+    .getAll("files")
+    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+
+  if (fromArray.length) return fromArray;
+
+  const single = formData.get("file");
+  if (single instanceof File && single.size > 0) return [single];
+
+  return [];
+}
 
 export async function POST(request: Request) {
   try {
     await requireAdminEmail();
 
     const formData = await request.formData();
-    const file = formData.get("file");
+    const files = filesFromFormData(formData);
 
-    if (!(file instanceof Blob) || file.size === 0) {
+    if (!files.length) {
       return NextResponse.json(
-        { ok: false, error: "Choose a roster screenshot to upload." },
+        { ok: false, error: "Choose one or more roster screenshots to upload." },
         { status: 400 }
       );
     }
 
-    const mimeType =
-      file instanceof File && file.type ? file.type : "image/png";
-
-    const { rows, warnings, errors } = await extractRosterEmployeesFromImage(
-      file,
-      mimeType
+    const result = await extractRosterEmployeesFromImages(
+      files.map((file) => ({
+        blob: file,
+        mimeType: file.type || "image/png",
+        fileName: file.name,
+      }))
     );
 
-    if (errors.length) {
+    if (!result.rows.length) {
       return NextResponse.json(
-        { ok: false, error: errors.join(" "), warnings },
+        {
+          ok: false,
+          error: result.errors.join(" ") || "Roster extraction failed.",
+          warnings: result.warnings,
+          failedFiles: result.failedFiles,
+        },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({ ok: true, rows, warnings });
+    return NextResponse.json({
+      ok: true,
+      rows: result.rows,
+      warnings: result.warnings,
+      processedFiles: result.processedFiles,
+      failedFiles: result.failedFiles,
+    });
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json(

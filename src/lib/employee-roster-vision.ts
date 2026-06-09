@@ -87,3 +87,32 @@ export function visionRosterToDirectoryRows(
 
   return { rows, warnings };
 }
+
+/** Combine rows from multiple screenshots; later duplicates by employee no. are skipped. */
+export function mergeRosterDirectoryRows(
+  rowGroups: EmployeeDirectoryCsvRow[][]
+): { rows: EmployeeDirectoryCsvRow[]; warnings: string[] } {
+  const warnings: string[] = [];
+  const byKey = new Map<string, EmployeeDirectoryCsvRow>();
+
+  for (const group of rowGroups) {
+    for (const row of group) {
+      const isProvisional =
+        row.employee_no.startsWith("PENDING-") ||
+        row.employee_no.startsWith("LEGACY-");
+      const key = isProvisional
+        ? `${row.full_name.toLowerCase()}|${row.branch_code ?? ""}`
+        : row.employee_no;
+
+      if (byKey.has(key)) {
+        warnings.push(
+          `Duplicate skipped: ${row.full_name} (${row.employee_no}).`
+        );
+        continue;
+      }
+      byKey.set(key, row);
+    }
+  }
+
+  return { rows: [...byKey.values()], warnings };
+}
