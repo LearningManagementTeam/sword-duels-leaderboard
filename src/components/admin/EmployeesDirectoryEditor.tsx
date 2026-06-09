@@ -58,6 +58,43 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
     });
   }, [employees, search, statusFilter]);
 
+  const stats = useMemo(() => {
+    let active = 0;
+    let onLeave = 0;
+    let resigned = 0;
+    let withHomeBranch = 0;
+    let asRep = 0;
+    let withPhoto = 0;
+    let provisionalId = 0;
+
+    for (const row of employees) {
+      if (row.employment_status === "active") active++;
+      else if (row.employment_status === "on_leave") onLeave++;
+      else if (row.employment_status === "resigned") resigned++;
+
+      if (row.home_branch_id || row.home_branch_code) withHomeBranch++;
+      if (row.rep_assignments.length > 0) asRep++;
+      if (row.photo_path) withPhoto++;
+      if (
+        row.employee_no.startsWith("PENDING-") ||
+        row.employee_no.startsWith("LEGACY-")
+      ) {
+        provisionalId++;
+      }
+    }
+
+    return {
+      total: employees.length,
+      active,
+      onLeave,
+      resigned,
+      withHomeBranch,
+      asRep,
+      withPhoto,
+      provisionalId,
+    };
+  }, [employees]);
+
   const filteredIds = useMemo(
     () => new Set(filtered.map((row) => row.id)),
     [filtered]
@@ -190,6 +227,63 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
           .
         </p>
       </div>
+
+      {employees.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="sd-inset rounded-lg p-3">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-sd-muted">
+                Total employees
+              </p>
+              <p className="mt-1 text-xl font-semibold text-emerald-300">
+                {stats.total}
+              </p>
+              {(search.trim() || statusFilter !== "all") && (
+                <p className="mt-1 text-[10px] text-sd-muted">
+                  Showing {filtered.length} in list
+                </p>
+              )}
+            </div>
+            <div className="sd-inset rounded-lg p-3">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-sd-muted">
+                Active
+              </p>
+              <p className="mt-1 text-xl font-semibold text-emerald-300">
+                {stats.active}
+              </p>
+              {(stats.onLeave > 0 || stats.resigned > 0) && (
+                <p className="mt-1 text-[10px] text-sd-muted">
+                  {stats.onLeave > 0 && `${stats.onLeave} on leave`}
+                  {stats.onLeave > 0 && stats.resigned > 0 && " · "}
+                  {stats.resigned > 0 && `${stats.resigned} resigned`}
+                </p>
+              )}
+            </div>
+            <div className="sd-inset rounded-lg p-3">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-sd-muted">
+                Home branch set
+              </p>
+              <p className="mt-1 text-xl font-semibold text-emerald-300">
+                {stats.withHomeBranch}
+              </p>
+              <p className="mt-1 text-[10px] text-sd-muted">
+                {stats.total - stats.withHomeBranch} without branch
+              </p>
+            </div>
+            <div className="sd-inset rounded-lg p-3">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-sd-muted">
+                Competition reps
+              </p>
+              <p className="mt-1 text-xl font-semibold text-emerald-300">
+                {stats.asRep}
+              </p>
+              <p className="mt-1 text-[10px] text-sd-muted">
+                {stats.withPhoto} with photo
+                {stats.provisionalId > 0 &&
+                  ` · ${stats.provisionalId} provisional id`}
+              </p>
+            </div>
+          </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <input
