@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "generate:branches": "node scripts/generate-branches-csv.mjs",
-    "test": "npx tsx --test src/lib/playoff-map.test.ts src/lib/parse-score-paste.test.ts src/lib/employees-csv.test.ts src/lib/employee-roster-ocr.test.ts src/lib/products/sword-duels/knockout-advance.test.ts"
+    "test": "npx tsx --test src/lib/playoff-map.test.ts src/lib/parse-score-paste.test.ts src/lib/employees-csv.test.ts src/lib/employee-roster-vision.test.ts src/lib/products/sword-duels/knockout-advance.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -16,8 +16,7 @@
     "clsx": "^2.1.1",
     "next": "16.2.7",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "tesseract.js": "^7.0.0"
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
