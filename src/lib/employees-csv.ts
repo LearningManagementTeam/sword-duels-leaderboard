@@ -1,4 +1,4 @@
-import { parseCsvLine } from "./branches-csv";
+import { parseSpreadsheetLine } from "./branches-csv";
 import { optionalCsvCol } from "./csv-cells";
 import { parseEmployeeDateHired } from "./employee-profile-fields";
 import { provisionalEmployeeNo } from "./employee-numbers";
@@ -44,7 +44,7 @@ export function parseEmployeeDirectoryCsv(text: string): {
     };
   }
 
-  const header = parseCsvLine(lines[0]).map((h) =>
+  const header = parseSpreadsheetLine(lines[0]!).map((h) =>
     h.toLowerCase().replace(/^\ufeff/, "").trim()
   );
 
@@ -103,7 +103,7 @@ export function parseEmployeeDirectoryCsv(text: string): {
     const line = lines[i].trim();
     if (!line) continue;
 
-    const cols = parseCsvLine(line);
+    const cols = parseSpreadsheetLine(line);
     const full_name = optionalCsvCol(cols, nameIdx) ?? "";
     const branch_code = optionalCsvCol(cols, branchCodeIdx);
     let employee_no = idIdx !== undefined ? (optionalCsvCol(cols, idIdx) ?? "") : "";
@@ -169,3 +169,79 @@ export const EMPLOYEE_DIRECTORY_CSV_TEMPLATE_SAMPLE = [
   EMPLOYEE_DIRECTORY_CSV_TEMPLATE_HEADER,
   'SENDAYEN, DARENCE MAE C.,DARA,SENIOR/BRANCH CASHIER,13986,1/11/2023,9679219459,sendayend@gmail.com,415,BAYAMBANG PANGASINAN,AREA 1',
 ].join("\n");
+
+const NAME_HEADER_ALIASES = new Set([
+  "name",
+  "full_name",
+  "full name",
+  "employee_name",
+  "employee name",
+]);
+
+function lineLooksLikeHeader(line: string): boolean {
+  const first = parseSpreadsheetLine(line)[0]?.toLowerCase().replace(/^\ufeff/, "").trim();
+  return first !== undefined && NAME_HEADER_ALIASES.has(first);
+}
+
+/** Parse one employee row pasted from Excel (tab- or comma-separated). */
+export function parseEmployeeProfilePaste(text: string): {
+  row: EmployeeDirectoryCsvRow | null;
+  errors: string[];
+  warnings: string[];
+} {
+  const lines = text
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return {
+      row: null,
+      errors: ["Paste a row from Excel first."],
+      warnings: [],
+    };
+  }
+
+  let csvText: string;
+
+  if (lines.length === 1) {
+    if (lineLooksLikeHeader(lines[0]!)) {
+      return {
+        row: null,
+        errors: [
+          "Paste the employee data row too — copy header + row, or just the data row.",
+        ],
+        warnings: [],
+      };
+    }
+    csvText = `${EMPLOYEE_DIRECTORY_CSV_TEMPLATE_HEADER}\n${lines[0]}`;
+  } else {
+    csvText = lines.join("\n");
+  }
+
+  const { rows, errors, warnings } = parseEmployeeDirectoryCsv(csvText);
+  if (errors.length) {
+    return { row: null, errors, warnings };
+  }
+  if (!rows.length) {
+    return {
+      row: null,
+      errors: ["No employee row found in paste."],
+      warnings,
+    };
+  }
+
+  const extraWarnings =
+    rows.length > 1
+      ? [
+          `Using first of ${rows.length} pasted rows — paste one employee at a time for clarity.`,
+        ]
+      : [];
+
+  return {
+    row: rows[0]!,
+    errors: [],
+    warnings: [...warnings, ...extraWarnings],
+  };
+}

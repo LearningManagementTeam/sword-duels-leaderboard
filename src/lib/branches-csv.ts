@@ -46,6 +46,14 @@ export function parseCsvLine(line: string): string[] {
   return fields;
 }
 
+/** Parse one pasted spreadsheet line — Excel uses tabs; CSV uses commas. */
+export function parseSpreadsheetLine(line: string): string[] {
+  if (line.includes("\t")) {
+    return line.split("\t").map((p) => p.trim().replace(/^"|"$/g, ""));
+  }
+  return parseCsvLine(line);
+}
+
 function normalizeRegion(raw: string): string {
   return raw
     .trim()

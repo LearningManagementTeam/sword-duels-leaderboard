@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { EmployeePhotoEditor } from "@/components/admin/EmployeePhotoEditor";
-import { EmployeeProfileClipboardImport } from "@/components/admin/EmployeeProfileClipboardImport";
+import { EmployeeProfileExcelPaste } from "@/components/admin/EmployeeProfileExcelPaste";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
 import {
   createEmployeeAction,
@@ -314,7 +314,7 @@ export function EmployeeProfileModal({
           </button>
         </div>
 
-        <EmployeeProfileClipboardImport
+        <EmployeeProfileExcelPaste
           branches={branches}
           disabled={loading}
           onApply={handleImportApply}
