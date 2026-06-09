@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { EmployeePhotoEditor } from "@/components/admin/EmployeePhotoEditor";
+import { EmployeeProfileClipboardImport } from "@/components/admin/EmployeeProfileClipboardImport";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
 import {
   createEmployeeAction,
@@ -91,6 +92,7 @@ export function EmployeeProfileModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [branchFilter, setBranchFilter] = useState("");
   const [listStale, setListStale] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
 
   const isCreate = mode === "create";
   const displayName = draft.full_name || employee?.full_name || "New employee";
@@ -101,7 +103,16 @@ export function EmployeeProfileModal({
     setShowDeleteConfirm(false);
     setBranchFilter("");
     setListStale(false);
+    setImportMessage("");
   }, [employee, mode]);
+
+  function handleImportApply(
+    patch: Partial<ProfileDraft>,
+    message: string
+  ) {
+    setDraft((prev) => ({ ...prev, ...patch }));
+    setImportMessage(message);
+  }
 
   const handleClose = useCallback(() => {
     if (loading) return;
@@ -302,6 +313,19 @@ export function EmployeeProfileModal({
             Close
           </button>
         </div>
+
+        <EmployeeProfileClipboardImport
+          branches={branches}
+          disabled={loading}
+          onApply={handleImportApply}
+          onError={onError}
+        />
+
+        {importMessage && (
+          <p className="text-xs text-emerald-200/90" role="status">
+            {importMessage}
+          </p>
+        )}
 
         <EmployeePhotoEditor
           {...(isCreate
