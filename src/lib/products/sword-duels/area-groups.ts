@@ -119,6 +119,46 @@ export function sortAreasByNumber(areas: string[]): string[] {
   return [...areas].sort(compareAreaNames);
 }
 
+export type BranchListSortMode =
+  | SdGroupSortMode
+  | "area_then_code"
+  | "area_then_name";
+
+export const BRANCH_LIST_SORT_LABELS: Record<BranchListSortMode, string> = {
+  ...SD_GROUP_SORT_LABELS,
+  area_then_code: "Area, then branch code",
+  area_then_name: "Area, then branch name",
+};
+
+export function compareBranchesForList<
+  T extends { branch_code: string; branch_name: string; area: string },
+>(a: T, b: T, mode: BranchListSortMode): number {
+  if (mode === "area_then_code" || mode === "area_then_name") {
+    const areaCmp = compareAreaNames(a.area, b.area);
+    if (areaCmp !== 0) return areaCmp;
+    return compareBranchesForList(
+      a,
+      b,
+      mode === "area_then_code" ? "branch_code" : "branch_name"
+    );
+  }
+
+  if (mode === "branch_name") {
+    const nameCmp = a.branch_name.localeCompare(b.branch_name, undefined, {
+      sensitivity: "base",
+    });
+    if (nameCmp !== 0) return nameCmp;
+  }
+
+  return a.branch_code.localeCompare(b.branch_code, undefined, { numeric: true });
+}
+
+export function sortBranchesForList<
+  T extends { branch_code: string; branch_name: string; area: string },
+>(branches: T[], mode: BranchListSortMode): T[] {
+  return [...branches].sort((a, b) => compareBranchesForList(a, b, mode));
+}
+
 export function decodeAreaSlug(slug: string): string {
   return decodeURIComponent(slug);
 }

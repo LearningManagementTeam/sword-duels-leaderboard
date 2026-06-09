@@ -12,6 +12,12 @@ import { repSnapshot, type RepresentativeSavePayload } from "@/lib/representativ
 import type { Branch } from "@/lib/types";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import type { Region } from "@/lib/scoring-config";
+import {
+  BRANCH_LIST_SORT_LABELS,
+  sortAreasByNumber,
+  sortBranchesForList,
+  type BranchListSortMode,
+} from "@/lib/products/sword-duels/area-groups";
 
 type RowState = RepresentativeSavePayload & {
   branch_code: string;
@@ -339,6 +345,7 @@ export function RepresentativesEditor({ branches, employees }: Props) {
 
   const [search, setSearch] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
+  const [sortMode, setSortMode] = useState<BranchListSortMode>("branch_code");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -346,7 +353,7 @@ export function RepresentativesEditor({ branches, employees }: Props) {
   const [loading, setLoading] = useState(false);
 
   const areas = useMemo(
-    () => [...new Set(rows.map((r) => r.area))].sort(),
+    () => sortAreasByNumber([...new Set(rows.map((r) => r.area))]),
     [rows]
   );
 
@@ -395,7 +402,7 @@ export function RepresentativesEditor({ branches, employees }: Props) {
   const hasUnsavedChanges = dirtyRows.length > 0;
 
   const filtered = useMemo(() => {
-    return rows.filter((r) => {
+    const matches = rows.filter((r) => {
       if (areaFilter && r.area !== areaFilter) return false;
 
       if (statusFilter === "incomplete" && r.representative_1.trim()) {
@@ -427,7 +434,9 @@ export function RepresentativesEditor({ branches, employees }: Props) {
       }
       return true;
     });
-  }, [rows, search, areaFilter, statusFilter, dirtyIds]);
+
+    return sortBranchesForList(matches, sortMode);
+  }, [rows, search, areaFilter, sortMode, statusFilter, dirtyIds]);
 
   const selectedRow = useMemo(
     () => rows.find((r) => r.branch_id === selectedBranchId) ?? null,
@@ -635,6 +644,7 @@ export function RepresentativesEditor({ branches, employees }: Props) {
           value={areaFilter}
           onChange={(e) => setAreaFilter(e.target.value)}
           className="rounded-lg sd-input px-3 py-2 text-sm"
+          aria-label="Filter by area"
         >
           <option value="">All areas</option>
           {areas.map((a) => (
@@ -642,6 +652,20 @@ export function RepresentativesEditor({ branches, employees }: Props) {
               {a}
             </option>
           ))}
+        </select>
+        <select
+          value={sortMode}
+          onChange={(e) => setSortMode(e.target.value as BranchListSortMode)}
+          className="rounded-lg sd-input px-3 py-2 text-sm"
+          aria-label="Sort branches"
+        >
+          {(Object.entries(BRANCH_LIST_SORT_LABELS) as [BranchListSortMode, string][]).map(
+            ([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            )
+          )}
         </select>
       </div>
 
