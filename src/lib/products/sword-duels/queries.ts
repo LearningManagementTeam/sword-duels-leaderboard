@@ -120,6 +120,8 @@ async function loadPersistedAreaBrackets(
           representative_2_employee_id: branch.representative_2_employee_id,
           representative_1_employment_status: branch.representative_1_employment_status,
           representative_2_employment_status: branch.representative_2_employment_status,
+          representative_1_photo_path: branch.representative_1_photo_path,
+          representative_2_photo_path: branch.representative_2_photo_path,
         };
         if (row.group_label === "a") groupA.push(entry);
         else groupB.push(entry);

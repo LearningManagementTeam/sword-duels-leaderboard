@@ -11,8 +11,8 @@ import {
   deleteEmployeeAction,
   saveEmployeeProfileAction,
   setEmployeeEmploymentStatusAction,
-  uploadEmployeePhotoAction,
 } from "@/lib/actions/admin";
+import { findEmployeeDirectoryDuplicateMessage } from "@/lib/employee-directory-duplicate";
 import { nationalCompetitionsPath } from "@/lib/admin-routes";
 import type {
   EmployeeAdminRow,
@@ -53,6 +53,7 @@ function draftFromEmployee(employee: EmployeeAdminRow): ProfileDraft {
 interface Props {
   mode: "create" | "edit";
   employee: EmployeeAdminRow | null;
+  existingEmployees: EmployeeAdminRow[];
   branches: HrisBranchOption[];
   onClose: () => void;
   onSaved: (message: string) => void;
@@ -62,6 +63,7 @@ interface Props {
 export function EmployeeProfileModal({
   mode,
   employee,
+  existingEmployees,
   branches,
   onClose,
   onSaved,
@@ -127,52 +129,85 @@ export function EmployeeProfileModal({
     }
   }
 
+  const finishSuccess = useCallback(
+    (message: string) => {
+      onSaved(message);
+      onClose();
+      router.refresh();
+    },
+    [onClose, onSaved, router]
+  );
+
+  async function uploadDraftPhoto(employeeId: string, file: File): Promise<string | null> {
+    const formData = new FormData();
+    formData.set("employeeId", employeeId);
+    formData.set("file", file);
+    const response = await fetch("/api/hris/employee-photo", {
+      method: "POST",
+      body: formData,
+    });
+    const data = (await response.json()) as {
+      ok?: boolean;
+      error?: string;
+      photoUrl?: string;
+    };
+    if (!response.ok || !data.ok) {
+      return data.error ?? "Photo upload failed.";
+    }
+    return null;
+  }
+
   async function handleSave() {
     if (!draft.employee_no.trim() || !draft.full_name.trim()) {
       onError("Employee number and full name are required.");
       return;
     }
 
+    const payload = {
+      employee_no: draft.employee_no,
+      full_name: normalizeAllCapsText(draft.full_name),
+      position: normalizeAllCapsText(draft.position),
+      notes: normalizeAllCapsText(draft.notes),
+      home_branch_id: draft.home_branch_id.trim() || null,
+    };
+
+    const duplicateMessage = findEmployeeDirectoryDuplicateMessage(
+      existingEmployees,
+      payload,
+      employee?.id
+    );
+    if (duplicateMessage) {
+      onError(duplicateMessage);
+      return;
+    }
+
     setLoading(true);
     try {
-      const payload = {
-        employee_no: draft.employee_no,
-        full_name: normalizeAllCapsText(draft.full_name),
-        position: normalizeAllCapsText(draft.position),
-        notes: normalizeAllCapsText(draft.notes),
-        home_branch_id: draft.home_branch_id.trim() || null,
-      };
-
       if (isCreate) {
         const result = await createEmployeeAction(payload);
         if (!result.ok) throw new Error(result.error);
 
         if (draftPhoto) {
-          const formData = new FormData();
-          formData.set("file", draftPhoto);
-          const photoResult = await uploadEmployeePhotoAction(
-            result.employee.id,
-            formData
-          );
-          if (!photoResult.ok) {
-            onSaved(
-              `Employee created, but photo upload failed: ${photoResult.error}`
+          const photoError = await uploadDraftPhoto(result.employee.id, draftPhoto);
+          if (photoError) {
+            finishSuccess(
+              `Employee created, but photo upload failed: ${photoError}`
             );
-            router.refresh();
-            onClose();
             return;
           }
+          finishSuccess("Employee created with photo.");
+          return;
         }
 
-        onSaved(draftPhoto ? "Employee created with photo." : "Employee created.");
-      } else if (employee) {
-        const result = await saveEmployeeProfileAction(employee.id, payload);
-        if (!result.ok) throw new Error(result.error);
-        onSaved("Employee updated.");
+        finishSuccess("Employee created.");
+        return;
       }
 
-      router.refresh();
-      onClose();
+      if (employee) {
+        const result = await saveEmployeeProfileAction(employee.id, payload);
+        if (!result.ok) throw new Error(result.error);
+        finishSuccess("Employee updated.");
+      }
     } catch (e) {
       onError(e instanceof Error ? e.message : "Save failed.");
     } finally {
@@ -187,8 +222,8 @@ export function EmployeeProfileModal({
       const result = await setEmployeeEmploymentStatusAction(employee.id, status);
       if (!result.ok) throw new Error(result.error);
       onSaved(`Marked as ${employmentStatusLabel(status).toLowerCase()}.`);
-      router.refresh();
       onClose();
+      router.refresh();
     } catch (e) {
       onError(e instanceof Error ? e.message : "Status update failed.");
     } finally {
@@ -203,8 +238,8 @@ export function EmployeeProfileModal({
       const result = await deleteEmployeeAction(employee.id);
       if (!result.ok) throw new Error(result.error);
       onSaved(`${employee.full_name} removed from the directory.`);
-      router.refresh();
       onClose();
+      router.refresh();
     } catch (e) {
       onError(e instanceof Error ? e.message : "Delete failed.");
     } finally {

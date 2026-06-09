@@ -34,6 +34,12 @@ export interface EmployeeAdminRow extends Employee {
   rep_assignments: EmployeeRepAssignment[];
 }
 
+/** Lightweight row for representative assignment picker. */
+export type EmployeePickerRow = Pick<
+  Employee,
+  "id" | "employee_no" | "full_name" | "position" | "photo_path" | "employment_status"
+>;
+
 export function employmentStatusLabel(status: EmploymentStatus): string {
   switch (status) {
     case "active":

@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
+import { EmployeeRepPicker } from "@/components/admin/EmployeeRepPicker";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
 import { saveBranchRepresentatives } from "@/lib/actions/admin";
 import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
-import type { EmploymentStatus } from "@/lib/employee-types";
+import type { EmployeePickerRow, EmploymentStatus } from "@/lib/employee-types";
 import { repSnapshot, type RepresentativeSavePayload } from "@/lib/representative-fields";
 import type { Branch } from "@/lib/types";
 import { REGION_LABELS } from "@/lib/scoring-config";
@@ -16,22 +17,50 @@ type RowState = RepresentativeSavePayload & {
   branch_name: string;
   area: string;
   region: Region;
-  representative_1_employment_status?: EmploymentStatus | null;
-  representative_2_employment_status?: EmploymentStatus | null;
+  representative_1_employee_id: string | null;
+  representative_2_employee_id: string | null;
+  representative_1_photo_path: string | null;
+  representative_2_photo_path: string | null;
+  representative_1_employment_status: EmploymentStatus | null;
+  representative_2_employment_status: EmploymentStatus | null;
 };
 
 interface Props {
   branches: Branch[];
+  employees: EmployeePickerRow[];
   initialWithReps: number;
 }
 
-type RepField =
-  | "representative_1"
-  | "representative_1_employee_no"
-  | "representative_1_position"
-  | "representative_2"
-  | "representative_2_employee_no"
-  | "representative_2_position";
+type RepSlot = 1 | 2;
+
+const SLOT_FIELDS: Record<
+  RepSlot,
+  {
+    name: "representative_1" | "representative_2";
+    empNo: "representative_1_employee_no" | "representative_2_employee_no";
+    position: "representative_1_position" | "representative_2_position";
+    employeeId: "representative_1_employee_id" | "representative_2_employee_id";
+    photoPath: "representative_1_photo_path" | "representative_2_photo_path";
+    status: "representative_1_employment_status" | "representative_2_employment_status";
+  }
+> = {
+  1: {
+    name: "representative_1",
+    empNo: "representative_1_employee_no",
+    position: "representative_1_position",
+    employeeId: "representative_1_employee_id",
+    photoPath: "representative_1_photo_path",
+    status: "representative_1_employment_status",
+  },
+  2: {
+    name: "representative_2",
+    empNo: "representative_2_employee_no",
+    position: "representative_2_position",
+    employeeId: "representative_2_employee_id",
+    photoPath: "representative_2_photo_path",
+    status: "representative_2_employment_status",
+  },
+};
 
 function branchToRow(b: Branch): RowState {
   return {
@@ -46,6 +75,10 @@ function branchToRow(b: Branch): RowState {
     representative_1_position: b.representative_1_position ?? "",
     representative_2_employee_no: b.representative_2_employee_no ?? "",
     representative_2_position: b.representative_2_position ?? "",
+    representative_1_employee_id: b.representative_1_employee_id ?? null,
+    representative_2_employee_id: b.representative_2_employee_id ?? null,
+    representative_1_photo_path: b.representative_1_photo_path ?? null,
+    representative_2_photo_path: b.representative_2_photo_path ?? null,
     representative_1_employment_status: b.representative_1_employment_status ?? null,
     representative_2_employment_status: b.representative_2_employment_status ?? null,
   };
@@ -53,69 +86,62 @@ function branchToRow(b: Branch): RowState {
 
 function RepBlock({
   title,
-  nameField,
-  empField,
-  posField,
-  status,
+  slot,
   row,
-  onUpdate,
+  employees,
+  onApplyEmployee,
+  onFieldChange,
 }: {
   title: string;
-  nameField: "representative_1" | "representative_2";
-  empField: "representative_1_employee_no" | "representative_2_employee_no";
-  posField: "representative_1_position" | "representative_2_position";
-  status?: EmploymentStatus | null;
+  slot: RepSlot;
   row: RowState;
-  onUpdate: (branch_id: string, field: RepField, value: string) => void;
+  employees: EmployeePickerRow[];
+  onApplyEmployee: (branchId: string, slot: RepSlot, employee: EmployeePickerRow | null) => void;
+  onFieldChange: (
+    branchId: string,
+    slot: RepSlot,
+    field: "name" | "employee_no" | "position",
+    value: string
+  ) => void;
 }) {
+  const fields = SLOT_FIELDS[slot];
+
   return (
     <div className="space-y-2 rounded-lg border border-emerald-500/15 bg-sd-deep/20 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-sd-muted/80">
           {title}
         </p>
-        <EmploymentStatusBadge status={status} />
+        <EmploymentStatusBadge status={row[fields.status]} />
       </div>
-      {status === "resigned" && row[nameField].trim() && (
+      {row[fields.status] === "resigned" && row[fields.name].trim() && (
         <p className="text-xs text-amber-200/90">
           This employee is marked resigned. Update their status in HRIS → Employee
           directory if they are competing again.
         </p>
       )}
-      <label className="block text-xs">
-        <span className="text-sd-muted/70">Name</span>
-        <input
-          value={row[nameField]}
-          onChange={(e) => onUpdate(row.branch_id, nameField, e.target.value)}
-          placeholder="Full name"
-          className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
-        />
-      </label>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label className="block text-xs">
-          <span className="text-sd-muted/70">Employee no.</span>
-          <input
-            value={row[empField]}
-            onChange={(e) => onUpdate(row.branch_id, empField, e.target.value)}
-            placeholder="e.g. 102345"
-            className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
-          />
-        </label>
-        <label className="block text-xs">
-          <span className="text-sd-muted/70">Position</span>
-          <input
-            value={row[posField]}
-            onChange={(e) => onUpdate(row.branch_id, posField, e.target.value)}
-            placeholder="Job title"
-            className="mt-1 w-full rounded sd-input px-2 py-1.5 text-sm"
-          />
-        </label>
-      </div>
+      <EmployeeRepPicker
+        employees={employees}
+        employeeId={row[fields.employeeId]}
+        employeeNo={row[fields.empNo]}
+        name={row[fields.name]}
+        position={row[fields.position]}
+        photoPath={row[fields.photoPath]}
+        employmentStatus={row[fields.status]}
+        onApply={(employee) => onApplyEmployee(row.branch_id, slot, employee)}
+        onEmployeeNoChange={(value) =>
+          onFieldChange(row.branch_id, slot, "employee_no", value)
+        }
+        onNameChange={(value) => onFieldChange(row.branch_id, slot, "name", value)}
+        onPositionChange={(value) =>
+          onFieldChange(row.branch_id, slot, "position", value)
+        }
+      />
     </div>
   );
 }
 
-export function RepresentativesEditor({ branches, initialWithReps }: Props) {
+export function RepresentativesEditor({ branches, employees, initialWithReps }: Props) {
   const initialRows = useMemo(() => branches.map(branchToRow), [branches]);
 
   const [rows, setRows] = useState<RowState[]>(initialRows);
@@ -147,7 +173,9 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
           r.branch_code.toLowerCase().includes(q) ||
           r.representative_1.toLowerCase().includes(q) ||
           r.representative_1_employee_no.toLowerCase().includes(q) ||
-          r.representative_1_position.toLowerCase().includes(q)
+          r.representative_1_position.toLowerCase().includes(q) ||
+          r.representative_2.toLowerCase().includes(q) ||
+          r.representative_2_employee_no.toLowerCase().includes(q)
         );
       }
       return true;
@@ -180,9 +208,65 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  function updateRow(branch_id: string, field: RepField, value: string) {
+  function applyEmployeeToSlot(
+    branchId: string,
+    slot: RepSlot,
+    employee: EmployeePickerRow | null
+  ) {
+    const fields = SLOT_FIELDS[slot];
     setRows((prev) =>
-      prev.map((r) => (r.branch_id === branch_id ? { ...r, [field]: value } : r))
+      prev.map((row) => {
+        if (row.branch_id !== branchId) return row;
+        if (!employee) {
+          return {
+            ...row,
+            [fields.name]: "",
+            [fields.empNo]: "",
+            [fields.position]: "",
+            [fields.employeeId]: null,
+            [fields.photoPath]: null,
+            [fields.status]: null,
+          };
+        }
+        return {
+          ...row,
+          [fields.name]: employee.full_name,
+          [fields.empNo]: employee.employee_no,
+          [fields.position]: employee.position ?? "",
+          [fields.employeeId]: employee.id,
+          [fields.photoPath]: employee.photo_path,
+          [fields.status]: employee.employment_status,
+        };
+      })
+    );
+  }
+
+  function updateRepField(
+    branchId: string,
+    slot: RepSlot,
+    field: "name" | "employee_no" | "position",
+    value: string
+  ) {
+    const fields = SLOT_FIELDS[slot];
+    const key =
+      field === "name"
+        ? fields.name
+        : field === "employee_no"
+          ? fields.empNo
+          : fields.position;
+
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.branch_id !== branchId) return row;
+        const next = { ...row, [key]: value };
+        if (field !== "employee_no") return next;
+        return {
+          ...next,
+          [fields.employeeId]: null,
+          [fields.photoPath]: null,
+          [fields.status]: null,
+        };
+      })
     );
   }
 
@@ -236,8 +320,8 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
       <div>
         <h2 className="text-lg font-semibold text-white">Edit representatives</h2>
         <p className="mt-1 text-sm text-sd-muted">
-          Name, employee number, and position for each rep. Stored on the branch
-          roster for future LMS use.
+          Pick reps from the HRIS employee directory so names, positions, and
+          photos flow through to Sword Duels leaderboards.
         </p>
       </div>
 
@@ -275,7 +359,7 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
         </select>
       </div>
 
-      <ul className="space-y-4 md:hidden">
+      <ul className="space-y-4">
         {filtered.map((row) => (
           <li key={row.branch_id} className="sd-neon-panel space-y-3 p-4">
             <div>
@@ -286,83 +370,23 @@ export function RepresentativesEditor({ branches, initialWithReps }: Props) {
             </div>
             <RepBlock
               title="Representative 1"
-              nameField="representative_1"
-              empField="representative_1_employee_no"
-              posField="representative_1_position"
-              status={row.representative_1_employment_status}
+              slot={1}
               row={row}
-              onUpdate={updateRow}
+              employees={employees}
+              onApplyEmployee={applyEmployeeToSlot}
+              onFieldChange={updateRepField}
             />
             <RepBlock
               title="Representative 2"
-              nameField="representative_2"
-              empField="representative_2_employee_no"
-              posField="representative_2_position"
-              status={row.representative_2_employment_status}
+              slot={2}
               row={row}
-              onUpdate={updateRow}
+              employees={employees}
+              onApplyEmployee={applyEmployeeToSlot}
+              onFieldChange={updateRepField}
             />
           </li>
         ))}
       </ul>
-
-      <div className="sd-table-wrap sd-inset hidden max-h-[55vh] md:block">
-        <table className="sd-table min-w-[960px]">
-          <thead className="sticky top-0 z-10 bg-sd-deep/95 shadow-[0_1px_0_rgb(74_222_128/0.25)] backdrop-blur-md">
-            <tr>
-              <th className="px-2 py-2 text-left">Branch</th>
-              <th className="px-2 py-2 text-left">Area</th>
-              <th className="px-2 py-2 text-left" colSpan={3}>
-                Representative 1
-              </th>
-              <th className="px-2 py-2 text-left" colSpan={3}>
-                Representative 2
-              </th>
-            </tr>
-            <tr className="text-[10px] uppercase text-sd-muted/60">
-              <th colSpan={2} />
-              <th className="px-2 py-1 font-normal">Name</th>
-              <th className="px-2 py-1 font-normal">Emp. no.</th>
-              <th className="px-2 py-1 font-normal">Position</th>
-              <th className="px-2 py-1 font-normal">Name</th>
-              <th className="px-2 py-1 font-normal">Emp. no.</th>
-              <th className="px-2 py-1 font-normal">Position</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((row) => (
-              <tr key={row.branch_id} className="border-t border-emerald-900/20">
-                <td className="px-2 py-1">
-                  <div className="font-medium">{row.branch_name}</div>
-                  <div className="text-xs text-sd-muted/60">{row.branch_code}</div>
-                </td>
-                <td className="px-2 py-1 text-sd-muted">{row.area}</td>
-                {(
-                  [
-                    ["representative_1", "Primary name"],
-                    ["representative_1_employee_no", "Emp no."],
-                    ["representative_1_position", "Position"],
-                    ["representative_2", "Optional"],
-                    ["representative_2_employee_no", "Emp no."],
-                    ["representative_2_position", "Position"],
-                  ] as const
-                ).map(([field, placeholder]) => (
-                  <td key={field} className="px-2 py-1">
-                    <input
-                      value={row[field]}
-                      onChange={(e) =>
-                        updateRow(row.branch_id, field, e.target.value)
-                      }
-                      placeholder={placeholder}
-                      className="w-full min-w-[100px] rounded sd-input px-2 py-1 text-sm"
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
 
       <p className="text-xs text-sd-muted/60">
         Showing {filtered.length} of {rows.length} branches

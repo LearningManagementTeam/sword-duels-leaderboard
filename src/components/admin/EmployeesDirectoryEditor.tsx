@@ -375,6 +375,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
         <EmployeeProfileModal
           mode={modal.mode}
           employee={modal.mode === "edit" ? selectedEmployee : null}
+          existingEmployees={employees}
           branches={branches}
           onClose={closeModal}
           onSaved={(msg) => {

@@ -1,11 +1,13 @@
 import type {
   Employee,
   EmployeeAdminRow,
+  EmployeePickerRow,
   EmployeeRepAssignment,
   EmploymentStatus,
 } from "@/lib/employee-types";
 import type { RepresentativeSavePayload } from "@/lib/representative-fields";
 import { createServiceClient } from "@/lib/supabase/server";
+import { findEmployeeDirectoryDuplicateMessage } from "@/lib/employee-directory-duplicate";
 import { normalizeAllCapsText } from "@/lib/text-format";
 
 export type {
@@ -27,6 +29,27 @@ const EMPLOYEE_COLUMNS =
 
 export function normalizeEmployeeNo(value: string): string {
   return value.trim();
+}
+
+async function assertEmployeeDirectoryUnique(
+  fields: { employee_no: string; full_name: string },
+  excludeEmployeeId?: string
+): Promise<void> {
+  const service = await createServiceClient();
+  const { data, error } = await service
+    .from("employees")
+    .select("id, employee_no, full_name");
+
+  if (error) {
+    throw new Error(error.message ?? "Could not verify employee directory.");
+  }
+
+  const message = findEmployeeDirectoryDuplicateMessage(
+    data ?? [],
+    fields,
+    excludeEmployeeId
+  );
+  if (message) throw new Error(message);
 }
 
 export function legacyEmployeeNo(branchCode: string, slot: 1 | 2): string {
@@ -61,6 +84,42 @@ function slotInputFromPayload(
   };
 }
 
+async function findEmployeeByEmployeeNoInService(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  employeeNo: string
+): Promise<Employee | null> {
+  const normalized = normalizeEmployeeNo(employeeNo);
+  if (!normalized) return null;
+
+  const { data: exact } = await service
+    .from("employees")
+    .select(EMPLOYEE_COLUMNS)
+    .eq("employee_no", normalized)
+    .maybeSingle();
+  if (exact) return exact as Employee;
+
+  const { data: insensitive } = await service
+    .from("employees")
+    .select(EMPLOYEE_COLUMNS)
+    .ilike("employee_no", normalized)
+    .maybeSingle();
+
+  return (insensitive as Employee) ?? null;
+}
+
+/** Prefer an existing HRIS directory row when employee_no matches. */
+async function resolveEmployeeForRepSlot(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  input: RepSlotInput
+): Promise<Employee> {
+  const employeeNo = normalizeEmployeeNo(input.employee_no);
+  if (employeeNo) {
+    const existing = await findEmployeeByEmployeeNoInService(service, employeeNo);
+    if (existing) return existing;
+  }
+  return upsertEmployeeFromRepSlot(service, input);
+}
+
 export async function upsertEmployeeFromRepSlot(
   service: Awaited<ReturnType<typeof createServiceClient>>,
   input: RepSlotInput
@@ -68,11 +127,7 @@ export async function upsertEmployeeFromRepSlot(
   const employeeNo = normalizeEmployeeNo(input.employee_no);
   const now = new Date().toISOString();
 
-  const { data: existing } = await service
-    .from("employees")
-    .select(EMPLOYEE_COLUMNS)
-    .eq("employee_no", employeeNo)
-    .maybeSingle();
+  const existing = await findEmployeeByEmployeeNoInService(service, employeeNo);
 
   if (existing) {
     const { data, error } = await service
@@ -90,6 +145,12 @@ export async function upsertEmployeeFromRepSlot(
       throw new Error(error?.message ?? "Failed to update employee profile");
     }
     return data as Employee;
+  }
+
+  if (employeeNo && !employeeNo.startsWith("LEGACY-")) {
+    throw new Error(
+      `Employee no. ${employeeNo} is not in the directory. Add them in HRIS → Employee directory first.`
+    );
   }
 
   const { data, error } = await service
@@ -141,10 +202,10 @@ export async function linkBranchRepresentatives(
   const now = updatedAt ?? new Date().toISOString();
 
   const emp1 = slots.slot1
-    ? await upsertEmployeeFromRepSlot(service, slots.slot1)
+    ? await resolveEmployeeForRepSlot(service, slots.slot1)
     : null;
   const emp2 = slots.slot2
-    ? await upsertEmployeeFromRepSlot(service, slots.slot2)
+    ? await resolveEmployeeForRepSlot(service, slots.slot2)
     : null;
 
   const { error } = await service
@@ -377,6 +438,11 @@ export async function updateEmployeeProfile(
   const now = new Date().toISOString();
   const employeeNo = normalizeEmployeeNo(fields.employee_no);
 
+  await assertEmployeeDirectoryUnique(
+    { employee_no: employeeNo, full_name: fields.full_name },
+    employeeId
+  );
+
   const { data, error } = await service
     .from("employees")
     .update({
@@ -394,7 +460,12 @@ export async function updateEmployeeProfile(
     .select(EMPLOYEE_COLUMNS)
     .single();
 
-  if (error || !data) throw new Error(error?.message ?? "Failed to update employee");
+  if (error || !data) {
+    if (error?.code === "23505") {
+      throw new Error("Employee number already exists in the directory.");
+    }
+    throw new Error(error?.message ?? "Failed to update employee");
+  }
   return data as Employee;
 }
 
@@ -407,6 +478,11 @@ export async function createEmployeeRecord(fields: {
 }): Promise<Employee> {
   const service = await createServiceClient();
   const now = new Date().toISOString();
+
+  await assertEmployeeDirectoryUnique({
+    employee_no: fields.employee_no,
+    full_name: fields.full_name,
+  });
 
   const { data, error } = await service
     .from("employees")
@@ -426,7 +502,12 @@ export async function createEmployeeRecord(fields: {
     .select(EMPLOYEE_COLUMNS)
     .single();
 
-  if (error || !data) throw new Error(error?.message ?? "Failed to create employee");
+  if (error || !data) {
+    if (error?.code === "23505") {
+      throw new Error("Employee number already exists in the directory.");
+    }
+    throw new Error(error?.message ?? "Failed to create employee");
+  }
   return data as Employee;
 }
 
@@ -501,13 +582,20 @@ export async function findEmployeeByEmployeeNo(
   employeeNo: string
 ): Promise<Employee | null> {
   const service = await createServiceClient();
-  const { data } = await service
-    .from("employees")
-    .select(EMPLOYEE_COLUMNS)
-    .eq("employee_no", normalizeEmployeeNo(employeeNo))
-    .maybeSingle();
+  return findEmployeeByEmployeeNoInService(service, employeeNo);
+}
 
-  return (data as Employee) ?? null;
+export async function getEmployeesForRepresentativePicker(): Promise<
+  EmployeePickerRow[]
+> {
+  const service = await createServiceClient();
+  const { data, error } = await service
+    .from("employees")
+    .select("id, employee_no, full_name, position, photo_path, employment_status")
+    .order("full_name");
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EmployeePickerRow[];
 }
 
 export async function deleteEmployeeRecord(employeeId: string): Promise<{

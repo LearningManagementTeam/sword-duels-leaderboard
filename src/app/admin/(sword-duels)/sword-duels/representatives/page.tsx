@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { RepresentativesEditor } from "@/components/admin/RepresentativesEditor";
 import { ImportSwordDuelsRepresentatives } from "@/components/sword-duels/ImportSwordDuelsRepresentatives";
-import { SWORD_DUELS_ADMIN } from "@/lib/admin-routes";
+import { SWORD_DUELS_ADMIN, hrisPath } from "@/lib/admin-routes";
+import { getEmployeesForRepresentativePicker } from "@/lib/employees";
 import { getAllBranches } from "@/lib/products/sword-duels/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function SwordDuelsRepresentativesPage() {
-  const branches = await getAllBranches();
+  const [branches, employees] = await Promise.all([
+    getAllBranches(),
+    getEmployeesForRepresentativePicker(),
+  ]);
   const withReps = branches.filter((b) => b.representative_1?.trim()).length;
 
   return (
@@ -15,8 +19,12 @@ export default async function SwordDuelsRepresentativesPage() {
       <div className="sd-page-header">
         <h1>Representatives</h1>
         <p>
-          Two representatives per branch compete in area group battles. Import
-          from CSV for bulk setup, or edit individual rows below.
+          Two representatives per branch compete in area group battles. Search the{" "}
+          <Link href={hrisPath("employees")} className="sd-link">
+            HRIS employee directory
+          </Link>{" "}
+          when assigning reps so photos appear on public leaderboards. CSV import
+          still works for bulk setup.
         </p>
         <p className="mt-2 text-sm text-sd-muted">
           Representatives are separate from bracket setup. After names are in,
@@ -32,8 +40,9 @@ export default async function SwordDuelsRepresentativesPage() {
       <ImportSwordDuelsRepresentatives branches={branches} />
 
       <RepresentativesEditor
-        key={`sd-reps-${branches.length}-${withReps}`}
+        key={`sd-reps-${branches.length}-${withReps}-${employees.length}`}
         branches={branches}
+        employees={employees}
         initialWithReps={withReps}
       />
     </div>
