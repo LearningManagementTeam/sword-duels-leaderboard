@@ -6,7 +6,8 @@ import {
 } from "@/lib/employee-roster-vision";
 import type { EmployeeDirectoryCsvRow } from "@/lib/employees-csv";
 
-const DEFAULT_MODEL = "gemini-2.0-flash";
+/** gemini-2.0-flash was shut down 2026-06-01; override via GEMINI_ROSTER_MODEL. */
+const DEFAULT_MODEL = "gemini-2.5-flash";
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_BULK_FILES = 10;
 
