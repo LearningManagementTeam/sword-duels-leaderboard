@@ -92,7 +92,7 @@ export function EmployeeProfileModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [branchFilter, setBranchFilter] = useState("");
   const [listStale, setListStale] = useState(false);
-  const [importMessage, setImportMessage] = useState("");
+  const [importApplied, setImportApplied] = useState(false);
 
   const isCreate = mode === "create";
   const displayName = draft.full_name || employee?.full_name || "New employee";
@@ -103,15 +103,17 @@ export function EmployeeProfileModal({
     setShowDeleteConfirm(false);
     setBranchFilter("");
     setListStale(false);
-    setImportMessage("");
+    setImportApplied(false);
   }, [employee, mode]);
 
-  function handleImportApply(
-    patch: Partial<ProfileDraft>,
-    message: string
-  ) {
+  function handleImportApply(patch: Partial<ProfileDraft>, _message: string) {
     setDraft((prev) => ({ ...prev, ...patch }));
-    setImportMessage(message);
+    setImportApplied(true);
+  }
+
+  function handleImportClear() {
+    setDraft(employee ? draftFromEmployee(employee) : emptyDraft());
+    setImportApplied(false);
   }
 
   const handleClose = useCallback(() => {
@@ -317,15 +319,11 @@ export function EmployeeProfileModal({
         <EmployeeProfileExcelPaste
           branches={branches}
           disabled={loading}
+          applied={importApplied}
           onApply={handleImportApply}
+          onClear={handleImportClear}
           onError={onError}
         />
-
-        {importMessage && (
-          <p className="text-xs text-emerald-200/90" role="status">
-            {importMessage}
-          </p>
-        )}
 
         <EmployeePhotoEditor
           {...(isCreate

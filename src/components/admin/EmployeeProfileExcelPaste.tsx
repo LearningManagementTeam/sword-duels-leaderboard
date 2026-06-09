@@ -22,7 +22,9 @@ export type ProfileDraftFromPaste = {
 interface Props {
   branches: HrisBranchOption[];
   disabled?: boolean;
+  applied?: boolean;
   onApply: (patch: Partial<ProfileDraftFromPaste>, message: string) => void;
+  onClear: () => void;
   onError: (message: string) => void;
 }
 
@@ -77,7 +79,9 @@ function filledFieldLabels(patch: Partial<ProfileDraftFromPaste>): string[] {
 export function EmployeeProfileExcelPaste({
   branches,
   disabled = false,
+  applied = false,
   onApply,
+  onClear,
   onError,
 }: Props) {
   const pasteZoneRef = useRef<HTMLTextAreaElement>(null);
@@ -114,16 +118,35 @@ export function EmployeeProfileExcelPaste({
     [branches, onApply, onError]
   );
 
+  function handleClear() {
+    setStatus("");
+    onClear();
+    pasteZoneRef.current?.focus();
+  }
+
   return (
     <section className="space-y-2 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-cyan-200/90">
-          Paste from Excel
-        </p>
-        <p className="mt-0.5 text-[11px] text-sd-muted">
-          Copy a row from your HR employee sheet (header + row, or data row
-          only), then paste below. Columns match the employee directory import.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-200/90">
+            Paste from Excel
+          </p>
+          <p className="mt-0.5 text-[11px] text-sd-muted">
+            Copy from your HR employee sheet: one table row (with or without
+            headers), or the label + value pairs from the profile template.
+            Review fields, then save.
+          </p>
+        </div>
+        {applied && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={handleClear}
+            className="sd-btn-secondary shrink-0 rounded-lg px-3 py-1.5 text-xs disabled:opacity-50"
+          >
+            Clear pasted data
+          </button>
+        )}
       </div>
 
       <textarea
