@@ -460,6 +460,69 @@ export async function saveBranchRepresentatives(
   return { ok: true as const, count: updates.length };
 }
 
+export async function assignEmployeeRepSlotAction(input: {
+  employeeId: string;
+  branchId: string;
+  slot: 1 | 2;
+}) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const now = new Date().toISOString();
+
+  try {
+    const { assignEmployeeToBranchRepSlot } = await import("@/lib/employees");
+    await assignEmployeeToBranchRepSlot(
+      service,
+      input.employeeId,
+      input.branchId,
+      input.slot,
+      now
+    );
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Failed to assign representative.",
+    };
+  }
+
+  await logAudit(email, "assign_employee_rep", "branches", input.branchId, {
+    employee_id: input.employeeId,
+    slot: input.slot,
+  });
+  revalidateEmployeePaths();
+  return { ok: true as const };
+}
+
+export async function clearEmployeeRepSlotAction(input: {
+  employeeId: string;
+  branchId: string;
+}) {
+  const { email } = await requireAdmin();
+  const service = await createServiceClient();
+  const now = new Date().toISOString();
+
+  try {
+    const { clearEmployeeFromBranchRep } = await import("@/lib/employees");
+    await clearEmployeeFromBranchRep(
+      service,
+      input.employeeId,
+      input.branchId,
+      now
+    );
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Failed to clear representative.",
+    };
+  }
+
+  await logAudit(email, "clear_employee_rep", "branches", input.branchId, {
+    employee_id: input.employeeId,
+  });
+  revalidateEmployeePaths();
+  return { ok: true as const };
+}
+
 function revalidateEmployeePaths() {
   revalidatePath("/admin/hris/employees");
   revalidatePath("/admin/hris/branches");

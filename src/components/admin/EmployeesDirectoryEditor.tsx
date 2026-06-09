@@ -26,9 +26,9 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
   const router = useRouter();
   const selectAllRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<EmploymentStatus | "all">(
-    "all"
-  );
+  const [statusFilter, setStatusFilter] = useState<
+    EmploymentStatus | "all" | "not_rep"
+  >("all");
   const [modal, setModal] = useState<ModalState>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -39,7 +39,9 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return employees.filter((row) => {
-      if (statusFilter !== "all" && row.employment_status !== statusFilter) {
+      if (statusFilter === "not_rep") {
+        if (row.rep_assignments.length > 0) return false;
+      } else if (statusFilter !== "all" && row.employment_status !== statusFilter) {
         return false;
       }
       if (!q) return true;
@@ -216,13 +218,15 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
         <h2 className="text-lg font-semibold text-white">Employee directory</h2>
         <p className="mt-1 text-sm text-sd-muted">
           HR profiles — employee number, name, position, nickname, contact, email,
-          home branch, photo, and employment status. Competition reps are assigned
-          separately on{" "}
+          home branch, photo, and employment status. Open a profile to assign{" "}
+          <strong className="font-normal text-white">Sword Duels</strong> rep
+          slots (Rep 1 or Rep 2 per branch), or use the branch-by-branch table
+          on{" "}
           <Link
             href={nationalCompetitionsPath("representatives")}
             className="sd-link"
           >
-            Revalida → Representatives
+            Representatives
           </Link>
           .
         </p>
@@ -296,11 +300,14 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
         <select
           value={statusFilter}
           onChange={(e) =>
-            setStatusFilter(e.target.value as EmploymentStatus | "all")
+            setStatusFilter(
+              e.target.value as EmploymentStatus | "all" | "not_rep"
+            )
           }
           className="rounded-lg sd-input px-3 py-2 text-sm"
         >
           <option value="all">All statuses</option>
+          <option value="not_rep">Not a rep yet</option>
           <option value="active">Active</option>
           <option value="on_leave">On leave</option>
           <option value="resigned">Resigned</option>
@@ -372,6 +379,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
                 <th className="px-2 py-2">Name</th>
                 <th className="px-2 py-2">Position</th>
                 <th className="px-2 py-2">Home branch</th>
+                <th className="px-2 py-2">Rep</th>
                 <th className="px-2 py-2">Status</th>
                 <th className="px-2 py-2 text-right"> </th>
               </tr>
@@ -427,6 +435,25 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
                         </>
                       ) : (
                         "—"
+                      )}
+                    </td>
+                    <td className="px-2 py-2 text-xs">
+                      {row.rep_assignments.length > 0 ? (
+                        <div className="space-y-0.5">
+                          {row.rep_assignments.map((a) => (
+                            <p
+                              key={`${a.branch_id}-${a.slot}`}
+                              className="text-violet-200/90"
+                            >
+                              <span className="font-mono text-[10px] text-emerald-100">
+                                {a.branch_code}
+                              </span>{" "}
+                              Rep {a.slot}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-sd-muted/50">—</span>
                       )}
                     </td>
                     <td className="px-2 py-2">

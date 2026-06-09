@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { EmployeePhotoEditor } from "@/components/admin/EmployeePhotoEditor";
 import { EmployeeProfileExcelPaste } from "@/components/admin/EmployeeProfileExcelPaste";
+import { EmployeeRepAssignmentPanel } from "@/components/admin/EmployeeRepAssignmentPanel";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
 import {
   createEmployeeAction,
@@ -14,7 +14,6 @@ import {
   setEmployeeEmploymentStatusAction,
 } from "@/lib/actions/admin";
 import { findEmployeeDirectoryDuplicateMessage } from "@/lib/employee-directory-duplicate";
-import { nationalCompetitionsPath } from "@/lib/admin-routes";
 import type {
   EmployeeAdminRow,
   EmploymentStatus,
@@ -490,34 +489,26 @@ export function EmployeeProfileModal({
             </div>
 
             {employee.rep_assignments.length > 0 && (
-              <p className="text-xs text-amber-200/90">
-                Competition rep for{" "}
+              <p className="text-xs text-emerald-200/80">
+                Currently a competition rep for{" "}
                 {employee.rep_assignments
                   .map((a) => `${a.branch_code} (Rep ${a.slot})`)
                   .join(", ")}
-                . Assign reps on{" "}
-                <Link
-                  href={nationalCompetitionsPath("representatives")}
-                  className="sd-link"
-                >
-                  Revalida → Representatives
-                </Link>
                 .
               </p>
             )}
+
+            <EmployeeRepAssignmentPanel
+              employee={employee}
+              branches={branches}
+              onSuccess={(msg) => {
+                onSaved(msg);
+                setListStale(true);
+              }}
+              onError={onError}
+            />
           </div>
         )}
-
-        <p className="text-xs text-sd-muted">
-          Competition representatives are assigned in{" "}
-          <Link
-            href={nationalCompetitionsPath("representatives")}
-            className="sd-link"
-          >
-            Revalida → Representatives
-          </Link>
-          , not here.
-        </p>
 
         {showDeleteConfirm && employee ? (
           <AdminConfirmPanel

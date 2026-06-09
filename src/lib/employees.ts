@@ -316,6 +316,141 @@ export async function linkBranchRepresentativesFromPayload(
   );
 }
 
+const BRANCH_REP_ASSIGN_SELECT =
+  "id, branch_code, representative_1_employee_id, representative_2_employee_id";
+
+function repSlotInputFromEmployee(employee: Employee): RepSlotInput {
+  return {
+    full_name: employee.full_name,
+    employee_no: employee.employee_no,
+    position: employee.position ?? "",
+    nickname: employee.nickname,
+    date_hired: employee.date_hired,
+    contact_number: employee.contact_number,
+    email: employee.email,
+    home_branch_id: employee.home_branch_id,
+  };
+}
+
+async function linkBranchRepSlotsByEmployeeIds(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  branchId: string,
+  branchCode: string,
+  slot1Id: string | null,
+  slot2Id: string | null,
+  updatedAt?: string
+): Promise<void> {
+  const empById = await loadEmployeesByIds(
+    [slot1Id, slot2Id].filter(Boolean) as string[]
+  );
+
+  await linkBranchRepresentatives(
+    service,
+    branchId,
+    branchCode,
+    {
+      slot1: slot1Id
+        ? repSlotInputFromEmployee(empById.get(slot1Id)!)
+        : null,
+      slot2: slot2Id
+        ? repSlotInputFromEmployee(empById.get(slot2Id)!)
+        : null,
+    },
+    updatedAt
+  );
+}
+
+/** Assign a directory employee to Rep 1 or Rep 2 on a branch (max two reps per branch). */
+export async function assignEmployeeToBranchRepSlot(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  employeeId: string,
+  branchId: string,
+  slot: 1 | 2,
+  updatedAt?: string
+): Promise<void> {
+  const { data: employeeRow, error: empError } = await service
+    .from("employees")
+    .select(EMPLOYEE_COLUMNS)
+    .eq("id", employeeId)
+    .maybeSingle();
+
+  if (empError || !employeeRow) {
+    throw new Error("Employee not found.");
+  }
+
+  const employee = employeeRow as Employee;
+  if (employee.employment_status === "resigned") {
+    throw new Error("Cannot assign a resigned employee as a competition rep.");
+  }
+
+  const { data: branchRow, error: branchError } = await service
+    .from("branches")
+    .select(BRANCH_REP_ASSIGN_SELECT)
+    .eq("id", branchId)
+    .maybeSingle();
+
+  if (branchError || !branchRow) {
+    throw new Error("Branch not found.");
+  }
+
+  const branchCode = branchRow.branch_code as string;
+  let slot1Id = branchRow.representative_1_employee_id as string | null;
+  let slot2Id = branchRow.representative_2_employee_id as string | null;
+
+  if (slot1Id === employeeId) slot1Id = null;
+  if (slot2Id === employeeId) slot2Id = null;
+
+  if (slot === 1) slot1Id = employeeId;
+  else slot2Id = employeeId;
+
+  await linkBranchRepSlotsByEmployeeIds(
+    service,
+    branchId,
+    branchCode,
+    slot1Id,
+    slot2Id,
+    updatedAt
+  );
+}
+
+/** Remove an employee from whichever rep slot they hold on a branch. */
+export async function clearEmployeeFromBranchRep(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  employeeId: string,
+  branchId: string,
+  updatedAt?: string
+): Promise<void> {
+  const { data: branchRow, error: branchError } = await service
+    .from("branches")
+    .select(BRANCH_REP_ASSIGN_SELECT)
+    .eq("id", branchId)
+    .maybeSingle();
+
+  if (branchError || !branchRow) {
+    throw new Error("Branch not found.");
+  }
+
+  const branchCode = branchRow.branch_code as string;
+  let slot1Id = branchRow.representative_1_employee_id as string | null;
+  let slot2Id = branchRow.representative_2_employee_id as string | null;
+
+  if (slot1Id !== employeeId && slot2Id !== employeeId) {
+    throw new Error("This employee is not assigned as a rep for that branch.");
+  }
+
+  if (slot1Id === employeeId) slot1Id = null;
+  if (slot2Id === employeeId) slot2Id = null;
+
+  await linkBranchRepSlotsByEmployeeIds(
+    service,
+    branchId,
+    branchCode,
+    slot1Id,
+    slot2Id,
+    updatedAt
+  );
+}
+
 export async function resolveEmployeeIdForRepSlot(
   service: Awaited<ReturnType<typeof createServiceClient>>,
   branchId: string,

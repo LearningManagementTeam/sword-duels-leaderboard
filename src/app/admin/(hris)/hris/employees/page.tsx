@@ -2,7 +2,7 @@ import Link from "next/link";
 import { EmployeesDirectoryEditor } from "@/components/admin/EmployeesDirectoryEditor";
 import { ImportEmployeesDirectory } from "@/components/admin/ImportEmployeesDirectory";
 import { SetupBanner } from "@/components/SetupBanner";
-import { hrisPath, nationalCompetitionsPath } from "@/lib/admin-routes";
+import { hrisPath } from "@/lib/admin-routes";
 import { getBranchOptionsForHris, getEmployeesForAdmin } from "@/lib/employees";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -32,16 +32,9 @@ export default async function HrisEmployeesPage() {
         <p>
           Manage HR employee profiles — number, name, position, nickname, date
           hired, contact, email, optional home branch, photo, and employment
-          status. Private HR fields stay off public leaderboards. Home branch is
-          where someone works; it does not assign them as a competition rep.
-          Assign reps per branch on{" "}
-          <Link
-            href={nationalCompetitionsPath("representatives")}
-            className="sd-link"
-          >
-            Revalida → Representatives
-          </Link>
-          . Branches are managed on{" "}
+          status. Open a profile to assign Sword Duels rep slots (Rep 1 or Rep 2
+          per branch). Home branch is where someone works; rep assignment is
+          separate. Branches are managed on{" "}
           <Link href={hrisPath("branches")} className="sd-link">
             HRIS → Branches
           </Link>
