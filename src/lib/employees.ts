@@ -7,6 +7,10 @@ import type {
 } from "@/lib/employee-types";
 import type { RepresentativeSavePayload } from "@/lib/representative-fields";
 import { createServiceClient } from "@/lib/supabase/server";
+import {
+  employeeHrisDbPayload,
+  type EmployeeHrisProfileFields,
+} from "@/lib/employee-profile-fields";
 import { findEmployeeDirectoryDuplicateMessage } from "@/lib/employee-directory-duplicate";
 import { normalizeAllCapsText } from "@/lib/text-format";
 
@@ -18,14 +22,54 @@ export type {
 } from "@/lib/employee-types";
 export { employmentStatusLabel } from "@/lib/employee-types";
 
-export interface RepSlotInput {
+export interface RepSlotInput extends EmployeeHrisProfileFields {
   full_name: string;
   employee_no: string;
   position: string;
+  home_branch_id?: string | null;
 }
 
 const EMPLOYEE_COLUMNS =
-  "id, employee_no, full_name, position, employment_status, resigned_at, notes, photo_path, home_branch_id, created_at, updated_at";
+  "id, employee_no, full_name, position, nickname, date_hired, contact_number, email, employment_status, resigned_at, notes, photo_path, home_branch_id, created_at, updated_at";
+
+function employeeWritePayload(
+  input: RepSlotInput | (EmployeeHrisProfileFields & {
+    full_name: string;
+    employee_no: string;
+    position?: string;
+    notes?: string;
+    home_branch_id?: string | null;
+  }),
+  options?: { mergeHris?: boolean }
+): Record<string, unknown> {
+  const now = new Date().toISOString();
+  const payload: Record<string, unknown> = {
+    full_name: normalizeAllCapsText(input.full_name.trim()),
+    position: normalizeAllCapsText(input.position?.trim() ?? "") || null,
+    updated_at: now,
+  };
+
+  if ("notes" in input && input.notes !== undefined) {
+    payload.notes = input.notes?.trim()
+      ? normalizeAllCapsText(input.notes.trim()) || null
+      : null;
+  }
+
+  if (input.home_branch_id !== undefined) {
+    payload.home_branch_id = input.home_branch_id?.trim() || null;
+  }
+
+  if (options?.mergeHris !== false) {
+    const hris = employeeHrisDbPayload(input);
+    for (const [key, value] of Object.entries(hris)) {
+      if (value != null && value !== "") {
+        payload[key] = value;
+      }
+    }
+  }
+
+  return payload;
+}
 
 export function normalizeEmployeeNo(value: string): string {
   return value.trim();
@@ -77,10 +121,25 @@ function slotInputFromPayload(
 
   if (!fullName && !no) return null;
 
+  const nickname =
+    slot === 1 ? payload.representative_1_nickname : payload.representative_2_nickname;
+  const date_hired =
+    slot === 1 ? payload.representative_1_date_hired : payload.representative_2_date_hired;
+  const contact_number =
+    slot === 1
+      ? payload.representative_1_contact_number
+      : payload.representative_2_contact_number;
+  const email =
+    slot === 1 ? payload.representative_1_email : payload.representative_2_email;
+
   return {
     full_name: fullName || no,
     employee_no: no || legacyEmployeeNo(branchCode, slot),
     position: position?.trim() ?? "",
+    nickname: nickname || undefined,
+    date_hired: date_hired || undefined,
+    contact_number: contact_number || undefined,
+    email: email || undefined,
   };
 }
 
@@ -107,16 +166,11 @@ async function findEmployeeByEmployeeNoInService(
   return (insensitive as Employee) ?? null;
 }
 
-/** Prefer an existing HRIS directory row when employee_no matches. */
+/** Prefer an existing HRIS directory row when employee_no matches; merge profile fields. */
 async function resolveEmployeeForRepSlot(
   service: Awaited<ReturnType<typeof createServiceClient>>,
   input: RepSlotInput
 ): Promise<Employee> {
-  const employeeNo = normalizeEmployeeNo(input.employee_no);
-  if (employeeNo) {
-    const existing = await findEmployeeByEmployeeNoInService(service, employeeNo);
-    if (existing) return existing;
-  }
   return upsertEmployeeFromRepSlot(service, input);
 }
 
@@ -132,11 +186,7 @@ export async function upsertEmployeeFromRepSlot(
   if (existing) {
     const { data, error } = await service
       .from("employees")
-      .update({
-        full_name: normalizeAllCapsText(input.full_name.trim()),
-        position: normalizeAllCapsText(input.position.trim()) || null,
-        updated_at: now,
-      })
+      .update(employeeWritePayload(input))
       .eq("id", existing.id)
       .select(EMPLOYEE_COLUMNS)
       .single();
@@ -157,8 +207,7 @@ export async function upsertEmployeeFromRepSlot(
     .from("employees")
     .insert({
       employee_no: employeeNo,
-      full_name: normalizeAllCapsText(input.full_name.trim()),
-      position: normalizeAllCapsText(input.position.trim()) || null,
+      ...employeeWritePayload(input),
       employment_status: "active",
       updated_at: now,
     })
@@ -192,6 +241,17 @@ function denormalizedRepColumns(
   };
 }
 
+function repSlotWithHomeBranch(
+  input: RepSlotInput | null,
+  branchId: string
+): RepSlotInput | null {
+  if (!input) return null;
+  return {
+    ...input,
+    home_branch_id: input.home_branch_id ?? branchId,
+  };
+}
+
 export async function linkBranchRepresentatives(
   service: Awaited<ReturnType<typeof createServiceClient>>,
   branchId: string,
@@ -202,10 +262,16 @@ export async function linkBranchRepresentatives(
   const now = updatedAt ?? new Date().toISOString();
 
   const emp1 = slots.slot1
-    ? await resolveEmployeeForRepSlot(service, slots.slot1)
+    ? await resolveEmployeeForRepSlot(
+        service,
+        repSlotWithHomeBranch(slots.slot1, branchId)!
+      )
     : null;
   const emp2 = slots.slot2
-    ? await resolveEmployeeForRepSlot(service, slots.slot2)
+    ? await resolveEmployeeForRepSlot(
+        service,
+        repSlotWithHomeBranch(slots.slot2, branchId)!
+      )
     : null;
 
   const { error } = await service
@@ -314,6 +380,14 @@ export async function enrichBranchesWithRepEmployees<
       representative_2_employment_status: e2?.employment_status ?? null,
       representative_1_photo_path: e1?.photo_path ?? null,
       representative_2_photo_path: e2?.photo_path ?? null,
+      representative_1_nickname: e1?.nickname ?? null,
+      representative_1_date_hired: e1?.date_hired ?? null,
+      representative_1_contact_number: e1?.contact_number ?? null,
+      representative_1_email: e1?.email ?? null,
+      representative_2_nickname: e2?.nickname ?? null,
+      representative_2_date_hired: e2?.date_hired ?? null,
+      representative_2_contact_number: e2?.contact_number ?? null,
+      representative_2_email: e2?.email ?? null,
     };
   });
 }
@@ -424,15 +498,17 @@ export async function getEmployeesForAdmin(
     });
 }
 
+export type EmployeeProfileInput = EmployeeHrisProfileFields & {
+  employee_no: string;
+  full_name: string;
+  position?: string;
+  notes?: string;
+  home_branch_id?: string | null;
+};
+
 export async function updateEmployeeProfile(
   employeeId: string,
-  fields: {
-    employee_no: string;
-    full_name: string;
-    position: string;
-    notes?: string;
-    home_branch_id?: string | null;
-  }
+  fields: EmployeeProfileInput
 ): Promise<Employee> {
   const service = await createServiceClient();
   const now = new Date().toISOString();
@@ -447,13 +523,7 @@ export async function updateEmployeeProfile(
     .from("employees")
     .update({
       employee_no: employeeNo,
-      full_name: normalizeAllCapsText(fields.full_name.trim()),
-      position:
-        normalizeAllCapsText(fields.position.trim()) || null,
-      notes: fields.notes?.trim()
-        ? normalizeAllCapsText(fields.notes.trim()) || null
-        : null,
-      home_branch_id: fields.home_branch_id?.trim() || null,
+      ...employeeWritePayload(fields),
       updated_at: now,
     })
     .eq("id", employeeId)
@@ -469,13 +539,9 @@ export async function updateEmployeeProfile(
   return data as Employee;
 }
 
-export async function createEmployeeRecord(fields: {
-  employee_no: string;
-  full_name: string;
-  position?: string;
-  notes?: string;
-  home_branch_id?: string | null;
-}): Promise<Employee> {
+export async function createEmployeeRecord(
+  fields: EmployeeProfileInput
+): Promise<Employee> {
   const service = await createServiceClient();
   const now = new Date().toISOString();
 
@@ -488,14 +554,7 @@ export async function createEmployeeRecord(fields: {
     .from("employees")
     .insert({
       employee_no: normalizeEmployeeNo(fields.employee_no),
-      full_name: normalizeAllCapsText(fields.full_name.trim()),
-      position: fields.position?.trim()
-        ? normalizeAllCapsText(fields.position.trim()) || null
-        : null,
-      notes: fields.notes?.trim()
-        ? normalizeAllCapsText(fields.notes.trim()) || null
-        : null,
-      home_branch_id: fields.home_branch_id?.trim() || null,
+      ...employeeWritePayload(fields),
       employment_status: "active",
       updated_at: now,
     })
@@ -596,6 +655,107 @@ export async function getEmployeesForRepresentativePicker(): Promise<
 
   if (error) throw new Error(error.message);
   return (data ?? []) as EmployeePickerRow[];
+}
+
+export async function upsertEmployeeFromDirectoryRow(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  row: import("@/lib/employees-csv").EmployeeDirectoryCsvRow,
+  homeBranchId: string | null
+): Promise<Employee> {
+  const employeeNo = normalizeEmployeeNo(row.employee_no);
+  const now = new Date().toISOString();
+  const input: EmployeeProfileInput = {
+    employee_no: employeeNo,
+    full_name: row.full_name,
+    position: row.position,
+    nickname: row.nickname,
+    date_hired: row.date_hired,
+    contact_number: row.contact_number,
+    email: row.email,
+    home_branch_id: homeBranchId,
+  };
+
+  const existing = await findEmployeeByEmployeeNoInService(service, employeeNo);
+
+  if (existing) {
+    const { data, error } = await service
+      .from("employees")
+      .update({
+        employee_no: employeeNo,
+        ...employeeWritePayload(input),
+        updated_at: now,
+      })
+      .eq("id", existing.id)
+      .select(EMPLOYEE_COLUMNS)
+      .single();
+
+    if (error || !data) {
+      throw new Error(error?.message ?? "Failed to update employee profile");
+    }
+    return data as Employee;
+  }
+
+  const { data, error } = await service
+    .from("employees")
+    .insert({
+      employee_no: employeeNo,
+      ...employeeWritePayload(input),
+      employment_status: "active",
+      updated_at: now,
+    })
+    .select(EMPLOYEE_COLUMNS)
+    .single();
+
+  if (error || !data) {
+    if (error?.code === "23505") {
+      throw new Error(`Employee number ${employeeNo} already exists.`);
+    }
+    throw new Error(error?.message ?? "Failed to create employee profile");
+  }
+
+  return data as Employee;
+}
+
+export async function importEmployeeDirectoryRows(
+  rows: import("@/lib/employees-csv").EmployeeDirectoryCsvRow[]
+): Promise<{ upserted: number; errors: string[] }> {
+  const service = await createServiceClient();
+  const { data: branches } = await service
+    .from("branches")
+    .select("id, branch_code");
+
+  const codeToBranchId = new Map(
+    (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b.id as string])
+  );
+
+  let upserted = 0;
+  const errors: string[] = [];
+
+  for (const row of rows) {
+    const branchCode = row.branch_code?.trim();
+    const homeBranchId = branchCode
+      ? (codeToBranchId.get(branchCode.toLowerCase()) ?? null)
+      : null;
+
+    if (branchCode && !homeBranchId) {
+      errors.push(
+        `Line for ${row.full_name} (${row.employee_no}): unknown branch_code "${branchCode}"`
+      );
+    }
+
+    try {
+      await upsertEmployeeFromDirectoryRow(service, row, homeBranchId);
+      upserted++;
+    } catch (e) {
+      errors.push(
+        `${row.full_name} (${row.employee_no}): ${
+          e instanceof Error ? e.message : "Import failed"
+        }`
+      );
+    }
+  }
+
+  return { upserted, errors };
 }
 
 export async function deleteEmployeeRecord(employeeId: string): Promise<{

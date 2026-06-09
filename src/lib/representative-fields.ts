@@ -24,6 +24,14 @@ export type RepresentativeSavePayload = {
   representative_1_position: string;
   representative_2_employee_no: string;
   representative_2_position: string;
+  representative_1_nickname?: string;
+  representative_1_date_hired?: string;
+  representative_1_contact_number?: string;
+  representative_1_email?: string;
+  representative_2_nickname?: string;
+  representative_2_date_hired?: string;
+  representative_2_contact_number?: string;
+  representative_2_email?: string;
 };
 
 export function representativeDbUpdate(row: Omit<RepresentativeSavePayload, "branch_id">) {

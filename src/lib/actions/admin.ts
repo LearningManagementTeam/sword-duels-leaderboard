@@ -12,7 +12,11 @@ import {
   validateBranchRosterFields,
 } from "@/lib/branch-roster";
 import { branchUpsertPayload, countRowsWithRepresentatives } from "@/lib/branch-upsert";
-import { parseRepresentativesCsv } from "@/lib/representatives-csv";
+import { parseEmployeeDirectoryCsv } from "@/lib/employees-csv";
+import {
+  parseRepresentativesCsv,
+  representativeCsvRowToPayload,
+} from "@/lib/representatives-csv";
 import {
   representativeDbUpdate,
   type RepresentativeSavePayload,
@@ -477,6 +481,10 @@ export async function saveEmployeeProfileAction(
     position: string;
     notes?: string;
     home_branch_id?: string | null;
+    nickname?: string | null;
+    date_hired?: string | null;
+    contact_number?: string | null;
+    email?: string | null;
   }
 ) {
   try {
@@ -507,6 +515,10 @@ export async function createEmployeeAction(fields: {
   position?: string;
   notes?: string;
   home_branch_id?: string | null;
+  nickname?: string | null;
+  date_hired?: string | null;
+  contact_number?: string | null;
+  email?: string | null;
 }) {
   try {
     const { email } = await requireAdmin();
@@ -865,14 +877,7 @@ export async function importRepresentativesFromCsv(csvText: string) {
         service,
         branch.id,
         branch.branch_code,
-        {
-          representative_1: row.representative_1,
-          representative_2: row.representative_2,
-          representative_1_employee_no: row.representative_1_employee_no,
-          representative_1_position: row.representative_1_position,
-          representative_2_employee_no: row.representative_2_employee_no,
-          representative_2_position: row.representative_2_position,
-        },
+        representativeCsvRowToPayload(row),
         now
       );
     } catch (e) {
@@ -907,6 +912,41 @@ export async function importRepresentativesFromCsv(csvText: string) {
     count: updated,
     warnings: resultErrors,
     message: `Updated representatives for ${updated} branches.`,
+  };
+}
+
+export async function importEmployeesFromCsv(csvText: string) {
+  const { email } = await requireAdmin();
+
+  if (!csvText?.trim()) {
+    return { ok: false as const, errors: ["CSV file is empty."] };
+  }
+
+  const { rows, errors: parseErrors } = parseEmployeeDirectoryCsv(csvText);
+  if (parseErrors.length) return { ok: false as const, errors: parseErrors };
+  if (!rows.length) {
+    return { ok: false as const, errors: ["No rows found in CSV."] };
+  }
+
+  const { importEmployeeDirectoryRows } = await import("@/lib/employees");
+  const { upserted, errors } = await importEmployeeDirectoryRows(rows);
+
+  await logAudit(email, "import_employees", "employees", null, {
+    row_count: rows.length,
+    upserted,
+    error_count: errors.length,
+  });
+  revalidatePath("/admin/hris/employees");
+
+  if (upserted === 0) {
+    return { ok: false as const, errors: errors.length ? errors : ["No rows imported."] };
+  }
+
+  return {
+    ok: true as const,
+    count: upserted,
+    warnings: errors.length ? errors : undefined,
+    message: `Imported ${upserted} employee profile${upserted === 1 ? "" : "s"}.`,
   };
 }
 

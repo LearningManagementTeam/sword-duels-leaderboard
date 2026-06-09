@@ -38,7 +38,10 @@ import {
   unpublishKnockoutMatch,
 } from "@/lib/products/sword-duels/knockout-sync";
 import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
-import { parseRepresentativesCsv } from "@/lib/representatives-csv";
+import {
+  parseRepresentativesCsv,
+  representativeCsvRowToPayload,
+} from "@/lib/representatives-csv";
 import { createServiceClient } from "@/lib/supabase/server";
 
 async function requireAdmin() {
@@ -696,14 +699,7 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
         service,
         branch.id,
         branch.branch_code,
-        {
-          representative_1: row.representative_1,
-          representative_2: row.representative_2,
-          representative_1_employee_no: row.representative_1_employee_no,
-          representative_1_position: row.representative_1_position,
-          representative_2_employee_no: row.representative_2_employee_no,
-          representative_2_position: row.representative_2_position,
-        },
+        representativeCsvRowToPayload(row),
         now
       );
     } catch (e) {

@@ -1,5 +1,12 @@
 import { parseCsvLine } from "./branches-csv";
 
+export interface RepresentativeCsvProfileFields {
+  nickname: string;
+  date_hired: string;
+  contact_number: string;
+  email: string;
+}
+
 export interface RepresentativeCsvRow {
   branch_code: string;
   representative_1: string;
@@ -8,6 +15,14 @@ export interface RepresentativeCsvRow {
   representative_1_position: string;
   representative_2_employee_no: string;
   representative_2_position: string;
+  representative_1_nickname: string;
+  representative_1_date_hired: string;
+  representative_1_contact_number: string;
+  representative_1_email: string;
+  representative_2_nickname: string;
+  representative_2_date_hired: string;
+  representative_2_contact_number: string;
+  representative_2_email: string;
 }
 
 function resolveHeaderIndex(
@@ -24,6 +39,42 @@ function resolveHeaderIndex(
 function col(cols: string[], idx: number | undefined): string {
   if (idx === undefined) return "";
   return (cols[idx] ?? "").trim();
+}
+
+function repProfileIndices(
+  header: string[],
+  slot: 1 | 2
+): {
+  nickname: number | undefined;
+  dateHired: number | undefined;
+  contact: number | undefined;
+  email: number | undefined;
+} {
+  const prefix = slot === 1 ? "representative_1" : "representative_2";
+  const short = slot === 1 ? "rep1" : "rep2";
+  return {
+    nickname: resolveHeaderIndex(header, [
+      `${prefix}_nickname`,
+      `${prefix} nickname`,
+      `${short}_nickname`,
+    ]),
+    dateHired: resolveHeaderIndex(header, [
+      `${prefix}_date_hired`,
+      `${prefix} date hired`,
+      `${short}_date_hired`,
+    ]),
+    contact: resolveHeaderIndex(header, [
+      `${prefix}_contact_number`,
+      `${prefix} contact number`,
+      `${prefix}_contact`,
+      `${short}_contact_number`,
+    ]),
+    email: resolveHeaderIndex(header, [
+      `${prefix}_email`,
+      `${prefix} email`,
+      `${short}_email`,
+    ]),
+  };
 }
 
 export function parseRepresentativesCsv(text: string): {
@@ -92,6 +143,9 @@ export function parseRepresentativesCsv(text: string): {
     "position 2",
   ]);
 
+  const rep1Profile = repProfileIndices(header, 1);
+  const rep2Profile = repProfileIndices(header, 2);
+
   if (codeIdx === undefined || rep1Idx === undefined) {
     return {
       rows: [],
@@ -126,6 +180,14 @@ export function parseRepresentativesCsv(text: string): {
       representative_1_position: col(cols, rep1PosIdx),
       representative_2_employee_no: col(cols, rep2EmpIdx),
       representative_2_position: col(cols, rep2PosIdx),
+      representative_1_nickname: col(cols, rep1Profile.nickname),
+      representative_1_date_hired: col(cols, rep1Profile.dateHired),
+      representative_1_contact_number: col(cols, rep1Profile.contact),
+      representative_1_email: col(cols, rep1Profile.email),
+      representative_2_nickname: col(cols, rep2Profile.nickname),
+      representative_2_date_hired: col(cols, rep2Profile.dateHired),
+      representative_2_contact_number: col(cols, rep2Profile.contact),
+      representative_2_email: col(cols, rep2Profile.email),
     });
   }
 
@@ -139,10 +201,10 @@ function formatCsvField(value: string): string {
   return value;
 }
 
-const TEMPLATE_HEADER =
-  "branch_code,branch_name,area,representative_1,representative_1_employee_no,representative_1_position,representative_2,representative_2_employee_no,representative_2_position";
+export const REPRESENTATIVES_CSV_TEMPLATE_HEADER =
+  "branch_code,branch_name,area,representative_1,representative_1_employee_no,representative_1_position,representative_1_nickname,representative_1_date_hired,representative_1_contact_number,representative_1_email,representative_2,representative_2_employee_no,representative_2_position,representative_2_nickname,representative_2_date_hired,representative_2_contact_number,representative_2_email";
 
-/** Prefilled template for rep import — includes area and employee metadata. */
+/** Prefilled template for rep import — includes area and employee HR metadata. */
 export function buildRepresentativesCsvTemplate(
   branches: Array<{
     branch_code: string;
@@ -154,6 +216,14 @@ export function buildRepresentativesCsvTemplate(
     representative_1_position?: string | null;
     representative_2_employee_no?: string | null;
     representative_2_position?: string | null;
+    representative_1_nickname?: string | null;
+    representative_1_date_hired?: string | null;
+    representative_1_contact_number?: string | null;
+    representative_1_email?: string | null;
+    representative_2_nickname?: string | null;
+    representative_2_date_hired?: string | null;
+    representative_2_contact_number?: string | null;
+    representative_2_email?: string | null;
   }>
 ): string {
   const sorted = [...branches].sort((a, b) => {
@@ -162,7 +232,7 @@ export function buildRepresentativesCsvTemplate(
     return a.branch_code.localeCompare(b.branch_code, undefined, { numeric: true });
   });
 
-  const lines = [TEMPLATE_HEADER];
+  const lines = [REPRESENTATIVES_CSV_TEMPLATE_HEADER];
   for (const b of sorted) {
     lines.push(
       [
@@ -172,11 +242,76 @@ export function buildRepresentativesCsvTemplate(
         formatCsvField(b.representative_1?.trim() ?? ""),
         formatCsvField(b.representative_1_employee_no?.trim() ?? ""),
         formatCsvField(b.representative_1_position?.trim() ?? ""),
+        formatCsvField(b.representative_1_nickname?.trim() ?? ""),
+        formatCsvField(b.representative_1_date_hired?.trim() ?? ""),
+        formatCsvField(b.representative_1_contact_number?.trim() ?? ""),
+        formatCsvField(b.representative_1_email?.trim() ?? ""),
         formatCsvField(b.representative_2?.trim() ?? ""),
         formatCsvField(b.representative_2_employee_no?.trim() ?? ""),
         formatCsvField(b.representative_2_position?.trim() ?? ""),
+        formatCsvField(b.representative_2_nickname?.trim() ?? ""),
+        formatCsvField(b.representative_2_date_hired?.trim() ?? ""),
+        formatCsvField(b.representative_2_contact_number?.trim() ?? ""),
+        formatCsvField(b.representative_2_email?.trim() ?? ""),
       ].join(",")
     );
   }
   return lines.join("\n");
+}
+
+export function representativeCsvRowToPayload(
+  row: RepresentativeCsvRow
+): import("@/lib/representative-fields").RepresentativeSavePayload {
+  return {
+    branch_id: "",
+    representative_1: row.representative_1,
+    representative_2: row.representative_2,
+    representative_1_employee_no: row.representative_1_employee_no,
+    representative_1_position: row.representative_1_position,
+    representative_2_employee_no: row.representative_2_employee_no,
+    representative_2_position: row.representative_2_position,
+    representative_1_nickname: row.representative_1_nickname,
+    representative_1_date_hired: row.representative_1_date_hired,
+    representative_1_contact_number: row.representative_1_contact_number,
+    representative_1_email: row.representative_1_email,
+    representative_2_nickname: row.representative_2_nickname,
+    representative_2_date_hired: row.representative_2_date_hired,
+    representative_2_contact_number: row.representative_2_contact_number,
+    representative_2_email: row.representative_2_email,
+  };
+}
+
+export function repSlotFromCsvRow(
+  row: RepresentativeCsvRow,
+  slot: 1 | 2
+): import("@/lib/employees").RepSlotInput | null {
+  const name = slot === 1 ? row.representative_1 : row.representative_2;
+  const employeeNo =
+    slot === 1 ? row.representative_1_employee_no : row.representative_2_employee_no;
+  const position =
+    slot === 1 ? row.representative_1_position : row.representative_2_position;
+  const nickname =
+    slot === 1 ? row.representative_1_nickname : row.representative_2_nickname;
+  const date_hired =
+    slot === 1 ? row.representative_1_date_hired : row.representative_2_date_hired;
+  const contact_number =
+    slot === 1
+      ? row.representative_1_contact_number
+      : row.representative_2_contact_number;
+  const email = slot === 1 ? row.representative_1_email : row.representative_2_email;
+
+  const fullName = name?.trim() ?? "";
+  const no = employeeNo?.trim() ?? "";
+
+  if (!fullName && !no) return null;
+
+  return {
+    full_name: fullName || no,
+    employee_no: no,
+    position: position?.trim() ?? "",
+    nickname: nickname || undefined,
+    date_hired: date_hired || undefined,
+    contact_number: contact_number || undefined,
+    email: email || undefined,
+  };
 }

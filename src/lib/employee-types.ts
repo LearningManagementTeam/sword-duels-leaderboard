@@ -5,6 +5,10 @@ export interface Employee {
   employee_no: string;
   full_name: string;
   position: string | null;
+  nickname: string | null;
+  date_hired: string | null;
+  contact_number: string | null;
+  email: string | null;
   employment_status: EmploymentStatus;
   resigned_at: string | null;
   notes: string | null;

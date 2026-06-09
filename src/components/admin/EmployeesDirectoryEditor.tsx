@@ -178,8 +178,9 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
       <div>
         <h2 className="text-lg font-semibold text-white">Employee directory</h2>
         <p className="mt-1 text-sm text-sd-muted">
-          HR profiles — employee number, name, position, home branch, photo, and
-          employment status. Competition reps are assigned separately on{" "}
+          HR profiles — employee number, name, position, nickname, contact, email,
+          home branch, photo, and employment status. Competition reps are assigned
+          separately on{" "}
           <Link
             href={nationalCompetitionsPath("representatives")}
             className="sd-link"

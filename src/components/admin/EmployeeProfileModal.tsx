@@ -28,6 +28,10 @@ type ProfileDraft = {
   position: string;
   notes: string;
   home_branch_id: string;
+  nickname: string;
+  date_hired: string;
+  contact_number: string;
+  email: string;
 };
 
 function emptyDraft(): ProfileDraft {
@@ -37,6 +41,10 @@ function emptyDraft(): ProfileDraft {
     position: "",
     notes: "",
     home_branch_id: "",
+    nickname: "",
+    date_hired: "",
+    contact_number: "",
+    email: "",
   };
 }
 
@@ -47,6 +55,10 @@ function draftFromEmployee(employee: EmployeeAdminRow): ProfileDraft {
     position: employee.position ?? "",
     notes: employee.notes ?? "",
     home_branch_id: employee.home_branch_id ?? "",
+    nickname: employee.nickname ?? "",
+    date_hired: employee.date_hired ?? "",
+    contact_number: employee.contact_number ?? "",
+    email: employee.email ?? "",
   };
 }
 
@@ -169,6 +181,10 @@ export function EmployeeProfileModal({
       position: normalizeAllCapsText(draft.position),
       notes: normalizeAllCapsText(draft.notes),
       home_branch_id: draft.home_branch_id.trim() || null,
+      nickname: draft.nickname.trim() || null,
+      date_hired: draft.date_hired.trim() || null,
+      contact_number: draft.contact_number.trim() || null,
+      email: draft.email.trim() || null,
     };
 
     const duplicateMessage = findEmployeeDirectoryDuplicateMessage(
@@ -363,6 +379,49 @@ export function EmployeeProfileModal({
               Work location only — not the same as competition rep assignment.
             </p>
           </label>
+          <label className="block text-sm sm:col-span-1">
+            <span className="text-sd-muted">Nickname</span>
+            <input
+              value={draft.nickname}
+              onChange={(e) =>
+                setDraft((s) => ({ ...s, nickname: e.target.value }))
+              }
+              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm sm:col-span-1">
+            <span className="text-sd-muted">Date hired</span>
+            <input
+              type="date"
+              value={draft.date_hired}
+              onChange={(e) =>
+                setDraft((s) => ({ ...s, date_hired: e.target.value }))
+              }
+              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm sm:col-span-1">
+            <span className="text-sd-muted">Contact number</span>
+            <input
+              type="tel"
+              value={draft.contact_number}
+              onChange={(e) =>
+                setDraft((s) => ({ ...s, contact_number: e.target.value }))
+              }
+              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm sm:col-span-1">
+            <span className="text-sd-muted">Email</span>
+            <input
+              type="email"
+              value={draft.email}
+              onChange={(e) =>
+                setDraft((s) => ({ ...s, email: e.target.value }))
+              }
+              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
+            />
+          </label>
           <label className="block text-sm sm:col-span-2">
             <span className="text-sd-muted">Notes</span>
             <input
@@ -375,6 +434,11 @@ export function EmployeeProfileModal({
             />
           </label>
         </div>
+
+        <p className="text-[10px] text-sd-muted/70">
+          Nickname, date hired, contact, and email are HRIS-only — not shown on
+          public leaderboards.
+        </p>
 
         {!isCreate && employee && (
           <div className="space-y-3">
