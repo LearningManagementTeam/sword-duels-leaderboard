@@ -1,9 +1,11 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArBackdrop } from "@/components/ui/ArBackdrop";
 import { AreaTournamentMap } from "@/components/sword-duels/AreaTournamentMap";
 import { NationalsKnockoutMap } from "@/components/sword-duels/NationalsKnockoutMap";
 import { NationalsWildcardMap } from "@/components/sword-duels/NationalsWildcardMap";
+import { SdTvRegionalStandingsBoard } from "@/components/sword-duels/SdTvRegionalStandingsBoard";
 import {
   buildSdTvEventSteps,
   SdTvEventRotator,
@@ -12,12 +14,18 @@ import { SdTvAreaRotator } from "@/components/sword-duels/SdTvAreaRotator";
 import { SdTvNationalsRotator } from "@/components/sword-duels/SdTvNationalsRotator";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { loadNationalsPublicView } from "@/lib/products/sword-duels/load-nationals-public-view";
+import { loadV2NationalsPublicView } from "@/lib/products/sword-duels/load-v2-nationals-public-view";
 import {
   filterPublicScores,
   getSdPublicArea,
   getSdPublicOverview,
 } from "@/lib/products/sword-duels/public-queries";
 import { getSdEvent } from "@/lib/products/sword-duels/queries";
+import {
+  isRegionalAverageFormat,
+  parseNationalsTvView,
+  type SdNationalsTvView,
+} from "@/lib/products/sword-duels/tournament-format";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +33,15 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Sword Duels — TV bracket",
 };
+
+function nationalsTvShell(children: ReactNode) {
+  return (
+    <div className="fixed inset-0 z-50 overflow-auto p-4 sm:p-6">
+      <ArBackdrop />
+      <div className="relative mx-auto max-w-7xl">{children}</div>
+    </div>
+  );
+}
 
 export default async function SwordDuelsTvPage({
   searchParams,
@@ -62,123 +79,216 @@ export default async function SwordDuelsTvPage({
 
   const areas = overview.brackets.map((b) => b.area);
   const event = await getSdEvent();
+  const tournamentFormat = event?.tournament_format ?? "classic_v1";
+  const isV2 = isRegionalAverageFormat(tournamentFormat);
 
   if (mode === "nationals" && event) {
-    let nationalsView;
-    try {
-      nationalsView = await loadNationalsPublicView(event.id);
-    } catch {
-      return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-          <ArBackdrop />
-          <p className="relative text-sd-muted">
-            Nationals tables not ready. Run migrations 019/020.{" "}
+    const view = parseNationalsTvView(params.view, tournamentFormat);
+
+    if (isV2) {
+      let v2View: Awaited<ReturnType<typeof loadV2NationalsPublicView>> | null =
+        null;
+      try {
+        v2View = await loadV2NationalsPublicView(event.id);
+      } catch {
+        return nationalsTvShell(
+          <p className="text-sd-muted">
+            Nationals tables not ready. Run migration 030.{" "}
             <Link href={SWORD_DUELS_PUBLIC} className="sd-link">
               Back
             </Link>
           </p>
-        </div>
-      );
-    }
+        );
+      }
 
-    const view =
-      params.view === "knockout" ? "knockout" : "wildcard";
-
-    return (
-      <div className="fixed inset-0 z-50 overflow-auto p-4 sm:p-6">
-        <ArBackdrop />
-        <div className="relative mx-auto max-w-7xl">
-          <SdTvNationalsRotator currentView={view} rotateSec={rotateSec} />
-          {view === "wildcard" ? (
-            <NationalsWildcardMap
-              model={nationalsView.model}
-              scores={nationalsView.wildcardScores}
-              confirmedWildcardId={nationalsView.confirmedWildcardId}
-              publicView
+      return nationalsTvShell(
+        <>
+          <SdTvNationalsRotator
+            currentView={view}
+            rotateSec={rotateSec}
+            tournamentFormat={tournamentFormat}
+          />
+          {view === "regionals" ? (
+            <SdTvRegionalStandingsBoard
+              models={v2View.regionalStandings}
               tvMode
             />
           ) : (
             <NationalsKnockoutMap
-              model={nationalsView.knockoutModel}
-              preview={nationalsView.knockoutIsPreview}
+              model={v2View.knockoutModel}
+              preview={!v2View.knockoutIsLive}
               tvMode
             />
           )}
-        </div>
-      </div>
+        </>
+      );
+    }
+
+    let nationalsView;
+    try {
+      nationalsView = await loadNationalsPublicView(event.id);
+    } catch {
+      return nationalsTvShell(
+        <p className="text-sd-muted">
+          Nationals tables not ready. Run migrations 019/020.{" "}
+          <Link href={SWORD_DUELS_PUBLIC} className="sd-link">
+            Back
+          </Link>
+        </p>
+      );
+    }
+
+    return nationalsTvShell(
+      <>
+        <SdTvNationalsRotator
+          currentView={view}
+          rotateSec={rotateSec}
+          tournamentFormat={tournamentFormat}
+        />
+        {view === "wildcard" ? (
+          <NationalsWildcardMap
+            model={nationalsView.model}
+            scores={nationalsView.wildcardScores}
+            confirmedWildcardId={nationalsView.confirmedWildcardId}
+            publicView
+            tvMode
+          />
+        ) : (
+          <NationalsKnockoutMap
+            model={nationalsView.knockoutModel}
+            preview={nationalsView.knockoutIsPreview}
+            tvMode
+          />
+        )}
+      </>
     );
   }
 
   if (mode === "event" && event) {
-    const steps = buildSdTvEventSteps(areas);
+    const steps = buildSdTvEventSteps(areas, tournamentFormat);
     const stepIndex = Math.min(
       Math.max(parseInt(params.step ?? "0", 10) || 0, 0),
       steps.length - 1
     );
     const current = steps[stepIndex]!;
 
-    let nationalsView: Awaited<ReturnType<typeof loadNationalsPublicView>> | null =
-      null;
-    if (current.kind === "nationals") {
-      try {
-        nationalsView = await loadNationalsPublicView(event.id);
-      } catch {
-        redirect(`${SWORD_DUELS_PUBLIC}/tv`);
-      }
-    }
-
     if (current.kind === "area") {
       const ctx = await getSdPublicArea(current.area);
       if (!ctx) redirect(SWORD_DUELS_PUBLIC);
       const publicScores = filterPublicScores(ctx.sets, ctx.scoreMap);
 
-      return (
-        <div className="fixed inset-0 z-50 overflow-auto p-4 sm:p-6">
-          <ArBackdrop />
-          <div className="relative mx-auto max-w-7xl">
-            <SdTvEventRotator
-              steps={steps}
-              currentIndex={stepIndex}
-              rotateSec={rotateSec}
-            />
-            <AreaTournamentMap
-              bracket={ctx.bracket}
-              sets={ctx.sets}
-              scoresBySetId={publicScores}
-              tvMode
-              fullscreen
-            />
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="fixed inset-0 z-50 overflow-auto p-4 sm:p-6">
-        <ArBackdrop />
-        <div className="relative mx-auto max-w-7xl">
+      return nationalsTvShell(
+        <>
           <SdTvEventRotator
             steps={steps}
             currentIndex={stepIndex}
             rotateSec={rotateSec}
           />
-          {current.view === "wildcard" ? (
-            <NationalsWildcardMap
-              model={nationalsView!.model}
-              scores={nationalsView!.wildcardScores}
-              confirmedWildcardId={nationalsView!.confirmedWildcardId}
-              publicView
+          <AreaTournamentMap
+            bracket={ctx.bracket}
+            sets={ctx.sets}
+            scoresBySetId={publicScores}
+            tvMode
+            fullscreen
+          />
+        </>
+      );
+    }
+
+    const nationalsView = isV2
+      ? await loadV2NationalsPublicView(event.id).catch(() => null)
+      : await loadNationalsPublicView(event.id).catch(() => null);
+
+    if (!nationalsView) {
+      redirect(`${SWORD_DUELS_PUBLIC}/tv`);
+    }
+
+    const nationalsViewKind = current.view as SdNationalsTvView;
+
+    return nationalsTvShell(
+      <>
+        <SdTvEventRotator
+          steps={steps}
+          currentIndex={stepIndex}
+          rotateSec={rotateSec}
+        />
+        {isV2 ? (
+          nationalsViewKind === "regionals" ? (
+            <SdTvRegionalStandingsBoard
+              models={
+                (
+                  nationalsView as Awaited<
+                    ReturnType<typeof loadV2NationalsPublicView>
+                  >
+                ).regionalStandings
+              }
               tvMode
             />
           ) : (
             <NationalsKnockoutMap
-              model={nationalsView!.knockoutModel}
-              preview={nationalsView!.knockoutIsPreview}
+              model={
+                (
+                  nationalsView as Awaited<
+                    ReturnType<typeof loadV2NationalsPublicView>
+                  >
+                ).knockoutModel
+              }
+              preview={
+                !(
+                  nationalsView as Awaited<
+                    ReturnType<typeof loadV2NationalsPublicView>
+                  >
+                ).knockoutIsLive
+              }
               tvMode
             />
-          )}
-        </div>
-      </div>
+          )
+        ) : nationalsViewKind === "wildcard" ? (
+          <NationalsWildcardMap
+            model={
+              (
+                nationalsView as Awaited<
+                  ReturnType<typeof loadNationalsPublicView>
+                >
+              ).model
+            }
+            scores={
+              (
+                nationalsView as Awaited<
+                  ReturnType<typeof loadNationalsPublicView>
+                >
+              ).wildcardScores
+            }
+            confirmedWildcardId={
+              (
+                nationalsView as Awaited<
+                  ReturnType<typeof loadNationalsPublicView>
+                >
+              ).confirmedWildcardId
+            }
+            publicView
+            tvMode
+          />
+        ) : (
+          <NationalsKnockoutMap
+            model={
+              (
+                nationalsView as Awaited<
+                  ReturnType<typeof loadNationalsPublicView>
+                >
+              ).knockoutModel
+            }
+            preview={
+              (
+                nationalsView as Awaited<
+                  ReturnType<typeof loadNationalsPublicView>
+                >
+              ).knockoutIsPreview
+            }
+            tvMode
+          />
+        )}
+      </>
     );
   }
 
@@ -192,23 +302,21 @@ export default async function SwordDuelsTvPage({
 
   const publicScores = filterPublicScores(ctx.sets, ctx.scoreMap);
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-auto p-4 sm:p-6">
-      <ArBackdrop />
-      <div className="relative mx-auto max-w-7xl">
-        <SdTvAreaRotator
-          areas={areas}
-          currentArea={currentArea}
-          rotateSec={rotateSec}
-        />
-        <AreaTournamentMap
-          bracket={ctx.bracket}
-          sets={ctx.sets}
-          scoresBySetId={publicScores}
-          tvMode
-          fullscreen
-        />
-      </div>
-    </div>
+  return nationalsTvShell(
+    <>
+      <SdTvAreaRotator
+        areas={areas}
+        currentArea={currentArea}
+        rotateSec={rotateSec}
+        tournamentFormat={tournamentFormat}
+      />
+      <AreaTournamentMap
+        bracket={ctx.bracket}
+        sets={ctx.sets}
+        scoresBySetId={publicScores}
+        tvMode
+        fullscreen
+      />
+    </>
   );
 }

@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { buildAreaTournamentMap } from "@/lib/products/sword-duels/tournament-map";
-import type { SdAreaBracket, SdSet, SdSetScore } from "@/lib/products/sword-duels/types";
+import type {
+  SdAreaBracket,
+  SdAreaSet,
+  SdSetScore,
+} from "@/lib/products/sword-duels/types";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { SdMobileBracketJourney } from "./SdMobileBracketJourney";
@@ -12,7 +16,7 @@ import { SdBracketSlot } from "./SdBracketSlot";
 
 interface Props {
   bracket: SdAreaBracket;
-  sets: SdSet[];
+  sets: SdAreaSet[];
   scoresBySetId: Map<string, SdSetScore[]>;
   tvMode?: boolean;
   /** Hide TV link and footer in fullscreen TV shell */

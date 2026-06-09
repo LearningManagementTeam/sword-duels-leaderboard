@@ -2,6 +2,9 @@ import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
 import { SdGroupSortSettings } from "@/components/sword-duels/SdGroupSortSettings";
 import { SdNationalsPhaseStrip } from "@/components/sword-duels/SdNationalsPhaseStrip";
+import { SdTournamentFormatSettings } from "@/components/sword-duels/SdTournamentFormatSettings";
+import { sdEventHasPublishedScores } from "@/lib/products/sword-duels/format-guards";
+import { isRegionalAverageFormat } from "@/lib/products/sword-duels/tournament-format";
 import { getSdAreaStatus } from "@/lib/products/sword-duels/area-status";
 import { swordDuelsPath, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
@@ -17,6 +20,7 @@ export default async function SwordDuelsDashboardPage() {
   let areas: Awaited<ReturnType<typeof getSdDashboard>>["areas"] = [];
   let nationalsContext: Awaited<ReturnType<typeof getSdNationalsContext>> | null =
     null;
+  let hasPublishedScores = false;
 
   if (event) {
     try {
@@ -29,6 +33,11 @@ export default async function SwordDuelsDashboardPage() {
       nationalsContext = await getSdNationalsContext(event.id);
     } catch {
       nationalsContext = null;
+    }
+    try {
+      hasPublishedScores = await sdEventHasPublishedScores(event.id);
+    } catch {
+      hasPublishedScores = false;
     }
   }
 
@@ -56,7 +65,13 @@ export default async function SwordDuelsDashboardPage() {
       {!configured && <SetupBanner />}
 
       {configured && event && (
-        <SdGroupSortSettings currentMode={event.group_sort_mode ?? "branch_code"} />
+        <>
+          <SdTournamentFormatSettings
+            currentFormat={event.tournament_format ?? "classic_v1"}
+            hasPublishedScores={hasPublishedScores}
+          />
+          <SdGroupSortSettings currentMode={event.group_sort_mode ?? "branch_code"} />
+        </>
       )}
 
       {nationalsContext && (
@@ -103,13 +118,34 @@ export default async function SwordDuelsDashboardPage() {
             Live tournament maps update as sets are published.
           </p>
         </Link>
+        {event && isRegionalAverageFormat(event.tournament_format) ? (
+          <Link
+            href={swordDuelsPath("regionals")}
+            className="sd-neon-panel block p-5 transition hover:ring-1 hover:ring-cyan-400/30"
+          >
+            <h2 className="font-semibold text-cyan-200">Regional rounds</h2>
+            <p className="mt-1 text-sm text-sd-muted">
+              Luzon / NCR / VisMin — 3 rounds, highest average wins
+            </p>
+          </Link>
+        ) : (
+          <Link
+            href={swordDuelsPath("nationals")}
+            className="sd-neon-panel block p-5 transition hover:ring-1 hover:ring-fuchsia-400/30"
+          >
+            <h2 className="font-semibold text-fuchsia-200">Nationals</h2>
+            <p className="mt-1 text-sm text-sd-muted">
+              Wild card + knockout bracket scoring
+            </p>
+          </Link>
+        )}
         <Link
           href={swordDuelsPath("nationals")}
-          className="sd-neon-panel block p-5 transition hover:ring-1 hover:ring-fuchsia-400/30"
+          className="sd-neon-panel block p-5 transition hover:ring-1 hover:ring-amber-400/25"
         >
-          <h2 className="font-semibold text-fuchsia-200">Nationals</h2>
+          <h2 className="font-semibold text-amber-200">Finals</h2>
           <p className="mt-1 text-sm text-sd-muted">
-            Wild card + knockout bracket scoring
+            National championship bracket
           </p>
         </Link>
       </div>

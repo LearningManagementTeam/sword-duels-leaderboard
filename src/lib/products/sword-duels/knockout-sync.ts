@@ -414,6 +414,14 @@ export async function trySyncKnockoutBracket(
   eventId: string
 ): Promise<void> {
   try {
+    const { getSdEvent } = await import("./queries");
+    const { isRegionalAverageFormat } = await import("./tournament-format");
+    const { trySyncV2KnockoutBracket } = await import("./v2-knockout-sync");
+    const event = await getSdEvent();
+    if (event && isRegionalAverageFormat(event.tournament_format)) {
+      await trySyncV2KnockoutBracket(eventId);
+      return;
+    }
     const { getSdNationalsContext } = await import("./nationals-queries");
     const ctx = await getSdNationalsContext(eventId);
     await syncKnockoutBracket(eventId, ctx.model);

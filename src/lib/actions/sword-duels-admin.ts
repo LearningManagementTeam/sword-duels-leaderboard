@@ -12,7 +12,18 @@ import {
   participantsForSetType,
 } from "@/lib/products/sword-duels/queries";
 import { computeSetResults } from "@/lib/products/sword-duels/scoring";
-import type { SdScoringMode, SdSetType } from "@/lib/products/sword-duels/types";
+import {
+  isRegionalSetType,
+  priorRegionalSetType,
+} from "@/lib/products/sword-duels/format-guards";
+import { sdEventHasPublishedScores } from "@/lib/products/sword-duels/format-guards";
+import { ensureRegionalSetsForEvent } from "@/lib/products/sword-duels/regional-rounds";
+import {
+  isRegionalAverageFormat,
+  type SdTournamentFormat,
+} from "@/lib/products/sword-duels/tournament-format";
+import { trySyncV2KnockoutBracket } from "@/lib/products/sword-duels/v2-knockout-sync";
+import type { SdAreaSetType, SdScoringMode, SdSetType } from "@/lib/products/sword-duels/types";
 import { SD_SET_ORDER } from "@/lib/products/sword-duels/types";
 import {
   publishWildcardRound,
@@ -70,6 +81,8 @@ function scheduleSdRevalidation(options?: {
       revalidatePath(SWORD_DUELS_PUBLIC);
       revalidatePath(`${SWORD_DUELS_PUBLIC}/calendar`);
       revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+      revalidatePath(`${SWORD_DUELS_PUBLIC}/regionals`);
+      revalidatePath(swordDuelsPath("regionals"));
       if (options?.area) {
         const slug = areaSlug(options.area);
         revalidatePath(`${SWORD_DUELS_PUBLIC}/${slug}`);
@@ -94,7 +107,9 @@ function scheduleSdNationalsRevalidation() {
     try {
       revalidatePath(SWORD_DUELS_ADMIN);
       revalidatePath(swordDuelsPath("nationals"));
+      revalidatePath(swordDuelsPath("regionals"));
       revalidatePath(`${SWORD_DUELS_PUBLIC}/nationals`);
+      revalidatePath(`${SWORD_DUELS_PUBLIC}/regionals`);
     } catch {
       /* non-fatal */
     }
@@ -173,6 +188,10 @@ export async function syncSdBrackets(
         });
       }
     }
+  }
+
+  if (isRegionalAverageFormat(event.tournament_format)) {
+    await ensureRegionalSetsForEvent(service, event.id);
   }
 
   await logAudit(email, "sync_sd_brackets", event.id, {
@@ -340,6 +359,10 @@ export async function publishSdSet(setId: string): Promise<{ winnerId: string | 
     throw new Error("Set is already published");
   }
 
+  if (isRegionalSetType(set.set_type)) {
+    return publishRegionalSdSet(setId, set, email);
+  }
+
   const ctx = await getSdAreaContext(set.event_id, set.area);
   if (!ctx) throw new Error("Area not found");
 
@@ -356,7 +379,7 @@ export async function publishSdSet(setId: string): Promise<{ winnerId: string | 
 
   const participants = participantsForSetType(
     ctx.bracket,
-    set.set_type as SdSetType,
+    set.set_type as SdAreaSetType,
     ctx.sets
   );
 
@@ -390,10 +413,16 @@ export async function publishSdSet(setId: string): Promise<{ winnerId: string | 
     winner_branch_id: winnerId,
   });
 
+  const event = await getSdEvent();
   if (set.set_type === "area_final") {
     try {
-      await syncWildcardRound(set.event_id);
-      await trySyncKnockoutBracket(set.event_id);
+      if (event && isRegionalAverageFormat(event.tournament_format)) {
+        const svc = await createServiceClient();
+        await ensureRegionalSetsForEvent(svc, set.event_id);
+      } else {
+        await syncWildcardRound(set.event_id);
+        await trySyncKnockoutBracket(set.event_id);
+      }
     } catch {
       /* wildcard/knockout tables may not exist until migrations 019/020 */
     }
@@ -401,6 +430,68 @@ export async function publishSdSet(setId: string): Promise<{ winnerId: string | 
 
   scheduleSdRevalidation({ area: set.area });
   return { winnerId };
+}
+
+async function publishRegionalSdSet(
+  setId: string,
+  set: {
+    event_id: string;
+    area: string;
+    set_type: string;
+    status: string;
+  },
+  email: string
+): Promise<{ winnerId: string | null }> {
+  const service = await createServiceClient();
+  const { getSdRegionalContext } = await import(
+    "@/lib/products/sword-duels/queries"
+  );
+  const region = set.area as import("@/lib/scoring-config").Region;
+  const ctx = await getSdRegionalContext(set.event_id, region);
+  if (!ctx.allAreaFinalsPublished) {
+    throw new Error(
+      "Publish all area finals before regional rounds for this region"
+    );
+  }
+  if (ctx.participants.length === 0) {
+    throw new Error("No area representatives in this region yet");
+  }
+
+  const prior = priorRegionalSetType(set.set_type);
+  if (prior) {
+    const priorSet = ctx.sets.find((s) => s.set_type === prior);
+    if (priorSet?.status !== "published") {
+      throw new Error("Publish the previous regional round first");
+    }
+  }
+
+  const scores = ctx.scoreMap.get(setId) ?? [];
+  if (scores.length === 0) {
+    throw new Error("Enter scores for area representatives before publishing");
+  }
+
+  const { error } = await service
+    .from("sd_sets")
+    .update({
+      status: "published",
+      winner_branch_id: null,
+      published_at: new Date().toISOString(),
+    })
+    .eq("id", setId);
+  if (error) throw new Error(error.message);
+
+  await logAudit(email, "publish_sd_regional_round", setId, {
+    region: set.area,
+    set_type: set.set_type,
+  });
+
+  if (set.set_type === "regional_r3") {
+    await trySyncV2KnockoutBracket(set.event_id);
+  }
+
+  scheduleSdRevalidation();
+  scheduleSdNationalsRevalidation();
+  return { winnerId: null };
 }
 
 export async function unpublishSdSet(setId: string): Promise<SdActionResult> {
@@ -461,14 +552,22 @@ export async function unpublishSdSet(setId: string): Promise<SdActionResult> {
 
     if (set.set_type === "area_final") {
       try {
-        await syncWildcardRound(set.event_id);
-        await trySyncKnockoutBracket(set.event_id);
+        const event = await getSdEvent();
+        if (!event || !isRegionalAverageFormat(event.tournament_format)) {
+          await syncWildcardRound(set.event_id);
+          await trySyncKnockoutBracket(set.event_id);
+        }
       } catch {
         /* wildcard/knockout tables may not exist until migrations 019/020 */
       }
     }
 
-    scheduleSdRevalidation({ area: set.area });
+    if (isRegionalSetType(set.set_type)) {
+      await trySyncV2KnockoutBracket(set.event_id);
+      scheduleSdNationalsRevalidation();
+    }
+
+    scheduleSdRevalidation({ area: isRegionalSetType(set.set_type) ? undefined : set.area });
     return { ok: true };
   } catch (e) {
     return {
@@ -642,6 +741,48 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
   };
 }
 
+export async function updateSdTournamentFormat(
+  format: SdTournamentFormat
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const { email } = await requireAdmin();
+    const service = await createServiceClient();
+    const event = await getSdEvent();
+    if (!event) throw new Error("Sword Duels event not found");
+
+    if (format !== event.tournament_format) {
+      const locked = await sdEventHasPublishedScores(event.id);
+      if (locked) {
+        return {
+          ok: false,
+          error:
+            "Cannot change format after scores have been published. Unpublish all sets first.",
+        };
+      }
+    }
+
+    const { error } = await service
+      .from("sd_events")
+      .update({ tournament_format: format })
+      .eq("id", event.id);
+    if (error) throw new Error(error.message);
+
+    if (isRegionalAverageFormat(format)) {
+      await ensureRegionalSetsForEvent(service, event.id);
+    }
+
+    await logAudit(email, "update_sd_tournament_format", event.id, { format });
+    scheduleSdRevalidation();
+    scheduleSdNationalsRevalidation();
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Save failed",
+    };
+  }
+}
+
 export async function updateSdGroupSortMode(
   mode: SdGroupSortMode
 ): Promise<void> {
@@ -775,8 +916,7 @@ export async function syncSdKnockoutBracketForm(): Promise<void> {
   const event = await getSdEvent();
   if (!event) throw new Error("Sword Duels event not found");
 
-  const ctx = await getSdNationalsContext(event.id);
-  await syncKnockoutBracket(event.id, ctx.model);
+  await trySyncKnockoutBracket(event.id);
   scheduleSdNationalsRevalidation();
 }
 

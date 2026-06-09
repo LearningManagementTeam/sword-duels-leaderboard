@@ -16,7 +16,7 @@ import {
 } from "@/lib/products/sword-duels/queries";
 import { swordDuelsPath, SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
-import type { SdSetType } from "@/lib/products/sword-duels/types";
+import type { SdAreaSetType } from "@/lib/products/sword-duels/types";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +47,7 @@ export default async function SwordDuelsAreaPage({
   const { bracket, sets, scoreMap } = ctx;
   const missingSets = sets.some((s) => !s.id);
 
-  function setLockReason(setType: SdSetType): string | null {
+  function setLockReason(setType: SdAreaSetType): string | null {
     if (setType === "area_final") {
       const ga = sets.find((s) => s.set_type === "group_a");
       const gb = sets.find((s) => s.set_type === "group_b");

@@ -5,7 +5,8 @@ import {
   getSdSetsForEvent,
   scoresBySetId,
 } from "./queries";
-import type { SdAreaBracket, SdSet } from "./types";
+import { isAreaSetType } from "./format-guards";
+import type { SdAreaSet, SdSet } from "./types";
 
 export async function getSdPublicOverview() {
   const event = await getSdEvent();
@@ -20,6 +21,12 @@ export async function getSdPublicOverview() {
   return { event, brackets, sets, scoreMap };
 }
 
+export function areaSetsForBracket(sets: SdSet[], area: string): SdAreaSet[] {
+  return sets.filter(
+    (s): s is SdAreaSet => s.area === area && isAreaSetType(s.set_type)
+  );
+}
+
 export async function getSdPublicArea(area: string) {
   const overview = await getSdPublicOverview();
   if (!overview) return null;
@@ -27,7 +34,7 @@ export async function getSdPublicArea(area: string) {
   const bracket = overview.brackets.find((b) => b.area === area);
   if (!bracket) return null;
 
-  const areaSets = overview.sets.filter((s) => s.area === area);
+  const areaSets = areaSetsForBracket(overview.sets, area);
   return {
     event: overview.event,
     bracket,

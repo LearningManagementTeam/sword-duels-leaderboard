@@ -65,7 +65,7 @@ export const SD_MECHANICS_SUMMARY = [
   "Enter two representatives per branch before battles. Names appear on the public tournament map.",
 ];
 
-export const SD_NATIONALS_PHASES = [
+export const SD_NATIONALS_PHASES_V1 = [
   {
     key: "area_finals",
     title: "Phase 1 — Area representatives",
@@ -85,3 +85,27 @@ export const SD_NATIONALS_PHASES = [
       "Area 1 vs Area 2, Area 3 vs Area 4, and so on — plus the wild card in slot 16. Winners advance round by round until one national champion remains.",
   },
 ] as const;
+
+export const SD_NATIONALS_PHASES_V2 = [
+  {
+    key: "area_finals",
+    title: "Phase 1 — Area representatives",
+    description:
+      "Same as Version 1: every area crowns one representative (15 total).",
+  },
+  {
+    key: "regionals",
+    title: "Phase 2 — Regional rounds (3-day average)",
+    description:
+      "Area reps group by Luzon, NCR, and VisMin. Each region runs three scored rounds on three days. Highest average wins the regional championship — no wild card.",
+  },
+  {
+    key: "finals",
+    title: "Phase 3 — National finals",
+    description:
+      "Three regional champions: semifinal Luzon vs NCR, then the winner faces the VisMin champion in the final.",
+  },
+] as const;
+
+/** @deprecated use SD_NATIONALS_PHASES_V1 */
+export const SD_NATIONALS_PHASES = SD_NATIONALS_PHASES_V1;

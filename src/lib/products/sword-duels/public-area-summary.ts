@@ -1,6 +1,10 @@
 import { SD_BRACKET_COPY } from "@/lib/products/sword-duels/bracket-copy";
 import { resolveActiveRepresentativeName } from "@/lib/representative-active";
-import type { SdAreaBracket, SdSet, SdSetScore } from "@/lib/products/sword-duels/types";
+import type {
+  SdAreaBracket,
+  SdAreaSet,
+  SdSetScore,
+} from "@/lib/products/sword-duels/types";
 
 export type SdPublicAreaPhase =
   | "awaiting_groups"
@@ -17,7 +21,7 @@ export interface SdPublicAreaSummary {
 
 /** Champion display name using the rep who competed in the area final. */
 export function resolveAreaChampionDisplayName(
-  areaSets: SdSet[],
+  areaSets: SdAreaSet[],
   scoreMap: Map<string, SdSetScore[]>,
   bracket: SdAreaBracket
 ): string | null {
@@ -39,7 +43,7 @@ export function resolveAreaChampionDisplayName(
 }
 
 export function getSdPublicAreaSummary(
-  areaSets: SdSet[],
+  areaSets: SdAreaSet[],
   championName: string | null
 ): SdPublicAreaSummary {
   const ga = areaSets.find((s) => s.set_type === "group_a");

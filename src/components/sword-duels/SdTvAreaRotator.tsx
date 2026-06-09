@@ -4,14 +4,25 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
+import {
+  sdNationalsTvDefaultView,
+  type SdTournamentFormat,
+} from "@/lib/products/sword-duels/tournament-format";
 
 interface Props {
   areas: string[];
   currentArea: string;
   rotateSec: number;
+  tournamentFormat?: SdTournamentFormat | null;
 }
 
-export function SdTvAreaRotator({ areas, currentArea, rotateSec }: Props) {
+export function SdTvAreaRotator({
+  areas,
+  currentArea,
+  rotateSec,
+  tournamentFormat,
+}: Props) {
+  const nationalsView = sdNationalsTvDefaultView(tournamentFormat);
   const router = useRouter();
 
   useEffect(() => {
@@ -64,7 +75,7 @@ export function SdTvAreaRotator({ areas, currentArea, rotateSec }: Props) {
           Standard view
         </Link>
         <Link
-          href="/sword-duels/tv?mode=nationals&view=wildcard"
+          href={`/sword-duels/tv?mode=nationals&view=${nationalsView}`}
           className="text-sd-muted hover:text-sd-glow"
         >
           Nationals TV

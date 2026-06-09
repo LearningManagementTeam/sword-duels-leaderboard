@@ -3,7 +3,8 @@ import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import type { HomeTimelineItem } from "@/lib/home-event-timeline";
 import { areaSlug } from "./area-groups";
 import { SD_SET_FLOW } from "./scoring-config";
-import type { SdSet, SdSetType } from "./types";
+import type { SdAreaSetType, SdSet } from "./types";
+import { isAreaSetType } from "./format-guards";
 
 export const SD_AREA_SCHEDULES_SLUG = "sd_area_schedules";
 
@@ -29,7 +30,7 @@ export const DEFAULT_SD_AREA_SCHEDULES: SdAreaSchedulesConfig = {
 };
 
 const SET_DATE_KEYS: Record<
-  SdSetType,
+  SdAreaSetType,
   keyof SdAreaScheduleDates
 > = {
   group_a: "groupA",
@@ -79,19 +80,20 @@ export function parseSdAreaSchedulesBody(raw: unknown): SdAreaSchedulesConfig {
 }
 
 export type SdAreaSetPublishState = Partial<
-  Record<SdSetType, "published" | "draft">
+  Record<SdAreaSetType, "published" | "draft">
 >;
 
 export function publishStateForArea(sets: SdSet[]): SdAreaSetPublishState {
   const state: SdAreaSetPublishState = {};
   for (const set of sets) {
+    if (!isAreaSetType(set.set_type)) continue;
     state[set.set_type] = set.status;
   }
   return state;
 }
 
 export interface SdAreaScheduleRow {
-  setType: SdSetType;
+  setType: SdAreaSetType;
   title: string;
   scheduledAt?: string;
   status?: "published" | "draft";

@@ -1,3 +1,4 @@
+import { areaSetsForBracket } from "./public-queries";
 import { resolveAreaChampionDisplayName } from "./public-area-summary";
 import type { SdAreaBracket, SdSet, SdSetScore } from "./types";
 
@@ -31,7 +32,7 @@ export function getRecentAreaChampions(
     .map((fin) => {
       const bracket = brackets.find((b) => b.area === fin.area);
       if (!bracket) return null;
-      const areaSets = sets.filter((s) => s.area === fin.area);
+      const areaSets = areaSetsForBracket(sets, fin.area);
       const championName = resolveAreaChampionDisplayName(
         areaSets,
         scoreMap,

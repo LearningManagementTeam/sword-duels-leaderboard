@@ -3,6 +3,7 @@ import { HomeSponsorLogoSection } from "@/components/home/HomeSponsorLogoSection
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import type { BrandingConfig } from "@/lib/branding";
 import type { SdPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
+import { sdNationalsTvDefaultView } from "@/lib/products/sword-duels/tournament-format";
 import { getSdPublicOverview } from "@/lib/products/sword-duels/public-queries";
 import {
   getRecentAreaChampions,
@@ -43,9 +44,12 @@ export async function HomeSdHero({ branding, journey, homeConfig }: Props) {
       ? Math.round((journey.areasPublished / journey.totalAreas) * 100)
       : null;
 
+  const nationalsTvView = sdNationalsTvDefaultView(journey?.tournamentFormat);
   const tvHref =
-    journey?.nationalsPhase === "knockout" || journey?.areasComplete
-      ? `${SWORD_DUELS_PUBLIC}/tv?mode=nationals`
+    journey?.nationalsPhase === "knockout" ||
+    journey?.nationalsPhase === "regionals" ||
+    journey?.areasComplete
+      ? `${SWORD_DUELS_PUBLIC}/tv?mode=nationals&view=${nationalsTvView}`
       : `${SWORD_DUELS_PUBLIC}/tv`;
 
   return (

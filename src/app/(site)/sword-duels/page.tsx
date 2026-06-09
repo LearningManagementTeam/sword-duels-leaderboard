@@ -10,7 +10,10 @@ import {
   resolveAreaChampionDisplayName,
 } from "@/lib/products/sword-duels/public-area-summary";
 import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
-import { getSdPublicOverview } from "@/lib/products/sword-duels/public-queries";
+import {
+  areaSetsForBracket,
+  getSdPublicOverview,
+} from "@/lib/products/sword-duels/public-queries";
 import {
   buildSdPageMetadata,
   journeyShareCopy,
@@ -59,7 +62,7 @@ export default async function SwordDuelsHomePage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {data.brackets.map((b) => {
-            const areaSets = data.sets.filter((s) => s.area === b.area);
+            const areaSets = areaSetsForBracket(data.sets, b.area);
             const championName = resolveAreaChampionDisplayName(
               areaSets,
               data.scoreMap,

@@ -1,7 +1,10 @@
 import type { BranchRepresentativeFields } from "@/lib/representative-fields";
 import type { SdGroupSortMode } from "./area-groups";
+import type { SdTournamentFormat } from "./tournament-format";
+import type { SdRegionalSetType } from "./regional-rounds";
 
-export type SdSetType = "group_a" | "group_b" | "area_final";
+export type SdAreaSetType = "group_a" | "group_b" | "area_final";
+export type SdSetType = SdAreaSetType | SdRegionalSetType;
 export type SdSetStatus = "draft" | "published";
 export type SdScoringMode = "high_score" | "survival";
 
@@ -10,6 +13,7 @@ export interface SdEvent {
   slug: string;
   name: string;
   group_sort_mode: SdGroupSortMode;
+  tournament_format: SdTournamentFormat;
 }
 
 export interface SdAreaGroupBranch extends BranchRepresentativeFields {
@@ -37,6 +41,9 @@ export interface SdSet {
   published_at: string | null;
 }
 
+/** Area bracket set row — excludes regional round types. */
+export type SdAreaSet = Omit<SdSet, "set_type"> & { set_type: SdAreaSetType };
+
 export interface SdSetScore {
   branch_id: string;
   points: number;
@@ -59,13 +66,16 @@ export interface SdAreaBracket {
   branchCount: number;
 }
 
-export const SD_SET_LABELS: Record<SdSetType, string> = {
+export const SD_AREA_SET_LABELS: Record<SdAreaSetType, string> = {
   group_a: "Group A battle",
   group_b: "Group B battle",
   area_final: "Area final",
 };
 
-export const SD_SET_ORDER: SdSetType[] = ["group_a", "group_b", "area_final"];
+export const SD_SET_ORDER: SdAreaSetType[] = ["group_a", "group_b", "area_final"];
+
+/** @deprecated use SD_AREA_SET_LABELS — area sets only */
+export const SD_SET_LABELS = SD_AREA_SET_LABELS;
 
 export type SdWildcardStatus =
   | "pending"

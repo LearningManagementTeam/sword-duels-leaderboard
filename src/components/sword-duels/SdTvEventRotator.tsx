@@ -5,10 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
+import type { SdNationalsTvView } from "@/lib/products/sword-duels/tournament-format";
+import {
+  SD_NATIONALS_TV_VIEW_LABELS,
+  sdNationalsTvViews,
+} from "@/lib/products/sword-duels/tournament-format";
 
 export type SdTvEventStep =
   | { kind: "area"; area: string }
-  | { kind: "nationals"; view: "wildcard" | "knockout" };
+  | { kind: "nationals"; view: SdNationalsTvView };
 
 interface Props {
   steps: SdTvEventStep[];
@@ -18,7 +23,7 @@ interface Props {
 
 function stepLabel(step: SdTvEventStep): string {
   if (step.kind === "area") return step.area;
-  return step.view === "wildcard" ? "Wild card" : "Knockout";
+  return SD_NATIONALS_TV_VIEW_LABELS[step.view];
 }
 
 function stepHref(index: number, rotateSec: number): string {
@@ -84,7 +89,10 @@ export function SdTvEventRotator({ steps, currentIndex, rotateSec }: Props) {
           </Link>
         )}
         {current?.kind === "nationals" && (
-          <Link href={`${SWORD_DUELS_PUBLIC}/nationals`} className="text-sd-muted hover:text-sd-glow">
+          <Link
+            href={`${SWORD_DUELS_PUBLIC}/nationals`}
+            className="text-sd-muted hover:text-sd-glow"
+          >
             Standard view
           </Link>
         )}
@@ -96,10 +104,16 @@ export function SdTvEventRotator({ steps, currentIndex, rotateSec }: Props) {
   );
 }
 
-export function buildSdTvEventSteps(areas: string[]): SdTvEventStep[] {
+export function buildSdTvEventSteps(
+  areas: string[],
+  format: import("@/lib/products/sword-duels/tournament-format").SdTournamentFormat | null | undefined
+): SdTvEventStep[] {
+  const nationalsViews = sdNationalsTvViews(format);
   return [
     ...areas.map((area) => ({ kind: "area" as const, area })),
-    { kind: "nationals" as const, view: "wildcard" },
-    { kind: "nationals" as const, view: "knockout" },
+    ...nationalsViews.map((view) => ({
+      kind: "nationals" as const,
+      view,
+    })),
   ];
 }

@@ -82,3 +82,27 @@ Eliminated branches are greyed out after a set is published. Spot holders advanc
 | Public area map | `/sword-duels/[area]` |
 
 National Competitions (`/june`, `/july`, `/august`) uses a different ruleset and is not affected.
+
+## Nationals — two tournament formats
+
+The committee picks **one** format on **Admin → Sword Duels** before any scores are published. After the first publish, the format is locked.
+
+### Version 1 (classic) — default
+
+1. **Phase 1:** Same area flow as above — 15 area representatives.
+2. **Phase 2 — Wild card:** Among area-final losers, one branch earns slot 16 (auto-resolve or tiebreak round).
+3. **Phase 3 — Knockout:** 16-slot bracket (area vs area pairings + wild card) to one national champion.
+
+Public map: `/sword-duels/nationals` · TV: `/sword-duels/tv?mode=nationals&view=wildcard`
+
+### Version 2 (regional average)
+
+1. **Phase 1:** Unchanged — 15 area representatives.
+2. **Phase 2 — Regional rounds:** Reps group by **Luzon**, **NCR**, and **VisMin**. Each region runs **three scored rounds** on three days. **Highest average** wins the region. No wild card.
+3. **Phase 3 — Finals:** Three regional champions — semifinal Luzon vs NCR, final winner vs VisMin.
+
+Public map: `/sword-duels/nationals` · Regional detail: `/sword-duels/regionals/[region]` · TV: `/sword-duels/tv?mode=nationals&view=regionals`
+
+Admin regional scoring: `/admin/sword-duels/regionals`
+
+Database migration: `030_sd_tournament_format.sql` (format column + regional set types).

@@ -1,7 +1,16 @@
 import { enrichBranchesWithRepEmployees } from "@/lib/employees";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BRANCH_WITH_REPS_SELECT } from "@/lib/representative-fields";
+import type { Region } from "@/lib/scoring-config";
+import { REGIONS } from "@/lib/scoring-config";
 import type { Branch } from "@/lib/types";
+import { loadNationalsRoster } from "./nationals-wildcard-data";
+import {
+  SD_REGIONAL_SET_ORDER,
+  regionalAreaReps,
+} from "./regional-rounds";
+import { isAreaSetType } from "./format-guards";
+import { normalizeSdTournamentFormat } from "./tournament-format";
 import {
   buildAreaBrackets,
   type SdGroupSortMode,
@@ -9,10 +18,11 @@ import {
 import type {
   SdAreaBracket,
   SdAreaGroupBranch,
+  SdAreaSet,
   SdEvent,
   SdSet,
   SdSetScore,
-  SdSetType,
+  SdAreaSetType,
 } from "./types";
 import { SD_SET_ORDER } from "./types";
 
@@ -28,19 +38,26 @@ export async function getSdEvent(): Promise<SdEvent | null> {
   if (error || !data) return null;
 
   let group_sort_mode: SdGroupSortMode = "branch_code";
+  let tournament_format = normalizeSdTournamentFormat("classic_v1");
   const { data: modeRow, error: modeError } = await service
     .from("sd_events")
-    .select("group_sort_mode")
+    .select("group_sort_mode, tournament_format")
     .eq("id", data.id)
     .maybeSingle();
 
-  if (!modeError && modeRow?.group_sort_mode) {
-    group_sort_mode = modeRow.group_sort_mode as SdGroupSortMode;
+  if (!modeError && modeRow) {
+    if (modeRow.group_sort_mode) {
+      group_sort_mode = modeRow.group_sort_mode as SdGroupSortMode;
+    }
+    tournament_format = normalizeSdTournamentFormat(
+      modeRow.tournament_format as string | null
+    );
   }
 
   return {
     ...data,
     group_sort_mode,
+    tournament_format,
   } as SdEvent;
 }
 
@@ -245,7 +262,9 @@ export async function getSdAreaContext(eventId: string, area: string) {
   const bracket = brackets.find((b) => b.area === area);
   if (!bracket) return null;
 
-  let sets = await getSdSetsForArea(eventId, area);
+  let sets: SdAreaSet[] = (await getSdSetsForArea(eventId, area)).filter(
+    (s): s is SdAreaSet => isAreaSetType(s.set_type)
+  );
   const existingTypes = new Set(sets.map((s) => s.set_type));
   for (const setType of SD_SET_ORDER) {
     if (!existingTypes.has(setType)) {
@@ -351,9 +370,52 @@ export async function getSdSetWithScores(setId: string) {
   };
 }
 
+export async function getSdRegionalContext(eventId: string, region: Region) {
+  const [roster, allSets] = await Promise.all([
+    loadNationalsRoster(eventId),
+    getSdSetsForEvent(eventId),
+  ]);
+  const regionalSetIds = allSets
+    .filter((s) => s.area === region && s.set_type.startsWith("regional_"))
+    .map((s) => s.id);
+  const scoreRows = await getSdSetScores(regionalSetIds);
+  const sets = allSets;
+
+  const regionalSets = SD_REGIONAL_SET_ORDER.map((setType) => {
+    const existing = sets.find(
+      (s) => s.area === region && s.set_type === setType
+    );
+    return (
+      existing ?? {
+        id: "",
+        event_id: eventId,
+        area: region,
+        set_type: setType,
+        scoring_mode: "high_score" as const,
+        status: "draft" as const,
+        winner_branch_id: null,
+        published_at: null,
+      }
+    );
+  });
+
+  const scoreMap = scoresBySetId(scoreRows);
+  const participants = regionalAreaReps(roster.areaReps, region);
+
+  return {
+    region,
+    roster,
+    sets: regionalSets,
+    allSets: sets,
+    scoreMap,
+    participants,
+    allAreaFinalsPublished: roster.allAreaFinalsPublished,
+  };
+}
+
 export function participantsForSetType(
   bracket: SdAreaBracket,
-  setType: SdSetType,
+  setType: SdAreaSetType,
   sets: SdSet[]
 ): SdAreaBracket["groupA"] {
   if (setType === "group_a") return bracket.groupA;

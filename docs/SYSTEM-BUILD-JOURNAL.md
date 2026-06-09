@@ -231,4 +231,21 @@ When new work ships, add a dated section here (or ask the agent to, using the **
 
 **In one sentence:** Org data (branches, people) lives in HRIS; competition week work lives in Revalida.
 
-Last updated: **2 June 2026**
+---
+
+## 8 June 2026 — Sword Duels dual format (V1 + V2)
+
+**What we did:** Added a second nationals tournament format operators can pick before scoring starts, plus TV and mechanics pages that follow the active choice.
+
+| What we built | What it does for you |
+|---------------|----------------------|
+| **Format picker** | Admin → Sword Duels: Version 1 (wild card + knockout) or Version 2 (regional averages + finals) |
+| **Regional scoring** | Admin → Sword Duels → Regionals — three rounds per Luzon / NCR / VisMin |
+| **Public finals map** | `/sword-duels/nationals` shows wild card (V1) or regional standings + finals (V2) |
+| **TV view** | Full-event rotate and nationals TV follow the active format (regionals ↔ knockout on V2) |
+| **Mechanics pages** | Public and admin mechanics explain both formats; copy matches what is live |
+| **Migration 030** | Database stores `tournament_format` and regional round set types |
+
+**In one sentence:** Phase 1 (area battles) is the same; nationals can run classic wild-card knockout or regional-average finals — pick once before publish.
+
+Last updated: **8 June 2026**

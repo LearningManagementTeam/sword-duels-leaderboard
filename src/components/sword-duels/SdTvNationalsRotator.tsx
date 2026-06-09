@@ -4,33 +4,42 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
-
-type NationalsTvView = "wildcard" | "knockout";
+import {
+  SD_NATIONALS_TV_VIEW_LABELS,
+  type SdNationalsTvView,
+  sdNationalsTvViews,
+} from "@/lib/products/sword-duels/tournament-format";
+import type { SdTournamentFormat } from "@/lib/products/sword-duels/tournament-format";
 
 interface Props {
-  currentView: NationalsTvView;
+  currentView: SdNationalsTvView;
   rotateSec: number;
+  tournamentFormat?: SdTournamentFormat | null;
 }
 
-function viewHref(view: NationalsTvView, rotateSec: number): string {
+function viewHref(view: SdNationalsTvView, rotateSec: number): string {
   const params = new URLSearchParams({ mode: "nationals", view });
   if (rotateSec > 0) params.set("rotate", String(rotateSec));
   return `${SWORD_DUELS_PUBLIC}/tv?${params.toString()}`;
 }
 
-export function SdTvNationalsRotator({ currentView, rotateSec }: Props) {
+export function SdTvNationalsRotator({
+  currentView,
+  rotateSec,
+  tournamentFormat,
+}: Props) {
   const router = useRouter();
-  const views: NationalsTvView[] = ["wildcard", "knockout"];
+  const views = sdNationalsTvViews(tournamentFormat);
 
   useEffect(() => {
-    if (!rotateSec || rotateSec < 10) return;
+    if (!rotateSec || rotateSec < 10 || views.length < 2) return;
     const id = setInterval(() => {
       const i = views.indexOf(currentView);
-      const next = views[(i + 1) % views.length];
+      const next = views[(i + 1) % views.length]!;
       router.push(viewHref(next, rotateSec));
     }, rotateSec * 1000);
     return () => clearInterval(id);
-  }, [rotateSec, currentView, router]);
+  }, [rotateSec, currentView, router, views]);
 
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
@@ -45,23 +54,35 @@ export function SdTvNationalsRotator({ currentView, rotateSec }: Props) {
                 : "sd-glass text-sd-muted hover:text-white"
             }`}
           >
-            {view === "wildcard" ? "Wild card" : "Knockout"}
+            {SD_NATIONALS_TV_VIEW_LABELS[view]}
           </Link>
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <Link href={viewHref(currentView, 60)} className="text-sd-muted hover:text-sd-glow">
+        <Link
+          href={viewHref(currentView, 60)}
+          className="text-sd-muted hover:text-sd-glow"
+        >
           Rotate 60s
         </Link>
         {rotateSec > 0 && (
-          <Link href={viewHref(currentView, 0)} className="text-sd-muted hover:text-sd-glow">
+          <Link
+            href={viewHref(currentView, 0)}
+            className="text-sd-muted hover:text-sd-glow"
+          >
             Stop rotate
           </Link>
         )}
-        <Link href={`${SWORD_DUELS_PUBLIC}/nationals`} className="text-sd-muted hover:text-sd-glow">
+        <Link
+          href={`${SWORD_DUELS_PUBLIC}/nationals`}
+          className="text-sd-muted hover:text-sd-glow"
+        >
           Standard view
         </Link>
-        <Link href={`${SWORD_DUELS_PUBLIC}/tv?mode=event&rotate=90`} className="text-sd-muted hover:text-sd-glow">
+        <Link
+          href={`${SWORD_DUELS_PUBLIC}/tv?mode=event&rotate=90`}
+          className="text-sd-muted hover:text-sd-glow"
+        >
           Full event rotate
         </Link>
       </div>

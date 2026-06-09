@@ -1,12 +1,15 @@
 import { computeSetResults } from "@/lib/products/sword-duels/scoring";
-import type { SdAreaBracket, SdSet } from "@/lib/products/sword-duels/types";
-import type { SdSetScore } from "@/lib/products/sword-duels/types";
-import { SD_SET_LABELS } from "@/lib/products/sword-duels/types";
+import type {
+  SdAreaBracket,
+  SdAreaSet,
+  SdSetScore,
+} from "@/lib/products/sword-duels/types";
+import { SD_AREA_SET_LABELS } from "@/lib/products/sword-duels/types";
 import { SdCollapsibleSection } from "./SdCollapsibleSection";
 
 interface Props {
   bracket: SdAreaBracket;
-  groupSets: SdSet[];
+  groupSets: SdAreaSet[];
   publicScores: Map<string, SdSetScore[]>;
   defaultOpen?: boolean;
 }
@@ -44,7 +47,7 @@ export function AreaGroupStandingsPanel({
             >
               <div className="border-b border-emerald-500/10 bg-emerald-950/30 px-4 py-2.5">
                 <h3 className="text-sm font-semibold text-white">
-                  {SD_SET_LABELS[set.set_type]}
+                  {SD_AREA_SET_LABELS[set.set_type]}
                 </h3>
               </div>
               {!published ? (

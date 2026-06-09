@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AreaTournamentMap } from "@/components/sword-duels/AreaTournamentMap";
+import { areaSetsForBracket } from "@/lib/products/sword-duels/public-queries";
 import { getSdAreaBrackets, getSdEvent, getSdSetsForEvent, getSdSetScores, scoresBySetId } from "@/lib/products/sword-duels/queries";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
 import { swordDuelsPath } from "@/lib/admin-routes";
@@ -31,7 +32,7 @@ export default async function SwordDuelsBracketsPage() {
       ) : (
         <div className="space-y-8">
           {brackets.map((bracket) => {
-            const areaSets = sets.filter((s) => s.area === bracket.area);
+            const areaSets = areaSetsForBracket(sets, bracket.area);
             return (
               <div key={bracket.area} className="space-y-2">
                 <Link

@@ -4,9 +4,9 @@ import type { Region } from "@/lib/scoring-config";
 import type {
   SdAreaBracket,
   SdAreaGroupBranch,
-  SdSet,
+  SdAreaSet,
+  SdAreaSetType,
   SdSetScore,
-  SdSetType,
 } from "./types";
 import { computeSetResults, type ScoredBranch } from "./scoring";
 
@@ -134,7 +134,10 @@ function placeholderSlot(label: string, index: number): PlayoffSlot {
   };
 }
 
-function setByType(sets: SdSet[], type: SdSetType): SdSet | undefined {
+function setByType(
+  sets: SdAreaSet[],
+  type: SdAreaSetType
+): SdAreaSet | undefined {
   return sets.find((s) => s.set_type === type);
 }
 
@@ -146,13 +149,13 @@ function scoresForSet(
   return allScores.get(setId) ?? [];
 }
 
-function isPublished(set: SdSet | undefined): boolean {
+function isPublished(set: SdAreaSet | undefined): boolean {
   return set?.status === "published";
 }
 
 export function buildAreaTournamentMap(input: {
   bracket: SdAreaBracket;
-  sets: SdSet[];
+  sets: SdAreaSet[];
   scoresBySetId: Map<string, SdSetScore[]>;
 }): AreaTournamentMapModel {
   const { bracket, sets } = input;
