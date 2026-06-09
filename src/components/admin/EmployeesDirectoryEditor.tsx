@@ -508,6 +508,16 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
             setMessage(msg);
             setError(true);
           }}
+          navigation={
+            modal.mode === "edit"
+              ? {
+                  ids: filtered.map((row) => row.id),
+                  currentId: modal.employeeId,
+                  onNavigate: (employeeId) =>
+                    setModal({ mode: "edit", employeeId }),
+                }
+              : undefined
+          }
         />
       )}
     </section>

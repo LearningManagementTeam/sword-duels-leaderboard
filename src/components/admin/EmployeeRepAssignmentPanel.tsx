@@ -105,19 +105,7 @@ export function EmployeeRepAssignmentPanel({
     employee.employment_status !== "resigned" && Boolean(branchId);
 
   return (
-    <div className="space-y-4 rounded-lg border border-violet-400/20 bg-violet-500/5 p-4">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-violet-200/90">
-          Competition representative
-        </p>
-        <p className="mt-1 text-xs text-sd-muted">
-          Each branch has at most <strong className="text-white">Rep 1</strong>{" "}
-          and <strong className="text-white">Rep 2</strong>. Assigning here
-          updates the same slots used on Sword Duels leaderboards and the
-          Representatives review table.
-        </p>
-      </div>
-
+    <div className="space-y-5 rounded-xl border border-violet-400/15 bg-violet-500/[0.04] p-5">
       {employee.rep_assignments.length > 0 && (
         <ul className="space-y-2">
           {employee.rep_assignments.map((assignment) => (
@@ -145,13 +133,13 @@ export function EmployeeRepAssignmentPanel({
         </ul>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm sm:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <label className="block text-sm">
           <span className="text-sd-muted">Competition</span>
           <select
             value={COMPETITION_REP_PROGRAMS[0]!.id}
             disabled
-            className="mt-1 block w-full rounded-lg sd-input px-3 py-2 text-sm opacity-80"
+            className="mt-1.5 block w-full rounded-lg sd-input px-3 py-2.5 text-sm opacity-80"
           >
             {COMPETITION_REP_PROGRAMS.map((program) => (
               <option key={program.id} value={program.id}>
@@ -159,49 +147,15 @@ export function EmployeeRepAssignmentPanel({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-[10px] text-sd-muted/70">
-            {COMPETITION_REP_PROGRAMS[0]!.description}. More competitions can
-            be added later.
-          </p>
         </label>
 
-        <label className="block text-sm sm:col-span-2">
-          <span className="text-sd-muted">Branch</span>
-          <input
-            type="search"
-            placeholder="Filter branches…"
-            value={branchFilter}
-            onChange={(e) => setBranchFilter(e.target.value)}
-            className="mt-1 block w-full rounded-lg sd-input px-3 py-2 text-sm"
-          />
-          <select
-            value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
-            disabled={busy}
-            className="mt-1 block w-full rounded-lg sd-input px-3 py-2 text-sm disabled:opacity-50"
-          >
-            <option value="">Choose branch…</option>
-            {filteredBranches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.branch_code} · {b.branch_name}
-                {b.area ? ` (${b.area})` : ""}
-              </option>
-            ))}
-          </select>
-          {employee.home_branch_id && branchId === employee.home_branch_id && (
-            <p className="mt-1 text-[10px] text-emerald-200/70">
-              Pre-filled from home branch.
-            </p>
-          )}
-        </label>
-
-        <fieldset className="block text-sm sm:col-span-2">
+        <fieldset className="block text-sm">
           <legend className="text-sd-muted">Rep slot</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {([1, 2] as const).map((repSlot) => (
               <label
                 key={repSlot}
-                className={`cursor-pointer rounded-lg px-3 py-2 text-sm ring-1 ${
+                className={`cursor-pointer rounded-lg px-4 py-2.5 text-sm ring-1 ${
                   slot === repSlot
                     ? "bg-violet-500/20 text-white ring-violet-400/40"
                     : "text-sd-muted ring-emerald-500/15 hover:bg-sd-deep/30"
@@ -222,6 +176,36 @@ export function EmployeeRepAssignmentPanel({
             ))}
           </div>
         </fieldset>
+
+        <label className="block text-sm lg:col-span-2">
+          <span className="text-sd-muted">Branch</span>
+          <input
+            type="search"
+            placeholder="Filter branches…"
+            value={branchFilter}
+            onChange={(e) => setBranchFilter(e.target.value)}
+            className="mt-1.5 block w-full rounded-lg sd-input px-3 py-2.5 text-sm"
+          />
+          <select
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+            disabled={busy}
+            className="mt-2 block w-full rounded-lg sd-input px-3 py-2.5 text-sm disabled:opacity-50"
+          >
+            <option value="">Choose branch…</option>
+            {filteredBranches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.branch_code} · {b.branch_name}
+                {b.area ? ` (${b.area})` : ""}
+              </option>
+            ))}
+          </select>
+          {employee.home_branch_id && branchId === employee.home_branch_id && (
+            <p className="mt-1.5 text-[11px] text-emerald-200/70">
+              Pre-filled from home branch.
+            </p>
+          )}
+        </label>
       </div>
 
       {employee.employment_status === "resigned" && (

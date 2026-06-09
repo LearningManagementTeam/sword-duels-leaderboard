@@ -45,6 +45,10 @@ type DraftProps = CommonProps & {
 
 type Props = SavedProps | DraftProps;
 
+type Layout = "horizontal" | "stacked";
+
+type PropsWithLayout = Props & { layout?: Layout };
+
 async function uploadPhotoViaApi(
   employeeId: string,
   file: File
@@ -78,8 +82,8 @@ async function removePhotoViaApi(employeeId: string): Promise<void> {
   }
 }
 
-export function EmployeePhotoEditor(props: Props) {
-  const { name, disabled = false, onPhotoUpdated, onMessage } = props;
+export function EmployeePhotoEditor(props: PropsWithLayout) {
+  const { name, disabled = false, onPhotoUpdated, onMessage, layout = "horizontal" } = props;
   const isDraft = !("employeeId" in props && props.employeeId);
 
   const router = useRouter();
@@ -311,12 +315,20 @@ export function EmployeePhotoEditor(props: Props) {
   const inactive = disabled || busy;
   const showStatus = status !== "idle" && statusMessage;
 
+  const stacked = layout === "stacked";
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <p className="text-xs font-medium uppercase tracking-wide text-sd-muted">
         Photo
       </p>
-      <div className="flex flex-wrap items-start gap-4">
+      <div
+        className={
+          stacked
+            ? "flex flex-col items-center gap-4 text-center"
+            : "flex flex-wrap items-start gap-4"
+        }
+      >
         <div
           ref={pasteZoneRef}
           tabIndex={inactive ? -1 : 0}
@@ -336,7 +348,7 @@ export function EmployeePhotoEditor(props: Props) {
         >
           <RepAvatar name={name} photoUrl={photoUrl} size="xl" />
         </div>
-        <div className="space-y-1.5">
+        <div className={stacked ? "w-full space-y-2" : "space-y-1.5"}>
           <input
             ref={inputRef}
             type="file"
@@ -348,7 +360,11 @@ export function EmployeePhotoEditor(props: Props) {
               clearFeedback();
             }}
           />
-          <div className="flex flex-wrap gap-2">
+          <div
+            className={
+              stacked ? "flex flex-col gap-2" : "flex flex-wrap gap-2"
+            }
+          >
             <button
               type="button"
               disabled={inactive}

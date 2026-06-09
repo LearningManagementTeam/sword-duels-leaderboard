@@ -1,7 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { EmployeePhotoEditor } from "@/components/admin/EmployeePhotoEditor";
 import { EmployeeProfileExcelPaste } from "@/components/admin/EmployeeProfileExcelPaste";
@@ -70,7 +77,61 @@ interface Props {
   onClose: () => void;
   onSaved: (message: string) => void;
   onError: (message: string) => void;
+  /** Desktop: prev/next through the filtered directory list. */
+  navigation?: {
+    ids: string[];
+    currentId: string;
+    onNavigate: (employeeId: string) => void;
+  };
 }
+
+function ProfileSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="border-b border-emerald-500/10 pb-2">
+        <h3 className="text-sm font-semibold tracking-tight text-white">
+          {title}
+        </h3>
+        {description ? (
+          <p className="mt-1 text-xs leading-relaxed text-sd-muted">
+            {description}
+          </p>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function FieldLabel({
+  children,
+  hint,
+}: {
+  children: ReactNode;
+  hint?: string;
+}) {
+  return (
+    <span className="mb-1.5 block text-xs font-medium text-sd-muted">
+      {children}
+      {hint ? (
+        <span className="mt-0.5 block text-[11px] font-normal leading-snug text-sd-muted/65">
+          {hint}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+const fieldClassName =
+  "block w-full rounded-lg sd-input px-3 py-2.5 text-sm leading-normal";
 
 export function EmployeeProfileModal({
   mode,
@@ -80,6 +141,7 @@ export function EmployeeProfileModal({
   onClose,
   onSaved,
   onError,
+  navigation,
 }: Props) {
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -133,7 +195,31 @@ export function EmployeeProfileModal({
 
   useEffect(() => {
     panelRef.current?.focus();
-  }, []);
+  }, [employee?.id, mode]);
+
+  const navIndex = navigation
+    ? navigation.ids.indexOf(navigation.currentId)
+    : -1;
+  const hasPrev = navIndex > 0;
+  const hasNext =
+    navIndex >= 0 && navIndex < (navigation?.ids.length ?? 0) - 1;
+
+  useEffect(() => {
+    if (!navigation) return;
+    const { onNavigate, ids } = navigation;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "ArrowLeft" && hasPrev) {
+        onNavigate(ids[navIndex - 1]!);
+      }
+      if (e.key === "ArrowRight" && hasNext) {
+        onNavigate(ids[navIndex + 1]!);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [navigation, hasPrev, hasNext, navIndex]);
 
   const filteredBranches = useMemo(() => {
     const q = branchFilter.trim().toLowerCase();
@@ -278,7 +364,7 @@ export function EmployeeProfileModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-sd-deep/80 p-4 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex justify-end bg-sd-deep/75 backdrop-blur-sm"
       onClick={handleClose}
     >
       <div
@@ -287,281 +373,352 @@ export function EmployeeProfileModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="employee-profile-title"
-        className="sd-neon-panel my-4 w-full max-w-lg space-y-5 p-5 outline-none sm:my-0"
+        className="flex h-full w-full max-w-5xl flex-col border-l border-emerald-500/20 bg-sd-deep shadow-2xl outline-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 id="employee-profile-title" className="text-lg font-semibold text-white">
-              {isCreate ? "New employee" : displayName}
-            </h2>
-            {!isCreate && employee && (
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs text-emerald-100">
-                  {employee.employee_no}
-                </span>
-                <EmploymentStatusBadge status={employee.employment_status} />
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={handleClose}
-            className="sd-btn-ghost rounded-lg px-2 py-1 text-sm"
-            aria-label="Close"
-          >
-            Close
-          </button>
-        </div>
-
-        <EmployeeProfileExcelPaste
-          branches={branches}
-          disabled={loading}
-          applied={importApplied}
-          onApply={handleImportApply}
-          onClear={handleImportClear}
-          onError={onError}
-        />
-
-        <EmployeePhotoEditor
-          {...(isCreate
-            ? {
-                draftFile: draftPhoto,
-                onDraftFileChange: setDraftPhoto,
-              }
-            : {
-                employeeId: employee!.id,
-                photoPath: employee!.photo_path,
-                onPhotoUpdated: () => setListStale(true),
-              })}
-          name={displayName}
-          disabled={loading}
-        />
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Employee no.</span>
-            <input
-              value={draft.employee_no}
-              onChange={(e) =>
-                setDraft((s) => ({ ...s, employee_no: e.target.value }))
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Full name</span>
-            <input
-              value={draft.full_name}
-              onChange={(e) =>
-                setDraft((s) => ({ ...s, full_name: e.target.value }))
-              }
-              onBlur={(e) => applyCapsOnBlur("full_name", e.target.value)}
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Position</span>
-            <input
-              value={draft.position}
-              onChange={(e) =>
-                setDraft((s) => ({ ...s, position: e.target.value }))
-              }
-              onBlur={(e) => applyCapsOnBlur("position", e.target.value)}
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Home branch</span>
-            <input
-              type="search"
-              placeholder="Filter branches…"
-              value={branchFilter}
-              onChange={(e) => setBranchFilter(e.target.value)}
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-            <select
-              value={draft.home_branch_id}
-              onChange={(e) =>
-                setDraft((s) => ({ ...s, home_branch_id: e.target.value }))
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            >
-              <option value="">None / Unassigned</option>
-              {filteredBranches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.branch_code} · {b.branch_name}
-                  {b.area ? ` (${b.area})` : ""}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-[10px] text-sd-muted/70">
-              Work location only — not the same as competition rep assignment.
-            </p>
-          </label>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Nickname</span>
-            <input
-              value={draft.nickname}
-              onChange={(e) =>
-                setDraft((s) => ({ ...s, nickname: e.target.value }))
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Date hired</span>
-            <input
-              type="date"
-              value={draft.date_hired}
-              onChange={(e) =>
-                setDraft((s) => ({ ...s, date_hired: e.target.value }))
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Contact number</span>
-            <input
-              type="tel"
-              value={draft.contact_number}
-              onChange={(e) =>
-                setDraft((s) => ({ ...s, contact_number: e.target.value }))
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-1">
-            <span className="text-sd-muted">Email</span>
-            <input
-              type="email"
-              value={draft.email}
-              onChange={(e) =>
-                setDraft((s) => ({ ...s, email: e.target.value }))
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm sm:col-span-2">
-            <span className="text-sd-muted">Notes</span>
-            <input
-              value={draft.notes}
-              onChange={(e) =>
-                setDraft((s) => ({ ...s, notes: e.target.value }))
-              }
-              onBlur={(e) => applyCapsOnBlur("notes", e.target.value)}
-              className="mt-1 block w-full rounded sd-input px-3 py-2 text-sm"
-            />
-          </label>
-        </div>
-
-        <p className="text-[10px] text-sd-muted/70">
-          Nickname, date hired, contact, and email are HRIS-only — not shown on
-          public leaderboards.
-        </p>
-
-        {!isCreate && employee && (
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-sd-muted">
-                Employment status
+        <header className="shrink-0 border-b border-emerald-500/15 px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-emerald-300/80">
+                {isCreate ? "New profile" : "Employee profile"}
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(["active", "on_leave", "resigned"] as EmploymentStatus[]).map(
-                  (status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      disabled={loading || employee.employment_status === status}
-                      onClick={() => void handleStatusChange(status)}
-                      className={`rounded-lg px-3 py-1.5 text-xs disabled:opacity-50 ${
-                        employee.employment_status === status
-                          ? "sd-btn-primary"
-                          : "sd-btn-ghost"
-                      }`}
-                    >
-                      {employmentStatusLabel(status)}
-                    </button>
-                  )
-                )}
-              </div>
-            </div>
-
-            {employee.rep_assignments.length > 0 && (
-              <p className="text-xs text-emerald-200/80">
-                Currently a competition rep for{" "}
-                {employee.rep_assignments
-                  .map((a) => `${a.branch_code} (Rep ${a.slot})`)
-                  .join(", ")}
-                .
-              </p>
-            )}
-
-            <EmployeeRepAssignmentPanel
-              employee={employee}
-              branches={branches}
-              onSuccess={(msg) => {
-                onSaved(msg);
-                setListStale(true);
-              }}
-              onError={onError}
-            />
-          </div>
-        )}
-
-        {showDeleteConfirm && employee ? (
-          <AdminConfirmPanel
-            title={`Delete ${employee.full_name}?`}
-            tone="danger"
-            confirmLabel="Delete employee"
-            busy={loading}
-            onConfirm={() => void handleDelete()}
-            onCancel={() => setShowDeleteConfirm(false)}
-          >
-            {employee.rep_assignments.length > 0 ? (
-              <p>
-                This also clears {employee.rep_assignments.length} competition
-                rep slot(s) on the Representatives page.
-              </p>
-            ) : (
-              <p>This permanently removes the employee profile.</p>
-            )}
-          </AdminConfirmPanel>
-        ) : (
-          <div className="flex flex-wrap gap-2 border-t border-emerald-500/15 pt-4">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => void handleSave()}
-              className="sd-btn-primary rounded-lg px-4 py-2 text-sm disabled:opacity-50"
-            >
-              {loading
-                ? "Saving…"
-                : isCreate
-                  ? "Create employee"
-                  : "Save changes"}
-            </button>
-            {!isCreate && employee && (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => setShowDeleteConfirm(true)}
-                className="rounded-lg px-4 py-2 text-sm text-rose-200 ring-1 ring-rose-400/30 hover:bg-rose-500/10 disabled:opacity-50"
+              <h2
+                id="employee-profile-title"
+                className="mt-1 truncate text-2xl font-semibold tracking-tight text-white"
               >
-                Delete
-              </button>
-            )}
+                {isCreate ? "Add employee" : displayName}
+              </h2>
+              {!isCreate && employee && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-100">
+                    {employee.employee_no}
+                  </span>
+                  <EmploymentStatusBadge status={employee.employment_status} />
+                  {employee.rep_assignments.length > 0 && (
+                    <span className="text-xs text-violet-200/90">
+                      {employee.rep_assignments.length} rep slot
+                      {employee.rep_assignments.length === 1 ? "" : "s"}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               disabled={loading}
               onClick={handleClose}
-              className="sd-btn-ghost rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+              className="sd-btn-ghost shrink-0 rounded-lg px-3 py-2 text-sm"
+              aria-label="Close"
             >
-              Cancel
+              Close
             </button>
           </div>
-        )}
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+          <div className="grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)]">
+            <aside className="space-y-6 lg:sticky lg:top-0 lg:self-start">
+              <div className="sd-inset rounded-xl p-4">
+                <EmployeePhotoEditor
+                  layout="stacked"
+                  {...(isCreate
+                    ? {
+                        draftFile: draftPhoto,
+                        onDraftFileChange: setDraftPhoto,
+                      }
+                    : {
+                        employeeId: employee!.id,
+                        photoPath: employee!.photo_path,
+                        onPhotoUpdated: () => setListStale(true),
+                      })}
+                  name={displayName}
+                  disabled={loading}
+                />
+              </div>
+
+              {!isCreate && employee && (
+                <div className="sd-inset rounded-xl p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-sd-muted">
+                    Employment status
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2">
+                    {(["active", "on_leave", "resigned"] as EmploymentStatus[]).map(
+                      (status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          disabled={loading || employee.employment_status === status}
+                          onClick={() => void handleStatusChange(status)}
+                          className={`rounded-lg px-3 py-2 text-left text-sm disabled:opacity-50 ${
+                            employee.employment_status === status
+                              ? "sd-btn-primary"
+                              : "sd-btn-ghost"
+                          }`}
+                        >
+                          {employmentStatusLabel(status)}
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <EmployeeProfileExcelPaste
+                branches={branches}
+                disabled={loading}
+                applied={importApplied}
+                onApply={handleImportApply}
+                onClear={handleImportClear}
+                onError={onError}
+              />
+            </aside>
+
+            <div className="min-w-0 space-y-8">
+              <ProfileSection
+                title="Identity"
+                description="Core fields shown on competition leaderboards when this person is a rep."
+              >
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  <label className="block sm:col-span-1">
+                    <FieldLabel>Employee no.</FieldLabel>
+                    <input
+                      value={draft.employee_no}
+                      onChange={(e) =>
+                        setDraft((s) => ({ ...s, employee_no: e.target.value }))
+                      }
+                      className={fieldClassName}
+                    />
+                  </label>
+                  <label className="block sm:col-span-1 xl:col-span-2">
+                    <FieldLabel>Full name</FieldLabel>
+                    <input
+                      value={draft.full_name}
+                      onChange={(e) =>
+                        setDraft((s) => ({ ...s, full_name: e.target.value }))
+                      }
+                      onBlur={(e) => applyCapsOnBlur("full_name", e.target.value)}
+                      className={fieldClassName}
+                    />
+                  </label>
+                  <label className="block sm:col-span-2 xl:col-span-3">
+                    <FieldLabel>Position</FieldLabel>
+                    <input
+                      value={draft.position}
+                      onChange={(e) =>
+                        setDraft((s) => ({ ...s, position: e.target.value }))
+                      }
+                      onBlur={(e) => applyCapsOnBlur("position", e.target.value)}
+                      className={fieldClassName}
+                    />
+                  </label>
+                </div>
+              </ProfileSection>
+
+              <ProfileSection
+                title="Work location"
+                description="HR home branch — separate from competition rep assignment."
+              >
+                <div className="grid gap-4">
+                  <label className="block">
+                    <FieldLabel hint="Search by code, name, or area.">
+                      Home branch
+                    </FieldLabel>
+                    <input
+                      type="search"
+                      placeholder="Filter branches…"
+                      value={branchFilter}
+                      onChange={(e) => setBranchFilter(e.target.value)}
+                      className={fieldClassName}
+                    />
+                    <select
+                      value={draft.home_branch_id}
+                      onChange={(e) =>
+                        setDraft((s) => ({ ...s, home_branch_id: e.target.value }))
+                      }
+                      className={`${fieldClassName} mt-2`}
+                    >
+                      <option value="">None / Unassigned</option>
+                      {filteredBranches.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.branch_code} · {b.branch_name}
+                          {b.area ? ` (${b.area})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </ProfileSection>
+
+              <ProfileSection
+                title="HR contact"
+                description="Private fields — not shown on public leaderboards."
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <FieldLabel>Nickname</FieldLabel>
+                    <input
+                      value={draft.nickname}
+                      onChange={(e) =>
+                        setDraft((s) => ({ ...s, nickname: e.target.value }))
+                      }
+                      className={fieldClassName}
+                    />
+                  </label>
+                  <label className="block">
+                    <FieldLabel>Date hired</FieldLabel>
+                    <input
+                      type="date"
+                      value={draft.date_hired}
+                      onChange={(e) =>
+                        setDraft((s) => ({ ...s, date_hired: e.target.value }))
+                      }
+                      className={fieldClassName}
+                    />
+                  </label>
+                  <label className="block">
+                    <FieldLabel>Contact number</FieldLabel>
+                    <input
+                      type="tel"
+                      value={draft.contact_number}
+                      onChange={(e) =>
+                        setDraft((s) => ({
+                          ...s,
+                          contact_number: e.target.value,
+                        }))
+                      }
+                      className={fieldClassName}
+                    />
+                  </label>
+                  <label className="block">
+                    <FieldLabel>Email</FieldLabel>
+                    <input
+                      type="email"
+                      value={draft.email}
+                      onChange={(e) =>
+                        setDraft((s) => ({ ...s, email: e.target.value }))
+                      }
+                      className={fieldClassName}
+                    />
+                  </label>
+                  <label className="block sm:col-span-2">
+                    <FieldLabel>Notes</FieldLabel>
+                    <textarea
+                      rows={3}
+                      value={draft.notes}
+                      onChange={(e) =>
+                        setDraft((s) => ({ ...s, notes: e.target.value }))
+                      }
+                      onBlur={(e) => applyCapsOnBlur("notes", e.target.value)}
+                      className={`${fieldClassName} resize-y min-h-[5rem]`}
+                    />
+                  </label>
+                </div>
+              </ProfileSection>
+
+              {!isCreate && employee && (
+                <ProfileSection
+                  title="Competition representative"
+                  description="Assign Rep 1 or Rep 2 for Sword Duels. Each branch allows at most two reps."
+                >
+                  <EmployeeRepAssignmentPanel
+                    employee={employee}
+                    branches={branches}
+                    onSuccess={(msg) => {
+                      onSaved(msg);
+                      setListStale(true);
+                    }}
+                    onError={onError}
+                  />
+                </ProfileSection>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <footer className="shrink-0 border-t border-emerald-500/15 bg-sd-deep/95 px-6 py-4 backdrop-blur-sm">
+          {showDeleteConfirm && employee ? (
+            <AdminConfirmPanel
+              title={`Delete ${employee.full_name}?`}
+              tone="danger"
+              confirmLabel="Delete employee"
+              busy={loading}
+              onConfirm={() => void handleDelete()}
+              onCancel={() => setShowDeleteConfirm(false)}
+            >
+              {employee.rep_assignments.length > 0 ? (
+                <p>
+                  This also clears {employee.rep_assignments.length} competition
+                  rep slot(s) on the Representatives page.
+                </p>
+              ) : (
+                <p>This permanently removes the employee profile.</p>
+              )}
+            </AdminConfirmPanel>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void handleSave()}
+                  className="sd-btn-primary rounded-lg px-5 py-2.5 text-sm disabled:opacity-50"
+                >
+                  {loading
+                    ? "Saving…"
+                    : isCreate
+                      ? "Create employee"
+                      : "Save changes"}
+                </button>
+                {!isCreate && employee && (
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="rounded-lg px-4 py-2.5 text-sm text-rose-200 ring-1 ring-rose-400/30 hover:bg-rose-500/10 disabled:opacity-50"
+                  >
+                    Delete
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={handleClose}
+                  className="sd-btn-ghost rounded-lg px-4 py-2.5 text-sm disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {navigation && navIndex >= 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!hasPrev}
+                    onClick={() =>
+                      navigation.onNavigate(navigation.ids[navIndex - 1]!)
+                    }
+                    className="sd-btn-ghost rounded-lg px-3 py-2 text-xs disabled:opacity-40"
+                  >
+                    ← Previous
+                  </button>
+                  <p className="text-[11px] text-sd-muted">
+                    {navIndex + 1} of {navigation.ids.length}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={!hasNext}
+                    onClick={() =>
+                      navigation.onNavigate(navigation.ids[navIndex + 1]!)
+                    }
+                    className="sd-btn-ghost rounded-lg px-3 py-2 text-xs disabled:opacity-40"
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </footer>
       </div>
     </div>
   );
