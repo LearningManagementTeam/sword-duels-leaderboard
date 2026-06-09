@@ -953,6 +953,41 @@ export async function importEmployeesFromCsv(csvText: string) {
   };
 }
 
+export async function importEmployeesFromDirectoryRows(
+  rows: import("@/lib/employees-csv").EmployeeDirectoryCsvRow[]
+) {
+  const { email } = await requireAdmin();
+
+  if (!rows?.length) {
+    return { ok: false as const, errors: ["No rows to import."] };
+  }
+
+  const { importEmployeeDirectoryRows } = await import("@/lib/employees");
+  const { upserted, errors } = await importEmployeeDirectoryRows(rows);
+
+  await logAudit(email, "import_employees", "employees", null, {
+    row_count: rows.length,
+    upserted,
+    error_count: errors.length,
+    source: "roster_screenshot",
+  });
+  revalidatePath("/admin/hris/employees");
+
+  if (upserted === 0) {
+    return {
+      ok: false as const,
+      errors: errors.length ? errors : ["No rows imported."],
+    };
+  }
+
+  return {
+    ok: true as const,
+    count: upserted,
+    warnings: errors.length ? errors : undefined,
+    message: `Imported ${upserted} employee profile${upserted === 1 ? "" : "s"}.`,
+  };
+}
+
 export async function saveRoundResults(
   roundId: string,
   results: Array<{

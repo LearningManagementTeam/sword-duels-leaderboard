@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminActionHint, AdminActionRow } from "@/components/admin/AdminActionHint";
+import { ImportEmployeesRosterScreenshot } from "@/components/admin/ImportEmployeesRosterScreenshot";
 import { importEmployeesFromCsv } from "@/lib/actions/admin";
 import {
   EMPLOYEE_DIRECTORY_CSV_TEMPLATE_SAMPLE,
@@ -178,6 +179,8 @@ export function ImportEmployeesDirectory() {
           <strong className="text-white">branch_code</strong> for home branch.
         </p>
       </div>
+
+      <ImportEmployeesRosterScreenshot />
 
       <div className="space-y-3">
         <label className="block text-sm text-sd-muted">
