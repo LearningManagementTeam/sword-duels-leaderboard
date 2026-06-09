@@ -1,16 +1,17 @@
 import { parseCsvLine } from "./branches-csv";
+import { optionalCsvCol } from "./csv-cells";
 import { parseEmployeeDateHired } from "./employee-profile-fields";
 
 /** One row per employee — matches HR branch employee sheet layout. */
 export interface EmployeeDirectoryCsvRow {
   employee_no: string;
   full_name: string;
-  nickname: string;
-  position: string;
-  date_hired: string;
-  contact_number: string;
-  email: string;
-  branch_code: string;
+  nickname?: string;
+  position?: string;
+  date_hired?: string;
+  contact_number?: string;
+  email?: string;
+  branch_code?: string;
 }
 
 function resolveHeaderIndex(
@@ -24,21 +25,22 @@ function resolveHeaderIndex(
   return undefined;
 }
 
-function col(cols: string[], idx: number | undefined): string {
-  if (idx === undefined) return "";
-  return (cols[idx] ?? "").trim();
-}
-
 export function parseEmployeeDirectoryCsv(text: string): {
   rows: EmployeeDirectoryCsvRow[];
   errors: string[];
+  warnings: string[];
 } {
   const lines = text.trim().split(/\r?\n/);
   const errors: string[] = [];
+  const warnings: string[] = [];
   const rows: EmployeeDirectoryCsvRow[] = [];
 
   if (lines.length < 2) {
-    return { rows: [], errors: ["CSV must include a header and at least one row."] };
+    return {
+      rows: [],
+      errors: ["CSV must include a header and at least one row."],
+      warnings: [],
+    };
   }
 
   const header = parseCsvLine(lines[0]).map((h) =>
@@ -94,6 +96,7 @@ export function parseEmployeeDirectoryCsv(text: string): {
       errors: [
         "Header must include name (or full_name) and id_number (or employee_no).",
       ],
+      warnings: [],
     };
   }
 
@@ -102,8 +105,8 @@ export function parseEmployeeDirectoryCsv(text: string): {
     if (!line) continue;
 
     const cols = parseCsvLine(line);
-    const full_name = col(cols, nameIdx);
-    const employee_no = col(cols, idIdx);
+    const full_name = optionalCsvCol(cols, nameIdx) ?? "";
+    const employee_no = optionalCsvCol(cols, idIdx) ?? "";
 
     if (!full_name) {
       errors.push(`Line ${i + 1}: missing name`);
@@ -114,25 +117,45 @@ export function parseEmployeeDirectoryCsv(text: string): {
       continue;
     }
 
-    const dateRaw = col(cols, hiredIdx);
-    const parsedDate = parseEmployeeDateHired(dateRaw);
-    if (dateRaw && !parsedDate) {
-      errors.push(`Line ${i + 1}: could not parse date hired "${dateRaw}"`);
+    let date_hired = optionalCsvCol(cols, hiredIdx);
+    if (date_hired !== undefined && date_hired) {
+      const parsedDate = parseEmployeeDateHired(date_hired);
+      if (!parsedDate) {
+        warnings.push(
+          `Line ${i + 1}: could not parse date hired "${date_hired}" — left blank`
+        );
+        date_hired = "";
+      } else {
+        date_hired = parsedDate;
+      }
     }
 
-    rows.push({
+    const row: EmployeeDirectoryCsvRow = {
       employee_no,
       full_name,
-      nickname: col(cols, nicknameIdx),
-      position: col(cols, positionIdx),
-      date_hired: parsedDate ?? "",
-      contact_number: col(cols, contactIdx),
-      email: col(cols, emailIdx),
-      branch_code: col(cols, branchCodeIdx),
-    });
+    };
+
+    const nickname = optionalCsvCol(cols, nicknameIdx);
+    if (nickname !== undefined) row.nickname = nickname;
+
+    const position = optionalCsvCol(cols, positionIdx);
+    if (position !== undefined) row.position = position;
+
+    if (date_hired !== undefined) row.date_hired = date_hired;
+
+    const contact_number = optionalCsvCol(cols, contactIdx);
+    if (contact_number !== undefined) row.contact_number = contact_number;
+
+    const email = optionalCsvCol(cols, emailIdx);
+    if (email !== undefined) row.email = email;
+
+    const branch_code = optionalCsvCol(cols, branchCodeIdx);
+    if (branch_code !== undefined) row.branch_code = branch_code;
+
+    rows.push(row);
   }
 
-  return { rows, errors };
+  return { rows, errors, warnings };
 }
 
 export const EMPLOYEE_DIRECTORY_CSV_TEMPLATE_HEADER =

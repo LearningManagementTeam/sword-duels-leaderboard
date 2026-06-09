@@ -8,7 +8,7 @@ import type {
 import type { RepresentativeSavePayload } from "@/lib/representative-fields";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
-  employeeHrisDbPayload,
+  applyHrisFieldsToPayload,
   type EmployeeHrisProfileFields,
 } from "@/lib/employee-profile-fields";
 import { findEmployeeDirectoryDuplicateMessage } from "@/lib/employee-directory-duplicate";
@@ -45,9 +45,12 @@ function employeeWritePayload(
   const now = new Date().toISOString();
   const payload: Record<string, unknown> = {
     full_name: normalizeAllCapsText(input.full_name.trim()),
-    position: normalizeAllCapsText(input.position?.trim() ?? "") || null,
     updated_at: now,
   };
+
+  if (input.position !== undefined) {
+    payload.position = normalizeAllCapsText(input.position.trim()) || null;
+  }
 
   if ("notes" in input && input.notes !== undefined) {
     payload.notes = input.notes?.trim()
@@ -60,12 +63,7 @@ function employeeWritePayload(
   }
 
   if (options?.mergeHris !== false) {
-    const hris = employeeHrisDbPayload(input);
-    for (const [key, value] of Object.entries(hris)) {
-      if (value != null && value !== "") {
-        payload[key] = value;
-      }
-    }
+    applyHrisFieldsToPayload(payload, input);
   }
 
   return payload;
@@ -132,15 +130,18 @@ function slotInputFromPayload(
   const email =
     slot === 1 ? payload.representative_1_email : payload.representative_2_email;
 
-  return {
+  const result: RepSlotInput = {
     full_name: fullName || no,
     employee_no: no || legacyEmployeeNo(branchCode, slot),
     position: position?.trim() ?? "",
-    nickname: nickname || undefined,
-    date_hired: date_hired || undefined,
-    contact_number: contact_number || undefined,
-    email: email || undefined,
   };
+
+  if (nickname !== undefined) result.nickname = nickname;
+  if (date_hired !== undefined) result.date_hired = date_hired;
+  if (contact_number !== undefined) result.contact_number = contact_number;
+  if (email !== undefined) result.email = email;
+
+  return result;
 }
 
 async function findEmployeeByEmployeeNoInService(
@@ -660,20 +661,21 @@ export async function getEmployeesForRepresentativePicker(): Promise<
 export async function upsertEmployeeFromDirectoryRow(
   service: Awaited<ReturnType<typeof createServiceClient>>,
   row: import("@/lib/employees-csv").EmployeeDirectoryCsvRow,
-  homeBranchId: string | null
+  homeBranchId: string | null | undefined
 ): Promise<Employee> {
   const employeeNo = normalizeEmployeeNo(row.employee_no);
   const now = new Date().toISOString();
   const input: EmployeeProfileInput = {
     employee_no: employeeNo,
     full_name: row.full_name,
-    position: row.position,
-    nickname: row.nickname,
-    date_hired: row.date_hired,
-    contact_number: row.contact_number,
-    email: row.email,
-    home_branch_id: homeBranchId,
   };
+
+  if (row.position !== undefined) input.position = row.position;
+  if (row.nickname !== undefined) input.nickname = row.nickname;
+  if (row.date_hired !== undefined) input.date_hired = row.date_hired;
+  if (row.contact_number !== undefined) input.contact_number = row.contact_number;
+  if (row.email !== undefined) input.email = row.email;
+  if (homeBranchId !== undefined) input.home_branch_id = homeBranchId;
 
   const existing = await findEmployeeByEmployeeNoInService(service, employeeNo);
 
@@ -732,15 +734,21 @@ export async function importEmployeeDirectoryRows(
   const errors: string[] = [];
 
   for (const row of rows) {
-    const branchCode = row.branch_code?.trim();
-    const homeBranchId = branchCode
-      ? (codeToBranchId.get(branchCode.toLowerCase()) ?? null)
-      : null;
+    let homeBranchId: string | null | undefined = undefined;
 
-    if (branchCode && !homeBranchId) {
-      errors.push(
-        `Line for ${row.full_name} (${row.employee_no}): unknown branch_code "${branchCode}"`
-      );
+    if (row.branch_code !== undefined) {
+      const branchCode = row.branch_code.trim();
+      if (branchCode) {
+        const branchId = codeToBranchId.get(branchCode.toLowerCase());
+        if (!branchId) {
+          errors.push(
+            `Line for ${row.full_name} (${row.employee_no}): unknown branch_code "${branchCode}"`
+          );
+        }
+        homeBranchId = branchId ?? null;
+      } else {
+        homeBranchId = null;
+      }
     }
 
     try {

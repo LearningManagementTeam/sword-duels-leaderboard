@@ -42,10 +42,10 @@ export function ImportEmployeesDirectory() {
   const [importLoading, setImportLoading] = useState(false);
 
   function runPreview(text: string) {
-    const { rows, errors } = parseEmployeeDirectoryCsv(text);
+    const { rows, errors, warnings } = parseEmployeeDirectoryCsv(text);
     setPreviewErrors(errors);
     setRowCount(rows.length);
-    return { rows, errors };
+    return { rows, errors, warnings };
   }
 
   async function loadPreview(text: string) {
@@ -53,10 +53,12 @@ export function ImportEmployeesDirectory() {
     setMessage("");
     setError(false);
     try {
-      const { errors } = runPreview(text);
+      const { errors, warnings } = runPreview(text);
       if (errors.length) {
         setError(true);
         setMessage(errors.join(" "));
+      } else if (warnings.length) {
+        setMessage(warnings.join(" "));
       }
     } catch (e) {
       setRowCount(0);
@@ -91,13 +93,16 @@ export function ImportEmployeesDirectory() {
       return;
     }
 
-    const { rows, errors } = parseEmployeeDirectoryCsv(csvText);
+    const { rows, errors, warnings } = parseEmployeeDirectoryCsv(csvText);
     setPreviewErrors(errors);
     setRowCount(rows.length);
     if (errors.length) {
       setError(true);
       setMessage(errors.join(" "));
       return;
+    }
+    if (warnings.length) {
+      setMessage(warnings.join(" "));
     }
     if (!rows.length) {
       setError(true);
@@ -167,9 +172,10 @@ export function ImportEmployeesDirectory() {
         </p>
         <p className="mt-2">
           Required: <strong className="text-white">name</strong> and{" "}
-          <strong className="text-white">id_number</strong>. Branch and area
-          columns are ignored on import — use <strong className="text-white">branch_code</strong>{" "}
-          to set home branch.
+          <strong className="text-white">id_number</strong>. Leave optional cells
+          blank to store empty HR fields. Branch and area columns are ignored —
+          use <strong className="text-white">branch_code</strong> to set home
+          branch (blank clears it).
         </p>
       </div>
 

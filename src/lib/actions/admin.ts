@@ -922,7 +922,8 @@ export async function importEmployeesFromCsv(csvText: string) {
     return { ok: false as const, errors: ["CSV file is empty."] };
   }
 
-  const { rows, errors: parseErrors } = parseEmployeeDirectoryCsv(csvText);
+  const { rows, errors: parseErrors, warnings: parseWarnings } =
+    parseEmployeeDirectoryCsv(csvText);
   if (parseErrors.length) return { ok: false as const, errors: parseErrors };
   if (!rows.length) {
     return { ok: false as const, errors: ["No rows found in CSV."] };
@@ -938,14 +939,16 @@ export async function importEmployeesFromCsv(csvText: string) {
   });
   revalidatePath("/admin/hris/employees");
 
+  const warnings = [...parseWarnings, ...errors];
+
   if (upserted === 0) {
-    return { ok: false as const, errors: errors.length ? errors : ["No rows imported."] };
+    return { ok: false as const, errors: warnings.length ? warnings : ["No rows imported."] };
   }
 
   return {
     ok: true as const,
     count: upserted,
-    warnings: errors.length ? errors : undefined,
+    warnings: warnings.length ? warnings : undefined,
     message: `Imported ${upserted} employee profile${upserted === 1 ? "" : "s"}.`,
   };
 }

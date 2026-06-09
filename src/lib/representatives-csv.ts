@@ -1,4 +1,5 @@
 import { parseCsvLine } from "./branches-csv";
+import { optionalCsvCol } from "./csv-cells";
 
 export interface RepresentativeCsvProfileFields {
   nickname: string;
@@ -10,19 +11,19 @@ export interface RepresentativeCsvProfileFields {
 export interface RepresentativeCsvRow {
   branch_code: string;
   representative_1: string;
-  representative_2: string;
-  representative_1_employee_no: string;
-  representative_1_position: string;
-  representative_2_employee_no: string;
-  representative_2_position: string;
-  representative_1_nickname: string;
-  representative_1_date_hired: string;
-  representative_1_contact_number: string;
-  representative_1_email: string;
-  representative_2_nickname: string;
-  representative_2_date_hired: string;
-  representative_2_contact_number: string;
-  representative_2_email: string;
+  representative_2?: string;
+  representative_1_employee_no?: string;
+  representative_1_position?: string;
+  representative_2_employee_no?: string;
+  representative_2_position?: string;
+  representative_1_nickname?: string;
+  representative_1_date_hired?: string;
+  representative_1_contact_number?: string;
+  representative_1_email?: string;
+  representative_2_nickname?: string;
+  representative_2_date_hired?: string;
+  representative_2_contact_number?: string;
+  representative_2_email?: string;
 }
 
 function resolveHeaderIndex(
@@ -34,11 +35,6 @@ function resolveHeaderIndex(
     if (i !== -1) return i;
   }
   return undefined;
-}
-
-function col(cols: string[], idx: number | undefined): string {
-  if (idx === undefined) return "";
-  return (cols[idx] ?? "").trim();
 }
 
 function repProfileIndices(
@@ -172,23 +168,51 @@ export function parseRepresentativesCsv(text: string): {
       continue;
     }
 
-    rows.push({
+    const row: RepresentativeCsvRow = {
       branch_code,
       representative_1: representative_1.trim(),
-      representative_2: col(cols, rep2Idx),
-      representative_1_employee_no: col(cols, rep1EmpIdx),
-      representative_1_position: col(cols, rep1PosIdx),
-      representative_2_employee_no: col(cols, rep2EmpIdx),
-      representative_2_position: col(cols, rep2PosIdx),
-      representative_1_nickname: col(cols, rep1Profile.nickname),
-      representative_1_date_hired: col(cols, rep1Profile.dateHired),
-      representative_1_contact_number: col(cols, rep1Profile.contact),
-      representative_1_email: col(cols, rep1Profile.email),
-      representative_2_nickname: col(cols, rep2Profile.nickname),
-      representative_2_date_hired: col(cols, rep2Profile.dateHired),
-      representative_2_contact_number: col(cols, rep2Profile.contact),
-      representative_2_email: col(cols, rep2Profile.email),
-    });
+    };
+
+    const rep2 = optionalCsvCol(cols, rep2Idx);
+    if (rep2 !== undefined) row.representative_2 = rep2;
+
+    const rep1Emp = optionalCsvCol(cols, rep1EmpIdx);
+    if (rep1Emp !== undefined) row.representative_1_employee_no = rep1Emp;
+
+    const rep1Pos = optionalCsvCol(cols, rep1PosIdx);
+    if (rep1Pos !== undefined) row.representative_1_position = rep1Pos;
+
+    const rep2Emp = optionalCsvCol(cols, rep2EmpIdx);
+    if (rep2Emp !== undefined) row.representative_2_employee_no = rep2Emp;
+
+    const rep2Pos = optionalCsvCol(cols, rep2PosIdx);
+    if (rep2Pos !== undefined) row.representative_2_position = rep2Pos;
+
+    const rep1Nick = optionalCsvCol(cols, rep1Profile.nickname);
+    if (rep1Nick !== undefined) row.representative_1_nickname = rep1Nick;
+
+    const rep1Hired = optionalCsvCol(cols, rep1Profile.dateHired);
+    if (rep1Hired !== undefined) row.representative_1_date_hired = rep1Hired;
+
+    const rep1Contact = optionalCsvCol(cols, rep1Profile.contact);
+    if (rep1Contact !== undefined) row.representative_1_contact_number = rep1Contact;
+
+    const rep1Email = optionalCsvCol(cols, rep1Profile.email);
+    if (rep1Email !== undefined) row.representative_1_email = rep1Email;
+
+    const rep2Nick = optionalCsvCol(cols, rep2Profile.nickname);
+    if (rep2Nick !== undefined) row.representative_2_nickname = rep2Nick;
+
+    const rep2Hired = optionalCsvCol(cols, rep2Profile.dateHired);
+    if (rep2Hired !== undefined) row.representative_2_date_hired = rep2Hired;
+
+    const rep2Contact = optionalCsvCol(cols, rep2Profile.contact);
+    if (rep2Contact !== undefined) row.representative_2_contact_number = rep2Contact;
+
+    const rep2Email = optionalCsvCol(cols, rep2Profile.email);
+    if (rep2Email !== undefined) row.representative_2_email = rep2Email;
+
+    rows.push(row);
   }
 
   return { rows, errors };
@@ -262,23 +286,42 @@ export function buildRepresentativesCsvTemplate(
 export function representativeCsvRowToPayload(
   row: RepresentativeCsvRow
 ): import("@/lib/representative-fields").RepresentativeSavePayload {
-  return {
+  const payload: import("@/lib/representative-fields").RepresentativeSavePayload = {
     branch_id: "",
     representative_1: row.representative_1,
-    representative_2: row.representative_2,
-    representative_1_employee_no: row.representative_1_employee_no,
-    representative_1_position: row.representative_1_position,
-    representative_2_employee_no: row.representative_2_employee_no,
-    representative_2_position: row.representative_2_position,
-    representative_1_nickname: row.representative_1_nickname,
-    representative_1_date_hired: row.representative_1_date_hired,
-    representative_1_contact_number: row.representative_1_contact_number,
-    representative_1_email: row.representative_1_email,
-    representative_2_nickname: row.representative_2_nickname,
-    representative_2_date_hired: row.representative_2_date_hired,
-    representative_2_contact_number: row.representative_2_contact_number,
-    representative_2_email: row.representative_2_email,
+    representative_2: row.representative_2 ?? "",
+    representative_1_employee_no: row.representative_1_employee_no ?? "",
+    representative_1_position: row.representative_1_position ?? "",
+    representative_2_employee_no: row.representative_2_employee_no ?? "",
+    representative_2_position: row.representative_2_position ?? "",
   };
+
+  if (row.representative_1_nickname !== undefined) {
+    payload.representative_1_nickname = row.representative_1_nickname;
+  }
+  if (row.representative_1_date_hired !== undefined) {
+    payload.representative_1_date_hired = row.representative_1_date_hired;
+  }
+  if (row.representative_1_contact_number !== undefined) {
+    payload.representative_1_contact_number = row.representative_1_contact_number;
+  }
+  if (row.representative_1_email !== undefined) {
+    payload.representative_1_email = row.representative_1_email;
+  }
+  if (row.representative_2_nickname !== undefined) {
+    payload.representative_2_nickname = row.representative_2_nickname;
+  }
+  if (row.representative_2_date_hired !== undefined) {
+    payload.representative_2_date_hired = row.representative_2_date_hired;
+  }
+  if (row.representative_2_contact_number !== undefined) {
+    payload.representative_2_contact_number = row.representative_2_contact_number;
+  }
+  if (row.representative_2_email !== undefined) {
+    payload.representative_2_email = row.representative_2_email;
+  }
+
+  return payload;
 }
 
 export function repSlotFromCsvRow(
@@ -305,13 +348,16 @@ export function repSlotFromCsvRow(
 
   if (!fullName && !no) return null;
 
-  return {
+  const result: import("@/lib/employees").RepSlotInput = {
     full_name: fullName || no,
     employee_no: no,
     position: position?.trim() ?? "",
-    nickname: nickname || undefined,
-    date_hired: date_hired || undefined,
-    contact_number: contact_number || undefined,
-    email: email || undefined,
   };
+
+  if (nickname !== undefined) result.nickname = nickname;
+  if (date_hired !== undefined) result.date_hired = date_hired;
+  if (contact_number !== undefined) result.contact_number = contact_number;
+  if (email !== undefined) result.email = email;
+
+  return result;
 }

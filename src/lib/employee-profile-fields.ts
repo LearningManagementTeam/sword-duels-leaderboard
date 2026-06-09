@@ -66,3 +66,22 @@ export function employeeHrisDbPayload(
     email: normalizeEmail(fields.email),
   };
 }
+
+/** Apply HRIS fields to a DB payload — undefined skips; blank string clears to null. */
+export function applyHrisFieldsToPayload(
+  payload: Record<string, unknown>,
+  fields: EmployeeHrisProfileFields
+): void {
+  if (fields.nickname !== undefined) {
+    payload.nickname = normalizeNickname(fields.nickname);
+  }
+  if (fields.date_hired !== undefined) {
+    payload.date_hired = parseEmployeeDateHired(fields.date_hired);
+  }
+  if (fields.contact_number !== undefined) {
+    payload.contact_number = normalizeContactNumber(fields.contact_number);
+  }
+  if (fields.email !== undefined) {
+    payload.email = normalizeEmail(fields.email);
+  }
+}

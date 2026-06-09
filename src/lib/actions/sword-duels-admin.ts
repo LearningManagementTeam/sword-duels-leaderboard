@@ -621,30 +621,27 @@ export async function previewSdRepresentativesImport(csvText: string): Promise<{
 
   const previewRows: SdRepresentativesPreviewRow[] = parsed.map((row) => {
     const match = byCode.get(row.branch_code.toLowerCase());
+    const preview = {
+      branch_code: row.branch_code,
+      representative_1: row.representative_1,
+      representative_2: row.representative_2 ?? "",
+      representative_1_employee_no: row.representative_1_employee_no ?? "",
+      representative_1_position: row.representative_1_position ?? "",
+      representative_2_employee_no: row.representative_2_employee_no ?? "",
+      representative_2_position: row.representative_2_position ?? "",
+    };
     if (!match) {
       return {
-        branch_code: row.branch_code,
+        ...preview,
         branch_name: null,
         area: null,
-        representative_1: row.representative_1,
-        representative_2: row.representative_2,
-        representative_1_employee_no: row.representative_1_employee_no,
-        representative_1_position: row.representative_1_position,
-        representative_2_employee_no: row.representative_2_employee_no,
-        representative_2_position: row.representative_2_position,
         status: "unknown_code" as const,
       };
     }
     return {
-      branch_code: row.branch_code,
+      ...preview,
       branch_name: match.branch_name,
       area: match.area,
-      representative_1: row.representative_1,
-      representative_2: row.representative_2,
-      representative_1_employee_no: row.representative_1_employee_no,
-      representative_1_position: row.representative_1_position,
-      representative_2_employee_no: row.representative_2_employee_no,
-      representative_2_position: row.representative_2_position,
       status: "ready" as const,
     };
   });
