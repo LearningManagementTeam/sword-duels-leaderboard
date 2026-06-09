@@ -171,11 +171,11 @@ export function ImportEmployeesDirectory() {
           branch_code, branch, area
         </p>
         <p className="mt-2">
-          Required: <strong className="text-white">name</strong> and{" "}
-          <strong className="text-white">id_number</strong>. Leave optional cells
-          blank to store empty HR fields. Branch and area columns are ignored —
-          use <strong className="text-white">branch_code</strong> to set home
-          branch (blank clears it).
+          Required: <strong className="text-white">name</strong>.{" "}
+          <strong className="text-white">id_number</strong> is optional — rows
+          without one get a provisional employee no. (PENDING-…) until HR assigns
+          a real id. Leave other optional cells blank. Use{" "}
+          <strong className="text-white">branch_code</strong> for home branch.
         </p>
       </div>
 

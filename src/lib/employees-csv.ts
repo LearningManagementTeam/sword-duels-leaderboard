@@ -1,6 +1,7 @@
 import { parseCsvLine } from "./branches-csv";
 import { optionalCsvCol } from "./csv-cells";
 import { parseEmployeeDateHired } from "./employee-profile-fields";
+import { provisionalEmployeeNo } from "./employee-numbers";
 
 /** One row per employee — matches HR branch employee sheet layout. */
 export interface EmployeeDirectoryCsvRow {
@@ -90,12 +91,10 @@ export function parseEmployeeDirectoryCsv(text: string): {
     "code",
   ]);
 
-  if (nameIdx === undefined || idIdx === undefined) {
+  if (nameIdx === undefined) {
     return {
       rows: [],
-      errors: [
-        "Header must include name (or full_name) and id_number (or employee_no).",
-      ],
+      errors: ["Header must include name (or full_name)."],
       warnings: [],
     };
   }
@@ -106,15 +105,21 @@ export function parseEmployeeDirectoryCsv(text: string): {
 
     const cols = parseCsvLine(line);
     const full_name = optionalCsvCol(cols, nameIdx) ?? "";
-    const employee_no = optionalCsvCol(cols, idIdx) ?? "";
+    const branch_code = optionalCsvCol(cols, branchCodeIdx);
+    let employee_no = idIdx !== undefined ? (optionalCsvCol(cols, idIdx) ?? "") : "";
 
     if (!full_name) {
       errors.push(`Line ${i + 1}: missing name`);
       continue;
     }
+
     if (!employee_no) {
-      errors.push(`Line ${i + 1}: missing id number for ${full_name}`);
-      continue;
+      employee_no = provisionalEmployeeNo(full_name, {
+        branchCode: branch_code,
+      });
+      warnings.push(
+        `Line ${i + 1}: no id for ${full_name} — using provisional ${employee_no}`
+      );
     }
 
     let date_hired = optionalCsvCol(cols, hiredIdx);
@@ -149,7 +154,6 @@ export function parseEmployeeDirectoryCsv(text: string): {
     const email = optionalCsvCol(cols, emailIdx);
     if (email !== undefined) row.email = email;
 
-    const branch_code = optionalCsvCol(cols, branchCodeIdx);
     if (branch_code !== undefined) row.branch_code = branch_code;
 
     rows.push(row);

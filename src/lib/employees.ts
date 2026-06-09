@@ -12,7 +12,13 @@ import {
   type EmployeeHrisProfileFields,
 } from "@/lib/employee-profile-fields";
 import { findEmployeeDirectoryDuplicateMessage } from "@/lib/employee-directory-duplicate";
+import {
+  legacyEmployeeNo,
+  provisionalEmployeeNo,
+} from "@/lib/employee-numbers";
 import { normalizeAllCapsText } from "@/lib/text-format";
+
+export { legacyEmployeeNo, provisionalEmployeeNo } from "@/lib/employee-numbers";
 
 export type {
   Employee,
@@ -92,10 +98,6 @@ async function assertEmployeeDirectoryUnique(
     excludeEmployeeId
   );
   if (message) throw new Error(message);
-}
-
-export function legacyEmployeeNo(branchCode: string, slot: 1 | 2): string {
-  return `LEGACY-${branchCode.trim()}-${slot}`;
 }
 
 function slotInputFromPayload(
