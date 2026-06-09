@@ -20,12 +20,13 @@ export default async function RepresentativesPage() {
       <div className="sd-page-header">
         <h1>Branch representatives</h1>
         <p>
-          Assign Rep 1 and Rep 2 per branch for competitions. Search the{" "}
+          Scan completion in the table below and click a branch to assign Rep 1
+          and Rep 2. Search the{" "}
           <Link href={hrisPath("employees")} className="sd-link">
             HRIS employee directory
           </Link>{" "}
-          when picking reps so photos and profiles appear on leaderboards. For
-          bulk branch setup use the combined CSV on{" "}
+          when picking reps so photos appear on leaderboards. For bulk setup use
+          the combined CSV on{" "}
           <Link href={hrisPath("branches")} className="sd-link">
             HRIS → Branches
           </Link>

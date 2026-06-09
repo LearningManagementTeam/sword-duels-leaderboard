@@ -19,12 +19,13 @@ export default async function SwordDuelsRepresentativesPage() {
       <div className="sd-page-header">
         <h1>Representatives</h1>
         <p>
-          Two representatives per branch compete in area group battles. Search the{" "}
+          Bulk setup: download the CSV template below, fill reps in Excel, and
+          import. Use the review table to fix individual branches. Pick reps from
+          the{" "}
           <Link href={hrisPath("employees")} className="sd-link">
             HRIS employee directory
           </Link>{" "}
-          when assigning reps so photos appear on public leaderboards. CSV import
-          still works for bulk setup.
+          so photos appear on public leaderboards.
         </p>
         <p className="mt-2 text-sm text-sd-muted">
           Representatives are separate from bracket setup. After names are in,
