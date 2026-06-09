@@ -1,19 +1,22 @@
 import { FullTournamentBlueprint } from "@/components/tournament/FullTournamentBlueprint";
 import { buildNationalCompetitionsBlueprint } from "@/lib/tournament-blueprint";
 import { buildSwordDuelsBlueprint } from "@/lib/products/sword-duels/tournament-blueprint";
+import type { SdTournamentFormat } from "@/lib/products/sword-duels/tournament-format";
 import type { ResolvedFeaturedProgram } from "@/lib/site-home-config";
 
 interface Props {
   featured: ResolvedFeaturedProgram;
+  sdTournamentFormat?: SdTournamentFormat | null;
   defaultOpen?: boolean;
 }
 
 export function CollapsibleFullTournamentMap({
   featured,
+  sdTournamentFormat,
   defaultOpen = false,
 }: Props) {
   const nc = buildNationalCompetitionsBlueprint();
-  const sd = buildSwordDuelsBlueprint();
+  const sd = buildSwordDuelsBlueprint(sdTournamentFormat);
 
   return (
     <details
@@ -42,6 +45,7 @@ export function CollapsibleFullTournamentMap({
         <FullTournamentBlueprint
           nationalCompetitions={nc}
           swordDuels={sd}
+          swordDuelsFormat={sdTournamentFormat}
           defaultProgram={featured}
           compact
         />

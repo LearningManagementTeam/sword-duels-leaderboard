@@ -3,7 +3,9 @@ import { FullTournamentBlueprint } from "@/components/tournament/FullTournamentB
 import { buildNationalCompetitionsBlueprint } from "@/lib/tournament-blueprint";
 import { buildSwordDuelsBlueprint } from "@/lib/products/sword-duels/tournament-blueprint";
 import { getSiteHomeConfig } from "@/lib/data/content-queries";
+import { sdJourneyShortPath } from "@/lib/products/sword-duels/journey-copy";
 import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
+import { isRegionalAverageFormat } from "@/lib/products/sword-duels/tournament-format";
 import { resolveFeaturedProgram } from "@/lib/site-home-config";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -21,6 +23,8 @@ export default async function TournamentJourneyPage() {
     ? await loadPublicJourneyState().catch(() => null)
     : null;
   const featured = resolveFeaturedProgram(homeConfig, sdJourney);
+  const sdFormat = sdJourney?.tournamentFormat ?? "classic_v1";
+  const sdPath = sdJourneyShortPath(sdFormat);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 py-2">
@@ -35,11 +39,19 @@ export default async function TournamentJourneyPage() {
           where the event is right now, check the live season quest on the home
           page.
         </p>
+        {sdJourney && (
+          <p className="mt-2 text-sm text-cyan-300/80">
+            Sword Duels is on{" "}
+            {isRegionalAverageFormat(sdFormat) ? "Version 2" : "Version 1"}:{" "}
+            {sdPath}
+          </p>
+        )}
       </header>
 
       <FullTournamentBlueprint
         nationalCompetitions={buildNationalCompetitionsBlueprint()}
-        swordDuels={buildSwordDuelsBlueprint()}
+        swordDuels={buildSwordDuelsBlueprint(sdJourney?.tournamentFormat)}
+        swordDuelsFormat={sdJourney?.tournamentFormat}
         defaultProgram={featured}
       />
     </div>

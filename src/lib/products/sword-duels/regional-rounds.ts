@@ -1,6 +1,7 @@
 import type { Region } from "@/lib/scoring-config";
 import { REGIONS } from "@/lib/scoring-config";
 import type { NationalsAreaRep } from "./nationals-wildcard-data";
+import type { SdSet } from "./types";
 
 export const SD_REGIONAL_SET_ORDER = [
   "regional_r1",
@@ -31,6 +32,17 @@ export const SD_REGIONAL_ROUND_DAY_HINTS: Record<SdRegionalSetType, string> = {
 /** Regional sets store the region slug in sd_sets.area (luzon | ncr | vismin). */
 export function isRegionalAreaKey(area: string): area is Region {
   return (REGIONS as readonly string[]).includes(area);
+}
+
+export function countRegionalRoundsPublished(sets: SdSet[]): {
+  published: number;
+  total: number;
+} {
+  const regional = sets.filter((s) => isRegionalSetType(s.set_type));
+  return {
+    published: regional.filter((s) => s.status === "published").length,
+    total: regional.length > 0 ? regional.length : REGIONS.length * 3,
+  };
 }
 
 export function regionalAreaReps(

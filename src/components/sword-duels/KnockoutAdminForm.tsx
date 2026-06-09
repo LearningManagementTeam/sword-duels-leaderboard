@@ -28,6 +28,8 @@ interface Props {
   knockoutModel: NationalsKnockoutModel | null;
   dbMatches: SdKnockoutMatch[];
   scoresByMatchId: Record<string, { branch_id: string; points: number }[]>;
+  /** Shown when the field is not yet locked (format-specific). */
+  fieldLockedMessage?: string;
 }
 
 function flatMatches(model: NationalsKnockoutModel): KnockoutMatch[] {
@@ -39,6 +41,7 @@ export function KnockoutAdminForm({
   knockoutModel,
   dbMatches,
   scoresByMatchId,
+  fieldLockedMessage = "Unlocks when all area representatives and the wild card are locked.",
 }: Props) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -112,9 +115,7 @@ export function KnockoutAdminForm({
     return (
       <section className="sd-neon-panel space-y-3 p-5">
         <h2 className="text-lg font-semibold text-white">Knockout bracket</h2>
-        <p className="text-sm text-sd-muted">
-          Unlocks when all area representatives and the wild card are locked.
-        </p>
+        <p className="text-sm text-sd-muted">{fieldLockedMessage}</p>
       </section>
     );
   }

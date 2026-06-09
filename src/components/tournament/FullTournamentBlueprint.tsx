@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { SdRegionalTournamentMap } from "@/components/sword-duels/SdRegionalTournamentMap";
+import { SdV2FormatOverview } from "@/components/sword-duels/SdV2FormatOverview";
+import { isRegionalAverageFormat } from "@/lib/products/sword-duels/tournament-format";
+import type { SdTournamentFormat } from "@/lib/products/sword-duels/tournament-format";
 import type {
   TournamentBlueprintModel,
   TournamentBlueprintPhase,
@@ -13,6 +16,8 @@ import type {
 interface Props {
   nationalCompetitions: TournamentBlueprintModel;
   swordDuels: TournamentBlueprintModel;
+  /** Active SD format — controls diagram above set-by-set detail. */
+  swordDuelsFormat?: SdTournamentFormat | null;
   /** Which program tab opens first on mobile. */
   defaultProgram?: TournamentBlueprintProgram;
   compact?: boolean;
@@ -158,12 +163,14 @@ function BlueprintPanel({ model }: { model: TournamentBlueprintModel }) {
 export function FullTournamentBlueprint({
   nationalCompetitions,
   swordDuels,
+  swordDuelsFormat,
   defaultProgram = "national_competitions",
   compact = false,
 }: Props) {
   const [program, setProgram] = useState<TournamentBlueprintProgram>(defaultProgram);
   const active =
     program === "sword_duels" ? swordDuels : nationalCompetitions;
+  const sdIsV2 = isRegionalAverageFormat(swordDuelsFormat);
 
   return (
     <div className={`sd-neon-panel space-y-5 ${compact ? "p-4 sm:p-5" : "p-5 sm:p-8"}`}>
@@ -199,10 +206,16 @@ export function FullTournamentBlueprint({
 
       {program === "sword_duels" ? (
         <>
-          <SdRegionalTournamentMap showChampion compact={compact} />
+          {sdIsV2 ? (
+            <SdV2FormatOverview />
+          ) : (
+            <SdRegionalTournamentMap showChampion compact={compact} />
+          )}
           <details className="sd-glass rounded-xl p-4">
             <summary className="cursor-pointer text-sm font-semibold text-white">
-              Set-by-set detail (Group A → B → final → nationals)
+              {sdIsV2
+                ? "Set-by-set detail (Group A → B → final → regionals → finals)"
+                : "Set-by-set detail (Group A → B → final → nationals)"}
             </summary>
             <div className="mt-4">
               <BlueprintPanel model={active} />

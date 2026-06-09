@@ -37,7 +37,11 @@ export default async function SwordDuelsSchedulesPage() {
           the public home timeline and each area&apos;s live map page.
         </p>
       </div>
-      <SdAreaSchedulesEditor areas={areas} initial={schedules} />
+      <SdAreaSchedulesEditor
+        areas={areas}
+        initial={schedules}
+        tournamentFormat={event?.tournament_format}
+      />
     </div>
   );
 }

@@ -32,6 +32,7 @@ interface Props {
   initialScores: SdSetScore[];
   canEdit: boolean;
   lockedReason?: string | null;
+  areaFinalUnpublishWarning?: string;
 }
 
 type RowState = {
@@ -57,6 +58,7 @@ export function SdSetScoresForm({
   initialScores,
   canEdit,
   lockedReason,
+  areaFinalUnpublishWarning = "This resets wildcard selection and knockout bracket progress for nationals. Only unpublish if the area final result was entered in error.",
 }: Props) {
   const router = useRouter();
   const scoreByBranch = useMemo(
@@ -403,11 +405,7 @@ export function SdSetScoresForm({
           onConfirm={() => void executeUnpublish()}
           onCancel={() => setShowUnpublishConfirm(false)}
         >
-          <p>
-            This resets wildcard selection and knockout bracket progress for
-            nationals. Only unpublish if the area final result was entered in
-            error.
-          </p>
+          <p>{areaFinalUnpublishWarning}</p>
         </AdminConfirmPanel>
       )}
 

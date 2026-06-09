@@ -131,7 +131,10 @@ export default async function HomePage() {
           mapConfig={mapConfig}
           defaultOpen={featured === "national_competitions"}
         />
-        <CollapsibleFullTournamentMap featured={featured} />
+        <CollapsibleFullTournamentMap
+          featured={featured}
+          sdTournamentFormat={sdJourney?.tournamentFormat}
+        />
         <ShareCard
           url={shareUrl}
           title={shareTitle}

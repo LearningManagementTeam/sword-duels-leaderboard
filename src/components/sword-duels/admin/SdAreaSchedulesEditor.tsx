@@ -12,11 +12,14 @@ import {
   SD_AREA_SCHEDULE_CSV_TEMPLATE,
 } from "@/lib/products/sword-duels/sd-area-schedules-csv";
 import { sortAreasByNumber } from "@/lib/products/sword-duels/area-groups";
+import { isRegionalAverageFormat } from "@/lib/products/sword-duels/tournament-format";
+import type { SdTournamentFormat } from "@/lib/products/sword-duels/tournament-format";
 import { SdButton } from "@/components/ui/SdButton";
 
 interface Props {
   areas: string[];
   initial: SdAreaSchedulesConfig;
+  tournamentFormat?: SdTournamentFormat | null;
 }
 
 function toDatetimeLocalValue(iso?: string): string {
@@ -36,7 +39,12 @@ function emptyDates(): SdAreaScheduleDates {
   return {};
 }
 
-export function SdAreaSchedulesEditor({ areas, initial }: Props) {
+export function SdAreaSchedulesEditor({
+  areas,
+  initial,
+  tournamentFormat = "classic_v1",
+}: Props) {
+  const isV2 = isRegionalAverageFormat(tournamentFormat);
   const [config, setConfig] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -240,35 +248,94 @@ export function SdAreaSchedulesEditor({ areas, initial }: Props) {
       </section>
 
       <section className="sd-neon-panel space-y-4 p-5">
-        <h2 className="text-lg font-semibold text-white">Nationals dates</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="text-sd-muted">Wild card</span>
-            <input
-              type="datetime-local"
-              value={toDatetimeLocalValue(config.nationals.wildcard)}
-              onChange={(e) =>
-                updateNationals({
-                  wildcard: fromDatetimeLocalValue(e.target.value),
-                })
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-sd-muted">Knockout</span>
-            <input
-              type="datetime-local"
-              value={toDatetimeLocalValue(config.nationals.knockout)}
-              onChange={(e) =>
-                updateNationals({
-                  knockout: fromDatetimeLocalValue(e.target.value),
-                })
-              }
-              className="mt-1 block w-full rounded sd-input px-3 py-2"
-            />
-          </label>
-        </div>
+        <h2 className="text-lg font-semibold text-white">
+          Nationals dates{isV2 ? " (Version 2)" : ""}
+        </h2>
+        {isV2 ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="text-sd-muted">Regional Round 1</span>
+              <input
+                type="datetime-local"
+                value={toDatetimeLocalValue(config.nationals.regionalR1)}
+                onChange={(e) =>
+                  updateNationals({
+                    regionalR1: fromDatetimeLocalValue(e.target.value),
+                  })
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-sd-muted">Regional Round 2</span>
+              <input
+                type="datetime-local"
+                value={toDatetimeLocalValue(config.nationals.regionalR2)}
+                onChange={(e) =>
+                  updateNationals({
+                    regionalR2: fromDatetimeLocalValue(e.target.value),
+                  })
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-sd-muted">Regional Round 3</span>
+              <input
+                type="datetime-local"
+                value={toDatetimeLocalValue(config.nationals.regionalR3)}
+                onChange={(e) =>
+                  updateNationals({
+                    regionalR3: fromDatetimeLocalValue(e.target.value),
+                  })
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-sd-muted">National finals</span>
+              <input
+                type="datetime-local"
+                value={toDatetimeLocalValue(config.nationals.finals)}
+                onChange={(e) =>
+                  updateNationals({
+                    finals: fromDatetimeLocalValue(e.target.value),
+                  })
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2"
+              />
+            </label>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="text-sd-muted">Wild card</span>
+              <input
+                type="datetime-local"
+                value={toDatetimeLocalValue(config.nationals.wildcard)}
+                onChange={(e) =>
+                  updateNationals({
+                    wildcard: fromDatetimeLocalValue(e.target.value),
+                  })
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-sd-muted">Knockout</span>
+              <input
+                type="datetime-local"
+                value={toDatetimeLocalValue(config.nationals.knockout)}
+                onChange={(e) =>
+                  updateNationals({
+                    knockout: fromDatetimeLocalValue(e.target.value),
+                  })
+                }
+                className="mt-1 block w-full rounded sd-input px-3 py-2"
+              />
+            </label>
+          </div>
+        )}
       </section>
 
       <div className="flex flex-wrap gap-2">

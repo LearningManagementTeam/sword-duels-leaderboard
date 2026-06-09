@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getPublicSiteUrl } from "@/lib/site-url";
+import { journeyShareCopy as buildJourneyShareCopy } from "./journey-copy";
 import type { SdPublicJourneyState } from "./public-journey";
 
 export function sdShareUrl(path: string): string {
@@ -35,42 +36,7 @@ export function buildSdPageMetadata(opts: {
 export function journeyShareCopy(
   journey: SdPublicJourneyState | null
 ): { title: string; description: string } {
-  if (!journey || journey.totalAreas === 0) {
-    return {
-      title: "Sword Duels — Area tournaments",
-      description:
-        "Follow area group battles live as branches fight for one representative per area.",
-    };
-  }
-
-  if (journey.knockoutComplete) {
-    return {
-      title: "Sword Duels — National Champion",
-      description:
-        "The nationals knockout is complete. See who claimed the Sword Duels crown.",
-    };
-  }
-
-  if (journey.nationalsPhase === "knockout") {
-    return {
-      title: "Sword Duels — Nationals Knockout",
-      description:
-        "Live area vs area knockout — follow every published match to the national champion.",
-    };
-  }
-
-  if (journey.areasComplete) {
-    return {
-      title: "Sword Duels — Nationals",
-      description:
-        "All area reps are locked. Watch the wild card and knockout bracket unfold live.",
-    };
-  }
-
-  return {
-    title: "Sword Duels — Area tournaments",
-    description: `${journey.areasPublished} of ${journey.totalAreas} area representatives crowned — follow live bracket updates.`,
-  };
+  return buildJourneyShareCopy(journey);
 }
 
 export function areaShareCopy(

@@ -32,7 +32,13 @@ import {
 } from "@/lib/products/sword-duels/area-schedules";
 import { getSdPublicOverview } from "@/lib/products/sword-duels/public-queries";
 import { getRecentAreaChampions } from "@/lib/products/sword-duels/recent-area-champions";
-import { getSdEvent } from "@/lib/products/sword-duels/queries";
+import { REGION_LABELS } from "@/lib/scoring-config";
+import { isRegionalAverageFormat } from "@/lib/products/sword-duels/tournament-format";
+import { SD_REGIONAL_SET_LABELS } from "@/lib/products/sword-duels/regional-rounds";
+import {
+  getSdEvent,
+  getSdSetsForEvent,
+} from "@/lib/products/sword-duels/queries";
 import type { SeasonSlug } from "@/lib/scoring-config";
 
 export type HomeTimelineProgram = EventScheduleProgram;
@@ -185,39 +191,88 @@ async function loadRecentSdItems(limit: number): Promise<HomeTimelineItem[]> {
     );
   }
 
-  try {
-    const ctx = await getSdNationalsContext(event.id);
-    const wc = ctx.wildcardRound;
-    if (
-      wc?.status === "tiebreak_published" &&
-      wc.published_at &&
-      wc.winner_branch_id
-    ) {
-      items.push({
-        id: `sd-wildcard-${wc.published_at}`,
-        program: "sword_duels",
-        title: "Wild card slot confirmed",
-        detail: "Nationals field locked to 16",
-        occurredAt: wc.published_at,
-        href: `${SWORD_DUELS_PUBLIC}/nationals#wildcard`,
-        source: "published",
-      });
-    }
+  const isV2 = isRegionalAverageFormat(event.tournament_format);
 
-    for (const match of ctx.knockoutMatches) {
-      if (match.status !== "published" || !match.published_at) continue;
-      items.push({
-        id: `sd-knockout-${match.id}`,
-        program: "sword_duels",
-        title: `${KNOCKOUT_ROUND_LABELS[match.round]} match published`,
-        detail: "Knockout bracket updated",
-        occurredAt: match.published_at,
-        href: `${SWORD_DUELS_PUBLIC}/nationals#knockout`,
-        source: "published",
-      });
+  if (isV2) {
+    try {
+      const sets = await getSdSetsForEvent(event.id);
+      for (const set of sets) {
+        if (
+          !set.set_type.startsWith("regional_") ||
+          set.status !== "published" ||
+          !set.published_at
+        ) {
+          continue;
+        }
+        const label =
+          SD_REGIONAL_SET_LABELS[
+            set.set_type as keyof typeof SD_REGIONAL_SET_LABELS
+          ] ?? set.set_type;
+        items.push({
+          id: `sd-regional-${set.id}-${set.published_at}`,
+          program: "sword_duels",
+          title: `${REGION_LABELS[set.area as keyof typeof REGION_LABELS] ?? set.area} · ${label} published`,
+          detail: "Regional standings updated",
+          occurredAt: set.published_at,
+          href: `${SWORD_DUELS_PUBLIC}/regionals/${set.area}`,
+          source: "published",
+        });
+      }
+
+      const { loadKnockoutBracketState } = await import(
+        "@/lib/products/sword-duels/knockout-sync"
+      );
+      const ko = await loadKnockoutBracketState(event.id);
+      for (const match of ko.matches) {
+        if (match.status !== "published" || !match.published_at) continue;
+        items.push({
+          id: `sd-finals-${match.id}`,
+          program: "sword_duels",
+          title: `${KNOCKOUT_ROUND_LABELS[match.round]} published`,
+          detail: "National finals updated",
+          occurredAt: match.published_at,
+          href: `${SWORD_DUELS_PUBLIC}/nationals#knockout`,
+          source: "published",
+        });
+      }
+    } catch {
+      /* tables optional */
     }
-  } catch {
-    /* nationals tables optional */
+  } else {
+    try {
+      const ctx = await getSdNationalsContext(event.id);
+      const wc = ctx.wildcardRound;
+      if (
+        wc?.status === "tiebreak_published" &&
+        wc.published_at &&
+        wc.winner_branch_id
+      ) {
+        items.push({
+          id: `sd-wildcard-${wc.published_at}`,
+          program: "sword_duels",
+          title: "Wild card slot confirmed",
+          detail: "Nationals field locked to 16",
+          occurredAt: wc.published_at,
+          href: `${SWORD_DUELS_PUBLIC}/nationals#wildcard`,
+          source: "published",
+        });
+      }
+
+      for (const match of ctx.knockoutMatches) {
+        if (match.status !== "published" || !match.published_at) continue;
+        items.push({
+          id: `sd-knockout-${match.id}`,
+          program: "sword_duels",
+          title: `${KNOCKOUT_ROUND_LABELS[match.round]} match published`,
+          detail: "Knockout bracket updated",
+          occurredAt: match.published_at,
+          href: `${SWORD_DUELS_PUBLIC}/nationals#knockout`,
+          source: "published",
+        });
+      }
+    } catch {
+      /* nationals tables optional */
+    }
   }
 
   return items
@@ -365,9 +420,15 @@ export async function loadHomeEventTimeline(
     ? await getSdPublicOverview()
     : null;
 
+  const event = isSupabaseConfigured() ? await getSdEvent() : null;
+
   const fromAreas =
     sdAreaSchedules && overview
-      ? upcomingFromSdAreaSchedules(sdAreaSchedules, overview.sets)
+      ? upcomingFromSdAreaSchedules(
+          sdAreaSchedules,
+          overview.sets,
+          event?.tournament_format
+        )
       : [];
 
   const [recentPublished, manualUpcoming, publishedNcRounds] =

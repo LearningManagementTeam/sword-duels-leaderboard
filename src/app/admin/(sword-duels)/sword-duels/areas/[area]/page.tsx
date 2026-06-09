@@ -16,6 +16,7 @@ import {
 } from "@/lib/products/sword-duels/queries";
 import { swordDuelsPath, SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { areaSlug } from "@/lib/products/sword-duels/area-groups";
+import { isRegionalAverageFormat } from "@/lib/products/sword-duels/tournament-format";
 import type { SdAreaSetType } from "@/lib/products/sword-duels/types";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +47,10 @@ export default async function SwordDuelsAreaPage({
 
   const { bracket, sets, scoreMap } = ctx;
   const missingSets = sets.some((s) => !s.id);
+  const isV2 = isRegionalAverageFormat(event.tournament_format);
+  const areaFinalUnpublishWarning = isV2
+    ? "This can reset regional rounds and national finals progress. Only unpublish if the area final result was entered in error."
+    : undefined;
 
   function setLockReason(setType: SdAreaSetType): string | null {
     if (setType === "area_final") {
@@ -140,6 +145,11 @@ export default async function SwordDuelsAreaPage({
                 initialScores={scoreMap.get(set.id) ?? []}
                 canEdit={!lock}
                 lockedReason={lock}
+                areaFinalUnpublishWarning={
+                  set.set_type === "area_final"
+                    ? areaFinalUnpublishWarning
+                    : undefined
+                }
               />
             </div>
           );

@@ -5,6 +5,10 @@ import { areaSlug } from "./area-groups";
 import { SD_SET_FLOW } from "./scoring-config";
 import type { SdAreaSetType, SdSet } from "./types";
 import { isAreaSetType } from "./format-guards";
+import {
+  isRegionalAverageFormat,
+  type SdTournamentFormat,
+} from "./tournament-format";
 
 export const SD_AREA_SCHEDULES_SLUG = "sd_area_schedules";
 
@@ -15,8 +19,14 @@ export interface SdAreaScheduleDates {
 }
 
 export interface SdNationalsScheduleDates {
+  /** V1 */
   wildcard?: string;
   knockout?: string;
+  /** V2 */
+  regionalR1?: string;
+  regionalR2?: string;
+  regionalR3?: string;
+  finals?: string;
 }
 
 export interface SdAreaSchedulesConfig {
@@ -74,6 +84,18 @@ export function parseSdAreaSchedulesBody(raw: unknown): SdAreaSchedulesConfig {
     if (typeof n.knockout === "string" && n.knockout.trim()) {
       nationals.knockout = n.knockout.trim();
     }
+    if (typeof n.regionalR1 === "string" && n.regionalR1.trim()) {
+      nationals.regionalR1 = n.regionalR1.trim();
+    }
+    if (typeof n.regionalR2 === "string" && n.regionalR2.trim()) {
+      nationals.regionalR2 = n.regionalR2.trim();
+    }
+    if (typeof n.regionalR3 === "string" && n.regionalR3.trim()) {
+      nationals.regionalR3 = n.regionalR3.trim();
+    }
+    if (typeof n.finals === "string" && n.finals.trim()) {
+      nationals.finals = n.finals.trim();
+    }
   }
 
   return { byArea, nationals };
@@ -124,8 +146,10 @@ export function areaScheduleRows(
 export function upcomingFromSdAreaSchedules(
   config: SdAreaSchedulesConfig,
   sets: SdSet[],
+  format: SdTournamentFormat | null | undefined = "classic_v1",
   now = Date.now()
 ): HomeTimelineItem[] {
+  const isV2 = isRegionalAverageFormat(format);
   const items: HomeTimelineItem[] = [];
   const setsByArea = new Map<string, SdSet[]>();
   for (const set of sets) {
@@ -157,33 +181,75 @@ export function upcomingFromSdAreaSchedules(
     }
   }
 
-  if (config.nationals.wildcard) {
-    const at = config.nationals.wildcard;
-    if (new Date(at).getTime() > now) {
+  if (isV2) {
+    const v2Phases: {
+      key: keyof SdNationalsScheduleDates;
+      title: string;
+      href: string;
+    }[] = [
+      {
+        key: "regionalR1",
+        title: "Nationals · Regional Round 1",
+        href: `${SWORD_DUELS_PUBLIC}/nationals#regionals`,
+      },
+      {
+        key: "regionalR2",
+        title: "Nationals · Regional Round 2",
+        href: `${SWORD_DUELS_PUBLIC}/nationals#regionals`,
+      },
+      {
+        key: "regionalR3",
+        title: "Nationals · Regional Round 3",
+        href: `${SWORD_DUELS_PUBLIC}/nationals#regionals`,
+      },
+      {
+        key: "finals",
+        title: "Nationals · Finals",
+        href: `${SWORD_DUELS_PUBLIC}/nationals#knockout`,
+      },
+    ];
+    for (const phase of v2Phases) {
+      const at = config.nationals[phase.key];
+      if (!at || new Date(at).getTime() <= now) continue;
       items.push({
-        id: `sd-nationals-wildcard-${at}`,
+        id: `sd-nationals-${phase.key}-${at}`,
         program: "sword_duels",
-        title: "Nationals · Wild card",
+        title: phase.title,
         detail: "Scheduled nationals phase",
         occurredAt: at,
-        href: `${SWORD_DUELS_PUBLIC}/nationals#wildcard`,
+        href: phase.href,
         source: "scheduled",
       });
     }
-  }
+  } else {
+    if (config.nationals.wildcard) {
+      const at = config.nationals.wildcard;
+      if (new Date(at).getTime() > now) {
+        items.push({
+          id: `sd-nationals-wildcard-${at}`,
+          program: "sword_duels",
+          title: "Nationals · Wild card",
+          detail: "Scheduled nationals phase",
+          occurredAt: at,
+          href: `${SWORD_DUELS_PUBLIC}/nationals#wildcard`,
+          source: "scheduled",
+        });
+      }
+    }
 
-  if (config.nationals.knockout) {
-    const at = config.nationals.knockout;
-    if (new Date(at).getTime() > now) {
-      items.push({
-        id: `sd-nationals-knockout-${at}`,
-        program: "sword_duels",
-        title: "Nationals · Knockout",
-        detail: "Scheduled nationals phase",
-        occurredAt: at,
-        href: `${SWORD_DUELS_PUBLIC}/nationals#knockout`,
-        source: "scheduled",
-      });
+    if (config.nationals.knockout) {
+      const at = config.nationals.knockout;
+      if (new Date(at).getTime() > now) {
+        items.push({
+          id: `sd-nationals-knockout-${at}`,
+          program: "sword_duels",
+          title: "Nationals · Knockout",
+          detail: "Scheduled nationals phase",
+          occurredAt: at,
+          href: `${SWORD_DUELS_PUBLIC}/nationals#knockout`,
+          source: "scheduled",
+        });
+      }
     }
   }
 

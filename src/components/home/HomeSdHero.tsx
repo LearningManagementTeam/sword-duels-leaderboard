@@ -8,6 +8,7 @@ import { getSdPublicOverview } from "@/lib/products/sword-duels/public-queries";
 import {
   getRecentAreaChampions,
   sdJourneyHeadline,
+  sdJourneyShortPath,
   sdJourneySubline,
 } from "@/lib/products/sword-duels/recent-area-champions";
 import type { SiteHomeConfig } from "@/lib/site-home-config";
@@ -135,7 +136,7 @@ export async function HomeSdHero({ branding, journey, homeConfig }: Props) {
           </Link>
         </div>
         <p className="text-center text-xs text-sd-muted/70">
-          Area battles → wild card → nationals knockout
+          {sdJourneyShortPath(journey?.tournamentFormat)}
         </p>
       </div>
     </section>

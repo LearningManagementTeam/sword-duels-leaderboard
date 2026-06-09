@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
+import { sdProgressLine } from "@/lib/products/sword-duels/journey-copy";
 import type { SdPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
 import type { ResolvedFeaturedProgram } from "@/lib/site-home-config";
 
@@ -7,22 +8,6 @@ interface Props {
   featured: ResolvedFeaturedProgram;
   sdJourney?: SdPublicJourneyState | null;
   ncStatusLine?: string;
-}
-
-function sdProgressLine(journey: SdPublicJourneyState): string {
-  if (journey.knockoutComplete) {
-    return "National champion crowned";
-  }
-  if (journey.nationalsPhase === "knockout") {
-    return "Nationals knockout underway";
-  }
-  if (journey.areasComplete) {
-    return "Wild card phase — area reps locked";
-  }
-  if (journey.totalAreas > 0) {
-    return `${journey.areasPublished} of ${journey.totalAreas} area reps locked`;
-  }
-  return "Area group battles — 2 spots fight for 1 area representative";
 }
 
 function ProgramCard({

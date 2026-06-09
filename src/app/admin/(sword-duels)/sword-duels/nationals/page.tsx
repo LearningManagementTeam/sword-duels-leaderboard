@@ -108,6 +108,7 @@ export default async function AdminSwordDuelsNationalsPage() {
           knockoutModel={v2View.knockoutModel}
           dbMatches={ko.matches}
           scoresByMatchId={scoresByMatchId}
+          fieldLockedMessage="Unlocks when Luzon, NCR, and VisMin each finish three published regional rounds."
         />
       </div>
     );

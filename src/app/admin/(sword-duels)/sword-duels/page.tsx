@@ -8,7 +8,14 @@ import { isRegionalAverageFormat } from "@/lib/products/sword-duels/tournament-f
 import { getSdAreaStatus } from "@/lib/products/sword-duels/area-status";
 import { swordDuelsPath, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
-import { getSdDashboard, getSdEvent } from "@/lib/products/sword-duels/queries";
+import { countRegionalRoundsPublished } from "@/lib/products/sword-duels/regional-rounds";
+import { loadNationalsRoster } from "@/lib/products/sword-duels/nationals-wildcard-data";
+import {
+  getSdDashboard,
+  getSdEvent,
+  getSdSetsForEvent,
+} from "@/lib/products/sword-duels/queries";
+import { loadKnockoutBracketState } from "@/lib/products/sword-duels/knockout-sync";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +28,12 @@ export default async function SwordDuelsDashboardPage() {
   let nationalsContext: Awaited<ReturnType<typeof getSdNationalsContext>> | null =
     null;
   let hasPublishedScores = false;
+  let regionalProgress = { published: 0, total: 9 };
+  let v2KnockoutBracket: Awaited<
+    ReturnType<typeof loadKnockoutBracketState>
+  >["bracket"] = null;
+  let v2AreasDone = 0;
+  let v2TotalAreas = 0;
 
   if (event) {
     try {
@@ -30,14 +43,32 @@ export default async function SwordDuelsDashboardPage() {
       areas = [];
     }
     try {
-      nationalsContext = await getSdNationalsContext(event.id);
-    } catch {
-      nationalsContext = null;
-    }
-    try {
       hasPublishedScores = await sdEventHasPublishedScores(event.id);
     } catch {
       hasPublishedScores = false;
+    }
+
+    const isV2 = isRegionalAverageFormat(event.tournament_format);
+    if (isV2) {
+      try {
+        const [roster, sets, ko] = await Promise.all([
+          loadNationalsRoster(event.id),
+          getSdSetsForEvent(event.id),
+          loadKnockoutBracketState(event.id),
+        ]);
+        regionalProgress = countRegionalRoundsPublished(sets);
+        v2KnockoutBracket = ko.bracket;
+        v2AreasDone = roster.publishedAreaCount;
+        v2TotalAreas = roster.totalAreaCount;
+      } catch {
+        /* optional */
+      }
+    } else {
+      try {
+        nationalsContext = await getSdNationalsContext(event.id);
+      } catch {
+        nationalsContext = null;
+      }
     }
   }
 
@@ -74,12 +105,27 @@ export default async function SwordDuelsDashboardPage() {
         </>
       )}
 
-      {nationalsContext && (
-        <SdNationalsPhaseStrip
-          model={nationalsContext.model}
-          knockoutBracket={nationalsContext.knockoutBracket}
-        />
-      )}
+      {event &&
+        (isRegionalAverageFormat(event.tournament_format) ? (
+          <SdNationalsPhaseStrip
+            format={event.tournament_format}
+            areasDone={v2AreasDone}
+            totalAreas={v2TotalAreas}
+            knockoutBracket={v2KnockoutBracket}
+            regionalPublished={regionalProgress.published}
+            regionalTotal={regionalProgress.total}
+          />
+        ) : (
+          nationalsContext && (
+            <SdNationalsPhaseStrip
+              format={event.tournament_format ?? "classic_v1"}
+              areasDone={nationalsContext.model.roster.publishedAreaCount}
+              totalAreas={nationalsContext.model.roster.totalAreaCount}
+              knockoutBracket={nationalsContext.knockoutBracket}
+              wildcardModel={nationalsContext.model}
+            />
+          )
+        ))}
 
       {configured && !event && (
         <div className="sd-neon-panel space-y-2 p-4 text-sm text-amber-100">
