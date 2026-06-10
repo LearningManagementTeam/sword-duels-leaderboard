@@ -6,7 +6,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { EmployeeProfileModal } from "@/components/admin/EmployeeProfileModal";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
+import { EmployeeNoDisplay } from "@/components/admin/EmployeeNoDisplay";
 import { RepAvatar } from "@/components/ui/RepAvatar";
+import { isProvisionalEmployeeNo } from "@/lib/employee-numbers";
 import { deleteEmployeesAction } from "@/lib/actions/admin";
 import { nationalCompetitionsPath } from "@/lib/admin-routes";
 import { useAdminUrlFilters } from "@/lib/use-admin-url-filters";
@@ -126,10 +128,7 @@ export function EmployeesDirectoryEditor({
       if (row.home_branch_id || row.home_branch_code) withHomeBranch++;
       if (row.rep_assignments.length > 0) asRep++;
       if (row.photo_path) withPhoto++;
-      if (
-        row.employee_no.startsWith("PENDING-") ||
-        row.employee_no.startsWith("LEGACY-")
-      ) {
+      if (isProvisionalEmployeeNo(row.employee_no)) {
         provisionalId++;
       }
     }
@@ -342,7 +341,7 @@ export function EmployeesDirectoryEditor({
               <p className="mt-1 text-[10px] text-sd-muted">
                 {stats.withPhoto} with photo
                 {stats.provisionalId > 0 &&
-                  ` · ${stats.provisionalId} provisional id`}
+                  ` · ${stats.provisionalId} pending ID`}
               </p>
             </div>
           </div>
@@ -474,8 +473,8 @@ export function EmployeesDirectoryEditor({
                         size="sm"
                       />
                     </td>
-                    <td className="px-2 py-2 font-mono text-xs text-emerald-100">
-                      {row.employee_no}
+                    <td className="px-2 py-2 text-xs text-emerald-100">
+                      <EmployeeNoDisplay employeeNo={row.employee_no} mono />
                     </td>
                     <td className="px-2 py-2 font-medium text-white">
                       {row.full_name}

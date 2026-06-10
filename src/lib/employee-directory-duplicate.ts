@@ -1,8 +1,10 @@
+import {
+  isProvisionalEmployeeNo,
+  normalizeEmployeeNo,
+} from "@/lib/employee-numbers";
 import { normalizeAllCapsText } from "@/lib/text-format";
 
-export function normalizeEmployeeNo(value: string): string {
-  return value.trim();
-}
+export { normalizeEmployeeNo } from "@/lib/employee-numbers";
 
 function employeeNumbersMatch(a: string, b: string): boolean {
   return (
@@ -30,9 +32,10 @@ export function findEmployeeDirectoryDuplicateMessage(
   excludeId?: string
 ): string | null {
   const employeeNo = normalizeEmployeeNo(fields.employee_no);
-  if (employeeNo) {
+  if (employeeNo && !isProvisionalEmployeeNo(employeeNo)) {
     for (const row of roster) {
       if (excludeId && row.id === excludeId) continue;
+      if (isProvisionalEmployeeNo(row.employee_no)) continue;
       if (employeeNumbersMatch(row.employee_no, employeeNo)) {
         return `Employee number ${row.employee_no} is already assigned to ${row.full_name}.`;
       }

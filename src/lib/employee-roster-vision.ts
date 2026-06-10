@@ -1,5 +1,8 @@
 import type { EmployeeDirectoryCsvRow } from "@/lib/employees-csv";
-import { provisionalEmployeeNo } from "@/lib/employee-numbers";
+import {
+  isProvisionalEmployeeNo,
+  provisionalEmployeeNo,
+} from "@/lib/employee-numbers";
 
 export interface VisionRosterEmployee {
   full_name: string;
@@ -97,9 +100,7 @@ export function mergeRosterDirectoryRows(
 
   for (const group of rowGroups) {
     for (const row of group) {
-      const isProvisional =
-        row.employee_no.startsWith("PENDING-") ||
-        row.employee_no.startsWith("LEGACY-");
+      const isProvisional = isProvisionalEmployeeNo(row.employee_no);
       const key = isProvisional
         ? `${row.full_name.toLowerCase()}|${row.branch_code ?? ""}`
         : row.employee_no;

@@ -14,7 +14,9 @@ import {
 import { findEmployeeDirectoryDuplicateMessage } from "@/lib/employee-directory-duplicate";
 import {
   legacyEmployeeNo,
+  normalizeEmployeeNo,
   provisionalEmployeeNo,
+  resolveEmployeeNoForSave,
 } from "@/lib/employee-numbers";
 import { normalizeAllCapsText } from "@/lib/text-format";
 
@@ -75,8 +77,23 @@ function employeeWritePayload(
   return payload;
 }
 
-export function normalizeEmployeeNo(value: string): string {
-  return value.trim();
+export { normalizeEmployeeNo } from "@/lib/employee-numbers";
+
+async function branchCodeForHomeBranch(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  homeBranchId?: string | null
+): Promise<string | undefined> {
+  const id = homeBranchId?.trim();
+  if (!id) return undefined;
+
+  const { data } = await service
+    .from("branches")
+    .select("branch_code")
+    .eq("id", id)
+    .maybeSingle();
+
+  const code = data?.branch_code?.trim();
+  return code || undefined;
 }
 
 async function assertEmployeeDirectoryUnique(
@@ -686,7 +703,26 @@ export async function updateEmployeeProfile(
 ): Promise<Employee> {
   const service = await createServiceClient();
   const now = new Date().toISOString();
-  const employeeNo = normalizeEmployeeNo(fields.employee_no);
+
+  const { data: existingRow, error: existingError } = await service
+    .from("employees")
+    .select("employee_no, home_branch_id")
+    .eq("id", employeeId)
+    .maybeSingle();
+
+  if (existingError || !existingRow) {
+    throw new Error(existingError?.message ?? "Employee not found.");
+  }
+
+  const branchCode = await branchCodeForHomeBranch(
+    service,
+    fields.home_branch_id ?? existingRow.home_branch_id
+  );
+  const employeeNo = resolveEmployeeNoForSave(fields.employee_no, {
+    fullName: fields.full_name,
+    branchCode,
+    existingEmployeeNo: existingRow.employee_no,
+  });
 
   await assertEmployeeDirectoryUnique(
     { employee_no: employeeNo, full_name: fields.full_name },
@@ -718,16 +754,21 @@ export async function createEmployeeRecord(
 ): Promise<Employee> {
   const service = await createServiceClient();
   const now = new Date().toISOString();
+  const branchCode = await branchCodeForHomeBranch(service, fields.home_branch_id);
+  const employeeNo = resolveEmployeeNoForSave(fields.employee_no, {
+    fullName: fields.full_name,
+    branchCode,
+  });
 
   await assertEmployeeDirectoryUnique({
-    employee_no: fields.employee_no,
+    employee_no: employeeNo,
     full_name: fields.full_name,
   });
 
   const { data, error } = await service
     .from("employees")
     .insert({
-      employee_no: normalizeEmployeeNo(fields.employee_no),
+      employee_no: employeeNo,
       ...employeeWritePayload(fields),
       employment_status: "active",
       updated_at: now,

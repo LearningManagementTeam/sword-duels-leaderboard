@@ -11,6 +11,7 @@ import {
 } from "react";
 import { BranchCombobox } from "@/components/admin/BranchCombobox";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
+import { EmployeeNoDisplay } from "@/components/admin/EmployeeNoDisplay";
 import { EmployeePhotoEditor } from "@/components/admin/EmployeePhotoEditor";
 import { EmployeeProfileExcelPaste } from "@/components/admin/EmployeeProfileExcelPaste";
 import { EmployeeRepAssignmentPanel } from "@/components/admin/EmployeeRepAssignmentPanel";
@@ -22,6 +23,11 @@ import {
   setEmployeeEmploymentStatusAction,
 } from "@/lib/actions/admin";
 import { findEmployeeDirectoryDuplicateMessage } from "@/lib/employee-directory-duplicate";
+import {
+  EMPLOYEE_NO_PENDING_LABEL,
+  isProvisionalEmployeeNo,
+  resolveEmployeeNoForSave,
+} from "@/lib/employee-numbers";
 import type {
   EmployeeAdminRow,
   EmployeeRepAssignment,
@@ -59,7 +65,9 @@ function emptyDraft(): ProfileDraft {
 
 function draftFromEmployee(employee: EmployeeAdminRow): ProfileDraft {
   return {
-    employee_no: employee.employee_no,
+    employee_no: isProvisionalEmployeeNo(employee.employee_no)
+      ? ""
+      : employee.employee_no,
     full_name: employee.full_name,
     position: employee.position ?? "",
     notes: employee.notes ?? "",
@@ -278,13 +286,23 @@ export function EmployeeProfileModal({
   }
 
   async function handleSave(andNext = false) {
-    if (!draft.employee_no.trim() || !draft.full_name.trim()) {
-      onError("Employee number and full name are required.");
+    if (!draft.full_name.trim()) {
+      onError("Full name is required.");
       return;
     }
 
+    const homeBranch = branches.find((b) => b.id === draft.home_branch_id.trim());
+    const resolvedEmployeeNo = resolveEmployeeNoForSave(draft.employee_no, {
+      fullName: draft.full_name,
+      branchCode: homeBranch?.branch_code,
+      existingEmployeeNo: employee?.employee_no,
+    });
+    const assigningPendingId =
+      !draft.employee_no.trim() &&
+      (!employee?.employee_no || isProvisionalEmployeeNo(employee.employee_no));
+
     const payload = {
-      employee_no: draft.employee_no,
+      employee_no: resolvedEmployeeNo,
       full_name: normalizeAllCapsText(draft.full_name),
       position: normalizeAllCapsText(draft.position),
       notes: normalizeAllCapsText(draft.notes),
@@ -323,14 +341,25 @@ export function EmployeeProfileModal({
           return;
         }
 
-        finishSuccess("Employee created.");
+        finishSuccess(
+          assigningPendingId
+            ? `Employee created with ${EMPLOYEE_NO_PENDING_LABEL}. Add the official number when HR provides it.`
+            : "Employee created."
+        );
         return;
       }
 
       if (employee) {
         const result = await saveEmployeeProfileAction(employee.id, payload);
         if (!result.ok) throw new Error(result.error);
-        onSaved("Employee updated.");
+        const upgradedFromPending =
+          isProvisionalEmployeeNo(employee.employee_no) &&
+          !isProvisionalEmployeeNo(resolvedEmployeeNo);
+        onSaved(
+          upgradedFromPending
+            ? "Employee updated — official employee number saved."
+            : "Employee updated."
+        );
         setListStale(true);
         router.refresh();
 
@@ -406,9 +435,11 @@ export function EmployeeProfileModal({
               </h2>
               {!isCreate && profileEmployee && (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-100">
-                    {profileEmployee.employee_no}
-                  </span>
+                  <EmployeeNoDisplay
+                    employeeNo={profileEmployee.employee_no}
+                    mono
+                    className="text-xs text-emerald-100"
+                  />
                   <EmploymentStatusBadge status={profileEmployee.employment_status} />
                   {profileEmployee.rep_assignments.length > 0 && (
                     <span className="text-xs text-violet-200/90">
@@ -496,14 +527,26 @@ export function EmployeeProfileModal({
               >
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <label className="block sm:col-span-1">
-                    <FieldLabel>Employee no.</FieldLabel>
+                    <FieldLabel hint="Leave blank if HR has not assigned an official number yet — the profile will show Pending ID until you update it.">
+                      Employee no.
+                    </FieldLabel>
                     <input
                       value={draft.employee_no}
                       onChange={(e) =>
                         setDraft((s) => ({ ...s, employee_no: e.target.value }))
                       }
+                      placeholder={EMPLOYEE_NO_PENDING_LABEL}
                       className={fieldClassName}
                     />
+                    {!draft.employee_no.trim() && (
+                      <p className="mt-1.5 text-[11px] text-amber-200/80">
+                        Will save as{" "}
+                        <strong className="text-amber-100">
+                          {EMPLOYEE_NO_PENDING_LABEL}
+                        </strong>{" "}
+                        until an official number is entered.
+                      </p>
+                    )}
                   </label>
                   <label className="block sm:col-span-1 xl:col-span-2">
                     <FieldLabel>Full name</FieldLabel>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
+import { EmployeeNoDisplay } from "@/components/admin/EmployeeNoDisplay";
 import { RepAvatar } from "@/components/ui/RepAvatar";
 import { resolveEmployeePhotoUrl } from "@/lib/employee-photo-storage";
 import type { EmployeePickerRow } from "@/lib/employee-types";
@@ -145,9 +146,11 @@ export function EmployeeRepPicker({
                       <span className="block truncate text-white">
                         {employee.full_name}
                       </span>
-                      <span className="block truncate text-[10px] text-sd-muted">
-                        {employee.employee_no}
-                        {employee.position ? ` · ${employee.position}` : ""}
+                      <span className="flex flex-wrap items-center gap-1 truncate text-[10px] text-sd-muted">
+                        <EmployeeNoDisplay employeeNo={employee.employee_no} />
+                        {employee.position ? (
+                          <span>· {employee.position}</span>
+                        ) : null}
                       </span>
                     </span>
                   </button>
