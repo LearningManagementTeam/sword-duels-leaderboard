@@ -490,7 +490,13 @@ export async function assignEmployeeRepSlotAction(input: {
     slot: input.slot,
   });
   revalidateEmployeePaths();
-  return { ok: true as const };
+
+  const { getEmployeeRepAssignments } = await import("@/lib/employees");
+  const rep_assignments = await getEmployeeRepAssignments(
+    service,
+    input.employeeId
+  );
+  return { ok: true as const, rep_assignments };
 }
 
 export async function clearEmployeeRepSlotAction(input: {
@@ -520,7 +526,13 @@ export async function clearEmployeeRepSlotAction(input: {
     employee_id: input.employeeId,
   });
   revalidateEmployeePaths();
-  return { ok: true as const };
+
+  const { getEmployeeRepAssignments } = await import("@/lib/employees");
+  const rep_assignments = await getEmployeeRepAssignments(
+    service,
+    input.employeeId
+  );
+  return { ok: true as const, rep_assignments };
 }
 
 function revalidateEmployeePaths() {

@@ -13,6 +13,8 @@ Read **[reference.md](reference.md)** for route inventory, audit action names, a
 
 For **operator journey + UI consistency audits** → [journey-audit.md](journey-audit.md) (sprint backlog).
 
+For **HRIS setup journey** (branches, employees, reps) → [hris-journey-audit](../hris-journey-audit/SKILL.md).
+
 For **Sword Duels area/nationals ecosystem audits** (design, gamification, knockout gaps) → [sword-duels-ecosystem-audit](../sword-duels-ecosystem-audit/SKILL.md).
 
 For owner-facing steps → [beginner-friendly-guide](../beginner-friendly-guide/SKILL.md) + [docs/DAILY-OPERATIONS.md](../../docs/DAILY-OPERATIONS.md).
@@ -31,6 +33,7 @@ For schema/migrations → [sword-duels-supabase](../sword-duels-supabase/SKILL.m
 
 ## Operator sequence (weekly)
 
+0. **HRIS setup (pre-event)** — HRIS → Branches CSV → Employee directory (CSV, Gemini screenshots, or manual) → assign Rep 1/2 from profile drawer or Representatives → verify photos.
 1. **Branches** — CSV UTF-8 import (130+ rows) → Admin → Branches → Import for June Round 1.
 2. **Representatives** — Table edit (Admin → Representatives) or optional rep columns in import CSV.
 3. **Round** — Admin → Rounds → enter scores → Save draft → Preview (optional) → **Save & publish** (progress panel).

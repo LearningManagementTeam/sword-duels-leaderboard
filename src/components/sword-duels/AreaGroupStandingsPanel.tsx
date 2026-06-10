@@ -12,27 +12,17 @@ interface Props {
   groupSets: SdAreaSet[];
   publicScores: Map<string, SdSetScore[]>;
   defaultOpen?: boolean;
+  /** Standings-first layout — always visible when results exist. */
+  prominent?: boolean;
 }
 
-export function AreaGroupStandingsPanel({
+function StandingsGrid({
   bracket,
   groupSets,
   publicScores,
-  defaultOpen = false,
-}: Props) {
-  const anyPublished = groupSets.some((s) => s.status === "published");
-
+}: Pick<Props, "bracket" | "groupSets" | "publicScores">) {
   return (
-    <SdCollapsibleSection
-      title="Group standings"
-      subtitle={
-        anyPublished
-          ? "Ranked scores from each group battle"
-          : "Opens when group results are published"
-      }
-      defaultOpen={defaultOpen}
-    >
-      <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
         {groupSets.map((set) => {
           const pool =
             set.set_type === "group_a" ? bracket.groupA : bracket.groupB;
@@ -84,7 +74,52 @@ export function AreaGroupStandingsPanel({
             </div>
           );
         })}
-      </div>
+    </div>
+  );
+}
+
+export function AreaGroupStandingsPanel({
+  bracket,
+  groupSets,
+  publicScores,
+  defaultOpen = false,
+  prominent = false,
+}: Props) {
+  const anyPublished = groupSets.some((s) => s.status === "published");
+
+  if (prominent && anyPublished) {
+    return (
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Group standings</h2>
+          <p className="mt-1 text-sm text-sd-muted">
+            Ranked scores from each group battle
+          </p>
+        </div>
+        <StandingsGrid
+          bracket={bracket}
+          groupSets={groupSets}
+          publicScores={publicScores}
+        />
+      </section>
+    );
+  }
+
+  return (
+    <SdCollapsibleSection
+      title="Group standings"
+      subtitle={
+        anyPublished
+          ? "Ranked scores from each group battle"
+          : "Opens when group results are published"
+      }
+      defaultOpen={defaultOpen}
+    >
+      <StandingsGrid
+        bracket={bracket}
+        groupSets={groupSets}
+        publicScores={publicScores}
+      />
     </SdCollapsibleSection>
   );
 }

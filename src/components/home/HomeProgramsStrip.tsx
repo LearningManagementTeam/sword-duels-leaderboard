@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
+import type { CompetitionMapConfig } from "@/lib/competition-map";
 import { sdProgressLine } from "@/lib/products/sword-duels/journey-copy";
 import type { SdPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
+import { resolvePublicStandingsHref } from "@/lib/public-standings-route";
 import type { ResolvedFeaturedProgram } from "@/lib/site-home-config";
 
 interface Props {
   featured: ResolvedFeaturedProgram;
+  mapConfig: CompetitionMapConfig;
   sdJourney?: SdPublicJourneyState | null;
   ncStatusLine?: string;
 }
@@ -55,9 +58,11 @@ function ProgramCard({
 
 export function HomeProgramsStrip({
   featured,
+  mapConfig,
   sdJourney,
   ncStatusLine = "June area-wide → July regional → The Nationals",
 }: Props) {
+  const ncHref = resolvePublicStandingsHref(mapConfig);
   const sdSubtitle =
     sdJourney && sdJourney.totalAreas > 0
       ? sdProgressLine(sdJourney)
@@ -86,7 +91,7 @@ export function HomeProgramsStrip({
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <ProgramCard
-          href="/june"
+          href={ncHref}
           title="National Competitions"
           subtitle={ncStatusLine}
           featured={featured === "national_competitions"}

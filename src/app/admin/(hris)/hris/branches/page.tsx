@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { BranchesRosterEditor } from "@/components/admin/BranchesRosterEditor";
 import { ImportParticipatingBranches } from "@/components/admin/ImportParticipatingBranches";
 import { ImportBranchesButton } from "@/components/admin/ImportBranchesButton";
@@ -46,12 +47,14 @@ export default async function HrisBranchesPage() {
 
       {!configured && <SetupBanner />}
 
-      <BranchesRosterEditor
-        key={`roster-${roster.total}-${roster.activeCount}-${roster.inactiveCount}`}
-        branches={roster.branches}
-        activeCount={roster.activeCount}
-        inactiveCount={roster.inactiveCount}
-      />
+      <Suspense fallback={<p className="text-sm text-sd-muted">Loading branches…</p>}>
+        <BranchesRosterEditor
+          key={`roster-${roster.total}-${roster.activeCount}-${roster.inactiveCount}`}
+          branches={roster.branches}
+          activeCount={roster.activeCount}
+          inactiveCount={roster.inactiveCount}
+        />
+      </Suspense>
 
       <ImportParticipatingBranches />
 

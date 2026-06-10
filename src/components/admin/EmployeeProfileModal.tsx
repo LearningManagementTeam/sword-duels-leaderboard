@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { BranchCombobox } from "@/components/admin/BranchCombobox";
 import { AdminConfirmPanel } from "@/components/admin/AdminConfirmPanel";
 import { EmployeePhotoEditor } from "@/components/admin/EmployeePhotoEditor";
 import { EmployeeProfileExcelPaste } from "@/components/admin/EmployeeProfileExcelPaste";
@@ -23,6 +24,7 @@ import {
 import { findEmployeeDirectoryDuplicateMessage } from "@/lib/employee-directory-duplicate";
 import type {
   EmployeeAdminRow,
+  EmployeeRepAssignment,
   EmploymentStatus,
   HrisBranchOption,
 } from "@/lib/employee-types";
@@ -77,6 +79,10 @@ interface Props {
   onClose: () => void;
   onSaved: (message: string) => void;
   onError: (message: string) => void;
+  onRepAssignmentsChange?: (
+    employeeId: string,
+    repAssignments: EmployeeRepAssignment[]
+  ) => void;
   /** Desktop: prev/next through the filtered directory list. */
   navigation?: {
     ids: string[];
@@ -141,6 +147,7 @@ export function EmployeeProfileModal({
   onClose,
   onSaved,
   onError,
+  onRepAssignmentsChange,
   navigation,
 }: Props) {
   const router = useRouter();
@@ -151,19 +158,33 @@ export function EmployeeProfileModal({
   const [draftPhoto, setDraftPhoto] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [branchFilter, setBranchFilter] = useState("");
   const [listStale, setListStale] = useState(false);
   const [importApplied, setImportApplied] = useState(false);
+  const [liveRepAssignments, setLiveRepAssignments] = useState<
+    EmployeeRepAssignment[] | null
+  >(null);
 
   const isCreate = mode === "create";
+
+  const repAssignmentsKey =
+    employee?.rep_assignments
+      .map((a) => `${a.branch_id}:${a.slot}`)
+      .join("|") ?? "";
+
+  useEffect(() => {
+    setLiveRepAssignments(null);
+  }, [employee?.id, repAssignmentsKey]);
+
+  const profileEmployee =
+    employee && liveRepAssignments
+      ? { ...employee, rep_assignments: liveRepAssignments }
+      : employee;
   const displayName = draft.full_name || employee?.full_name || "New employee";
 
   useEffect(() => {
     setDraft(employee ? draftFromEmployee(employee) : emptyDraft());
     setDraftPhoto(null);
     setShowDeleteConfirm(false);
-    setBranchFilter("");
-    setListStale(false);
     setImportApplied(false);
   }, [employee, mode]);
 
@@ -221,17 +242,6 @@ export function EmployeeProfileModal({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [navigation, hasPrev, hasNext, navIndex]);
 
-  const filteredBranches = useMemo(() => {
-    const q = branchFilter.trim().toLowerCase();
-    if (!q) return branches;
-    return branches.filter(
-      (b) =>
-        b.branch_code.toLowerCase().includes(q) ||
-        b.branch_name.toLowerCase().includes(q) ||
-        (b.area?.toLowerCase().includes(q) ?? false)
-    );
-  }, [branches, branchFilter]);
-
   function applyCapsOnBlur(field: keyof ProfileDraft, value: string) {
     const normalized = normalizeAllCapsText(value);
     if (normalized !== value) {
@@ -267,7 +277,7 @@ export function EmployeeProfileModal({
     return null;
   }
 
-  async function handleSave() {
+  async function handleSave(andNext = false) {
     if (!draft.employee_no.trim() || !draft.full_name.trim()) {
       onError("Employee number and full name are required.");
       return;
@@ -320,7 +330,13 @@ export function EmployeeProfileModal({
       if (employee) {
         const result = await saveEmployeeProfileAction(employee.id, payload);
         if (!result.ok) throw new Error(result.error);
-        finishSuccess("Employee updated.");
+        onSaved("Employee updated.");
+        setListStale(true);
+        router.refresh();
+
+        if (andNext && navigation && hasNext) {
+          navigation.onNavigate(navigation.ids[navIndex + 1]!);
+        }
       }
     } catch (e) {
       onError(e instanceof Error ? e.message : "Save failed.");
@@ -388,16 +404,16 @@ export function EmployeeProfileModal({
               >
                 {isCreate ? "Add employee" : displayName}
               </h2>
-              {!isCreate && employee && (
+              {!isCreate && profileEmployee && (
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-100">
-                    {employee.employee_no}
+                    {profileEmployee.employee_no}
                   </span>
-                  <EmploymentStatusBadge status={employee.employment_status} />
-                  {employee.rep_assignments.length > 0 && (
+                  <EmploymentStatusBadge status={profileEmployee.employment_status} />
+                  {profileEmployee.rep_assignments.length > 0 && (
                     <span className="text-xs text-violet-200/90">
-                      {employee.rep_assignments.length} rep slot
-                      {employee.rep_assignments.length === 1 ? "" : "s"}
+                      {profileEmployee.rep_assignments.length} rep slot
+                      {profileEmployee.rep_assignments.length === 1 ? "" : "s"}
                     </span>
                   )}
                 </div>
@@ -520,31 +536,18 @@ export function EmployeeProfileModal({
               >
                 <div className="grid gap-4">
                   <label className="block">
-                    <FieldLabel hint="Search by code, name, or area.">
+                    <FieldLabel hint="Type to search by code, name, or area.">
                       Home branch
                     </FieldLabel>
-                    <input
-                      type="search"
-                      placeholder="Filter branches…"
-                      value={branchFilter}
-                      onChange={(e) => setBranchFilter(e.target.value)}
-                      className={fieldClassName}
-                    />
-                    <select
+                    <BranchCombobox
+                      branches={branches}
                       value={draft.home_branch_id}
-                      onChange={(e) =>
-                        setDraft((s) => ({ ...s, home_branch_id: e.target.value }))
+                      onChange={(branchId) =>
+                        setDraft((s) => ({ ...s, home_branch_id: branchId }))
                       }
-                      className={`${fieldClassName} mt-2`}
-                    >
-                      <option value="">None / Unassigned</option>
-                      {filteredBranches.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.branch_code} · {b.branch_name}
-                          {b.area ? ` (${b.area})` : ""}
-                        </option>
-                      ))}
-                    </select>
+                      disabled={loading}
+                      className="mt-1.5"
+                    />
                   </label>
                 </div>
               </ProfileSection>
@@ -615,15 +618,20 @@ export function EmployeeProfileModal({
                 </div>
               </ProfileSection>
 
-              {!isCreate && employee && (
+              {!isCreate && profileEmployee && (
                 <ProfileSection
                   title="Competition representative"
                   description="Assign Rep 1 or Rep 2 for Sword Duels. Each branch allows at most two reps."
                 >
                   <EmployeeRepAssignmentPanel
-                    employee={employee}
+                    employee={profileEmployee}
                     branches={branches}
-                    onSuccess={(msg) => {
+                    onSuccess={(msg, repAssignments) => {
+                      setLiveRepAssignments(repAssignments);
+                      onRepAssignmentsChange?.(
+                        profileEmployee.id,
+                        repAssignments
+                      );
                       onSaved(msg);
                       setListStale(true);
                     }}
@@ -636,20 +644,20 @@ export function EmployeeProfileModal({
         </div>
 
         <footer className="shrink-0 border-t border-emerald-500/15 bg-sd-deep/95 px-6 py-4 backdrop-blur-sm">
-          {showDeleteConfirm && employee ? (
-            <AdminConfirmPanel
-              title={`Delete ${employee.full_name}?`}
+        {showDeleteConfirm && profileEmployee ? (
+          <AdminConfirmPanel
+            title={`Delete ${profileEmployee.full_name}?`}
               tone="danger"
               confirmLabel="Delete employee"
               busy={loading}
               onConfirm={() => void handleDelete()}
               onCancel={() => setShowDeleteConfirm(false)}
             >
-              {employee.rep_assignments.length > 0 ? (
-                <p>
-                  This also clears {employee.rep_assignments.length} competition
-                  rep slot(s) on the Representatives page.
-                </p>
+            {profileEmployee.rep_assignments.length > 0 ? (
+              <p>
+                This also clears {profileEmployee.rep_assignments.length} competition
+                rep slot(s) on the Representatives page.
+              </p>
               ) : (
                 <p>This permanently removes the employee profile.</p>
               )}
@@ -669,6 +677,16 @@ export function EmployeeProfileModal({
                       ? "Create employee"
                       : "Save changes"}
                 </button>
+                {!isCreate && hasNext && (
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => void handleSave(true)}
+                    className="rounded-lg px-4 py-2.5 text-sm text-emerald-100 ring-1 ring-emerald-400/35 hover:bg-emerald-500/10 disabled:opacity-50"
+                  >
+                    Save &amp; next
+                  </button>
+                )}
                 {!isCreate && employee && (
                   <button
                     type="button"

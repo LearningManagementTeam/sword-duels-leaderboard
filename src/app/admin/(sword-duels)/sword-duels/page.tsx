@@ -10,7 +10,9 @@ import { swordDuelsPath, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
 import { countRegionalRoundsPublished } from "@/lib/products/sword-duels/regional-rounds";
 import { loadNationalsRoster } from "@/lib/products/sword-duels/nationals-wildcard-data";
+import { areaSlug } from "@/lib/products/sword-duels/area-groups";
 import {
+  getLastSdScoredArea,
   getSdDashboard,
   getSdEvent,
   getSdSetsForEvent,
@@ -34,11 +36,16 @@ export default async function SwordDuelsDashboardPage() {
   >["bracket"] = null;
   let v2AreasDone = 0;
   let v2TotalAreas = 0;
+  let lastScoredArea: string | null = null;
 
   if (event) {
     try {
-      const dash = await getSdDashboard(event.id);
+      const [dash, lastArea] = await Promise.all([
+        getSdDashboard(event.id),
+        getLastSdScoredArea(event.id).catch(() => null),
+      ]);
       areas = dash.areas;
+      lastScoredArea = lastArea?.area ?? null;
     } catch {
       areas = [];
     }
@@ -202,8 +209,11 @@ export default async function SwordDuelsDashboardPage() {
             <h2 className="font-semibold text-white">Area scoring</h2>
             {areas.length === 0 ? (
               <p className="mt-1 text-sm text-sd-muted">
-                Sync brackets after branches are imported from National
-                Competitions → Branches.
+                Import branches in{" "}
+                <Link href="/admin/hris/branches" className="sd-link">
+                  HRIS → Branches
+                </Link>
+                , then open Areas and click <strong className="text-white">Sync from branches</strong>.
               </p>
             ) : (
               <p className="mt-1 text-sm text-sd-muted">
@@ -216,12 +226,22 @@ export default async function SwordDuelsDashboardPage() {
               </p>
             )}
           </div>
-          <Link
-            href={swordDuelsPath("areas")}
-            className="sd-link shrink-0 text-sm font-medium"
-          >
-            Open areas →
-          </Link>
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            {lastScoredArea && (
+              <Link
+                href={swordDuelsPath("areas", areaSlug(lastScoredArea))}
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-cyan-200 ring-1 ring-cyan-400/30 hover:bg-cyan-500/10"
+              >
+                Resume scoring — {lastScoredArea}
+              </Link>
+            )}
+            <Link
+              href={swordDuelsPath("areas")}
+              className="sd-link text-sm font-medium"
+            >
+              Open areas →
+            </Link>
+          </div>
         </div>
       </section>
     </div>

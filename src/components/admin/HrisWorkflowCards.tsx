@@ -25,8 +25,9 @@ export function HrisWorkflowCards() {
       <div className="sd-neon-panel flex flex-col p-4 ring-1 ring-violet-400/20">
         <h3 className="font-semibold text-white">Employee directory</h3>
         <p className="mt-1 flex-1 text-sm text-sd-muted">
-          Competition rep profiles — employee number, name, position, and
-          employment status (active, on leave, resigned).
+          Employee profiles — number, name, position, photo, home branch, and
+          employment status. Bulk-import roster screenshots, then open a profile
+          to assign Sword Duels Rep 1 or Rep 2 per branch.
         </p>
         <div className="mt-3 space-y-1.5">
           <SdButtonLink

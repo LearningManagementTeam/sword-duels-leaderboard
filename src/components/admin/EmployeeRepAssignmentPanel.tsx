@@ -1,18 +1,23 @@
 "use client";
 
+import { BranchCombobox } from "@/components/admin/BranchCombobox";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   assignEmployeeRepSlotAction,
   clearEmployeeRepSlotAction,
 } from "@/lib/actions/admin";
 import { COMPETITION_REP_PROGRAMS } from "@/lib/competition-rep-programs";
-import type { EmployeeAdminRow, HrisBranchOption } from "@/lib/employee-types";
+import type {
+  EmployeeAdminRow,
+  EmployeeRepAssignment,
+  HrisBranchOption,
+} from "@/lib/employee-types";
 
 interface Props {
   employee: EmployeeAdminRow;
   branches: HrisBranchOption[];
-  onSuccess: (message: string) => void;
+  onSuccess: (message: string, repAssignments: EmployeeRepAssignment[]) => void;
   onError: (message: string) => void;
 }
 
@@ -23,7 +28,6 @@ export function EmployeeRepAssignmentPanel({
   onError,
 }: Props) {
   const router = useRouter();
-  const [branchFilter, setBranchFilter] = useState("");
   const [branchId, setBranchId] = useState(employee.home_branch_id ?? "");
   const [slot, setSlot] = useState<1 | 2>(1);
   const [busy, setBusy] = useState(false);
@@ -34,17 +38,6 @@ export function EmployeeRepAssignmentPanel({
       employee.rep_assignments.some((a) => a.slot === 1) ? 2 : 1
     );
   }, [employee.id, employee.home_branch_id, employee.rep_assignments]);
-
-  const filteredBranches = useMemo(() => {
-    const q = branchFilter.trim().toLowerCase();
-    if (!q) return branches;
-    return branches.filter(
-      (b) =>
-        b.branch_code.toLowerCase().includes(q) ||
-        b.branch_name.toLowerCase().includes(q) ||
-        (b.area?.toLowerCase().includes(q) ?? false)
-    );
-  }, [branches, branchFilter]);
 
   const selectedBranch = branches.find((b) => b.id === branchId) ?? null;
   const assignmentOnSelected = employee.rep_assignments.find(
@@ -70,7 +63,8 @@ export function EmployeeRepAssignmentPanel({
         ? `${selectedBranch.branch_code} · ${selectedBranch.branch_name}`
         : "branch";
       onSuccess(
-        `Assigned ${employee.full_name} as Rep ${slot} (${COMPETITION_REP_PROGRAMS[0]!.label}) for ${branchLabel}.`
+        `Assigned ${employee.full_name} as Rep ${slot} (${COMPETITION_REP_PROGRAMS[0]!.label}) for ${branchLabel}.`,
+        result.rep_assignments
       );
       router.refresh();
     } catch (e) {
@@ -91,7 +85,8 @@ export function EmployeeRepAssignmentPanel({
 
       const branch = branches.find((b) => b.id === targetBranchId);
       onSuccess(
-        `Removed ${employee.full_name} as a rep for ${branch?.branch_code ?? "branch"}.`
+        `Removed ${employee.full_name} as a rep for ${branch?.branch_code ?? "branch"}.`,
+        result.rep_assignments
       );
       router.refresh();
     } catch (e) {
@@ -179,27 +174,15 @@ export function EmployeeRepAssignmentPanel({
 
         <label className="block text-sm lg:col-span-2">
           <span className="text-sd-muted">Branch</span>
-          <input
-            type="search"
-            placeholder="Filter branches…"
-            value={branchFilter}
-            onChange={(e) => setBranchFilter(e.target.value)}
-            className="mt-1.5 block w-full rounded-lg sd-input px-3 py-2.5 text-sm"
-          />
-          <select
+          <BranchCombobox
+            branches={branches}
             value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
+            onChange={setBranchId}
             disabled={busy}
-            className="mt-2 block w-full rounded-lg sd-input px-3 py-2.5 text-sm disabled:opacity-50"
-          >
-            <option value="">Choose branch…</option>
-            {filteredBranches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.branch_code} · {b.branch_name}
-                {b.area ? ` (${b.area})` : ""}
-              </option>
-            ))}
-          </select>
+            placeholder="Search branches…"
+            emptyLabel="Choose branch…"
+            className="mt-1.5"
+          />
           {employee.home_branch_id && branchId === employee.home_branch_id && (
             <p className="mt-1.5 text-[11px] text-emerald-200/70">
               Pre-filled from home branch.

@@ -17,6 +17,7 @@ import {
 } from "@/lib/products/sword-duels/share-metadata";
 import { REGION_LABELS } from "@/lib/scoring-config";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
+import { NATIONALS_PUBLIC_UNAVAILABLE } from "@/lib/products/sword-duels/public-setup-messages";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -59,11 +60,7 @@ export default async function SwordDuelsNationalsPage() {
     } catch {
       return (
         <div className="space-y-4">
-          <p className="text-sd-muted">
-            Nationals data could not load. Run migration{" "}
-            <code className="text-xs">030_sd_tournament_format.sql</code> and
-            refresh.
-          </p>
+          <p className="text-sd-muted">{NATIONALS_PUBLIC_UNAVAILABLE}</p>
           <Link href={SWORD_DUELS_PUBLIC} className="sd-link text-sm">
             ← Back to Sword Duels
           </Link>
@@ -139,13 +136,7 @@ export default async function SwordDuelsNationalsPage() {
   } catch {
     return (
       <div className="space-y-4">
-        <p className="text-sd-muted">
-          Nationals tables are not ready. Run migration{" "}
-          <code className="text-xs">019_sd_nationals_wildcard.sql</code> and{" "}
-          <code className="text-xs">020_sd_nationals_knockout.sql</code> (or{" "}
-          <code className="text-xs">016_sword_duels_repair.sql</code>) in
-          Supabase, then refresh.
-        </p>
+        <p className="text-sd-muted">{NATIONALS_PUBLIC_UNAVAILABLE}</p>
         <Link href={SWORD_DUELS_PUBLIC} className="sd-link text-sm">
           ← Back to Sword Duels
         </Link>

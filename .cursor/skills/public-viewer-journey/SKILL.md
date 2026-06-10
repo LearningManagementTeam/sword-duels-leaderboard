@@ -20,18 +20,37 @@ Public viewers open the site to **see scores and who advanced** — not to expor
 3. **Tap budget** — Live standings reachable in ≤2 taps from home (**View standings** on home, or phase tabs when already on a board page).
 4. **Content order (home)** — Live standings preview (centered arena block) → Carousel → Season journey (collapsed) → Share. No hero logo on home.
 5. **Content order (board pages)** — Sticky phase/region bar → Leaderboard → Collapsible progress/status below.
-6. **Navigation** — Mobile: fixed bottom glass bar. Desktop: fixed top glass bar. Two destinations: **Home**, **How to win**. No duplicate standings link in nav — home **View standings** is the primary entry; board pages keep phase tabs.
+6. **Navigation** — Mobile: fixed bottom glass bar. Desktop: fixed top glass bar. **Current (2026-06):** three destinations — **Home**, **Sword Duels**, **How to win** (`PublicNav.tsx`). NC standings remain via home **View standings** CTA (competition-map-driven), not a fourth nav item.
 7. **Standings destination** — Home CTA uses `resolvePublicStandingsHref()` from competition map (finals when map says August, etc.) — not “last CSV export” or arbitrary default.
 8. **Empty states** — One clear message when R0; avoid stacking chrome with no data.
 
-## Public nav items (only these)
+## Public nav items (current)
 
 | Label | Target | Active when |
 |-------|--------|-------------|
 | Home | `/` | pathname `/` |
+| Sword Duels | `/sword-duels` | `/sword-duels/*` |
 | How to win | `/mechanics` | `/mechanics` |
 
-Standings are **not** in global nav (same destination as home **View standings**). Use home CTA or in-board phase/region navigation.
+Standings are **not** in global nav — use home **View standings** (`resolvePublicStandingsHref()`) or in-board phase/region navigation.
+
+**Home Programs strip:** National Competitions card also uses `resolvePublicStandingsHref(mapConfig)` — same map-driven destination as the hero CTA.
+
+**SD featured home:** Journey step pills live inside `HomeSdHero` (`SdPublicJourneyBar variant="embedded"`). Do not add a second full journey panel below the hero.
+
+**Audit note (2026-06-10):** Three-item nav is intentional for dual-product home but differs from older two-item spec. Revisit only if NC season needs a dedicated nav tab.
+
+## SD area page hierarchy (Batch 3 — 2026-06-10)
+
+Order on `/sword-duels/[area]`:
+
+1. Page header
+2. **Sticky group summary** (`AreaGroupStickySummary`) — Group A/B leaders when published
+3. Group split panel
+4. **Group standings** (`AreaGroupStandingsPanel` `prominent`) — full tables before bracket
+5. Schedule → bracket map (spectacle below scores)
+
+Matches standings-first scan path while keeping bracket map for fans who scroll.
 
 ## Home arena block (`HomeStandingsPreview`)
 
@@ -89,6 +108,7 @@ June R3 live board: `/june/leaderboard`. R1/R2: regional URLs only.
 ## Related skills
 
 - **sword-duels-neon-glass** — visual styling (`sd-glass`, neon panels)
+- **hris-journey-audit** — HRIS setup before competitions
 - **beginner-friendly-guide** — explain changes to non-developer owner
 
 ## Do / Don't

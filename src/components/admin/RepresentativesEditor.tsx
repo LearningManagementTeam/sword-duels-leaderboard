@@ -6,6 +6,7 @@ import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge"
 import { RepAvatar } from "@/components/ui/RepAvatar";
 import { saveBranchRepresentatives } from "@/lib/actions/admin";
 import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
+import { useAdminUrlFilters } from "@/lib/use-admin-url-filters";
 import { resolveEmployeePhotoUrl } from "@/lib/employee-photo-storage";
 import type { EmployeePickerRow, EmploymentStatus } from "@/lib/employee-types";
 import { repSnapshot, type RepresentativeSavePayload } from "@/lib/representative-fields";
@@ -40,6 +41,13 @@ type StatusFilter =
   | "missing_rep2"
   | "needs_attention"
   | "unsaved";
+
+const REP_URL_FILTERS = {
+  q: { default: "", debounce: true },
+  area: { default: "" },
+  status: { default: "all" },
+  sort: { default: "branch_code" },
+} as const;
 
 interface Props {
   branches: Branch[];
@@ -343,10 +351,11 @@ export function RepresentativesEditor({ branches, employees }: Props) {
     setBaseline(initialRows);
   }, [initialRows]);
 
-  const [search, setSearch] = useState("");
-  const [areaFilter, setAreaFilter] = useState("");
-  const [sortMode, setSortMode] = useState<BranchListSortMode>("branch_code");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const { filters, setFilter } = useAdminUrlFilters(REP_URL_FILTERS);
+  const search = filters.q ?? "";
+  const areaFilter = filters.area ?? "";
+  const sortMode = (filters.sort ?? "branch_code") as BranchListSortMode;
+  const statusFilter = (filters.status ?? "all") as StatusFilter;
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
@@ -637,12 +646,12 @@ export function RepresentativesEditor({ branches, employees }: Props) {
           type="search"
           placeholder="Search branch, code, rep name, employee no…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => setFilter("q", e.target.value)}
           className="min-w-[200px] flex-1 rounded-lg sd-input px-3 py-2 text-sm"
         />
         <select
           value={areaFilter}
-          onChange={(e) => setAreaFilter(e.target.value)}
+          onChange={(e) => setFilter("area", e.target.value)}
           className="rounded-lg sd-input px-3 py-2 text-sm"
           aria-label="Filter by area"
         >
@@ -655,7 +664,9 @@ export function RepresentativesEditor({ branches, employees }: Props) {
         </select>
         <select
           value={sortMode}
-          onChange={(e) => setSortMode(e.target.value as BranchListSortMode)}
+          onChange={(e) =>
+            setFilter("sort", e.target.value as BranchListSortMode)
+          }
           className="rounded-lg sd-input px-3 py-2 text-sm"
           aria-label="Sort branches"
         >
@@ -678,7 +689,7 @@ export function RepresentativesEditor({ branches, employees }: Props) {
               key={chip.id}
               type="button"
               disabled={disabled}
-              onClick={() => setStatusFilter(chip.id)}
+              onClick={() => setFilter("status", chip.id)}
               className={`rounded-full px-3 py-1 text-xs transition ${
                 active
                   ? "bg-emerald-500/25 text-emerald-100 ring-1 ring-emerald-400/40"

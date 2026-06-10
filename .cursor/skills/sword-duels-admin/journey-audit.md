@@ -117,6 +117,28 @@ Central team member, non-developer. Opens admin weekly to score rounds, occasion
 - Anticipation-tone copy on advancement picks empty region.
 - Preview page labels The Nationals; admin surfaces use `seasonPhaseLabel` (no raw “August” in UI copy).
 
+### Sprint 7 — HRIS operator journey (2026-06-10 audit — backlog, owner decides)
+
+**Batch 1 shipped:** SD area copy → HRIS; HRIS hints/cards; live rep refresh in profile drawer; public nationals friendly errors.
+
+**Batch 2 shipped:** HRIS setup progress cards; save & stay / save & next on profile drawer; NC “View live board”; SD “Resume scoring” shortcut; `?filter=not_rep` on employees.
+
+**Batch 3 shipped:** SD area sticky leaders + standings-first reorder; home Programs NC → map href; SD featured home single journey UI.
+
+**Batch 4 shipped:** Employee CSV import; searchable branch combobox; URL-persisted filters on HRIS/rep tables. Per-competition rep DB slots deferred.
+
+See [hris-journey-audit/SKILL.md](../hris-journey-audit/SKILL.md) and [findings-2026-06-10-full-journey.md](../sword-duels-ecosystem-audit/findings-2026-06-10-full-journey.md).
+
+| Priority | Item | Rationale |
+|----------|------|-----------|
+| ~~P1~~ | ~~HRIS dashboard **setup progress**~~ | ✅ Batch 2 |
+| ~~P1~~ | ~~**Save & stay** on profile drawer~~ | ✅ Batch 2 |
+| P1 | Align hints/copy: rep assign in **profile drawer** + Representatives table | Dual paths today |
+| ~~P1~~ | ~~Fix **stale drawer** after rep assign~~ | ✅ Batch 1 |
+| P2 | Employee **CSV import** (parity with branches) | When screenshots unavailable |
+| P2 | Clickable stat cards → filters | Faster “not a rep yet” workflow |
+| P2 | Searchable branch combobox | 135-row select fatigue |
+
 ## Regression checks after each sprint
 
 - [ ] `npm run build`

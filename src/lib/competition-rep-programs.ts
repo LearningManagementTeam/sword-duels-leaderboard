@@ -1,4 +1,9 @@
-/** Competitions that read branch rep slots (Rep 1 / Rep 2 on branches). */
+/** Competitions that read branch rep slots (Rep 1 / Rep 2 on branches).
+ *
+ * Rep columns live on `branches` today — shared across programs. Per-competition
+ * rep tables are deferred until Quiz Day (or another program) needs different
+ * reps than Sword Duels / National Competitions.
+ */
 
 export type CompetitionRepProgramId = "sword_duels";
 

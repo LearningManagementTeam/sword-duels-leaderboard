@@ -536,6 +536,42 @@ export interface GetEmployeesForAdminOptions {
   branchId?: string;
 }
 
+/** Rep slots this employee holds across all branches. */
+export async function getEmployeeRepAssignments(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  employeeId: string
+): Promise<EmployeeRepAssignment[]> {
+  const { data: branches } = await service
+    .from("branches")
+    .select(
+      "id, branch_code, branch_name, representative_1_employee_id, representative_2_employee_id"
+    );
+
+  const assignments: EmployeeRepAssignment[] = [];
+  for (const branch of branches ?? []) {
+    if (branch.representative_1_employee_id === employeeId) {
+      assignments.push({
+        branch_id: branch.id,
+        branch_code: branch.branch_code,
+        branch_name: branch.branch_name,
+        slot: 1,
+      });
+    }
+    if (branch.representative_2_employee_id === employeeId) {
+      assignments.push({
+        branch_id: branch.id,
+        branch_code: branch.branch_code,
+        branch_name: branch.branch_name,
+        slot: 2,
+      });
+    }
+  }
+
+  return assignments.sort((a, b) =>
+    a.branch_code.localeCompare(b.branch_code, undefined, { numeric: true })
+  );
+}
+
 export async function getBranchOptionsForHris(): Promise<
   import("@/lib/employee-types").HrisBranchOption[]
 > {

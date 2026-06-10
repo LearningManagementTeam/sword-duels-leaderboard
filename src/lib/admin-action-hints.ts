@@ -10,11 +10,11 @@ import {
 
 export const HRIS_NAV_HINTS: Record<string, string> = {
   [HRIS_ADMIN]:
-    "HRIS home: shortcuts to branches and the employee directory.",
+    "HRIS home: import branches, load employees, then assign Sword Duels rep slots from profiles.",
   [hrisPath("branches")]:
     "Master branch list: add or edit branches, deactivate closed ones, or bulk-import CSV.",
   [hrisPath("employees")]:
-    "Employee directory: search reps by number, edit profiles, and set active / on leave / resigned status.",
+    "Employee directory: search profiles, upload photos, CSV or screenshot import, and assign Rep 1 / Rep 2 per branch from each profile.",
 };
 
 export const ADMIN_NAV_HINTS: Record<string, string> = {
@@ -29,7 +29,7 @@ export const ADMIN_NAV_HINTS: Record<string, string> = {
   [nationalCompetitionsPath("advancement")]:
     "End of June or July: after Round 3 is live everywhere, lock the phase to seed survivors into the next stage (24 → July, 3 → Nationals).",
   [nationalCompetitionsPath("representatives")]:
-    "Assign Rep 1 and Rep 2 per branch for competitions — profiles sync to HRIS.",
+    "Branch-by-branch rep review: assign Rep 1 and Rep 2, or use HRIS → Employee directory → open a profile to assign from the employee side.",
   [nationalCompetitionsPath("competition")]:
     "Update the home page journey map (“you are here”) after major beats — not needed for every score change.",
   [nationalCompetitionsPath("mechanics")]:
@@ -56,13 +56,13 @@ export const ADMIN_WORKFLOW_HINTS = {
   phaseLock:
     "Once June or July Round 3 is published in all regions: lock to send 24 survivors to July or 3 champions to Nationals.",
   employeeDirectory:
-    "Use this for employee numbers, job titles, and resigned/on-leave status — not for entering round scores.",
+    "HR profiles, photos, home branch, and Sword Duels rep assignment (Rep 1 / Rep 2) — open a row to edit. Bulk load via roster screenshots or Excel paste in the profile drawer.",
   representatives:
-    "Pick which person competes as Rep 1 or Rep 2 for each branch. Profiles sync to the employee directory.",
+    "Same rep slots as the employee directory — use this table to scan all branches at once, or assign from HRIS profiles when you start from a person.",
   branches:
     "Master list of ~135 branches: codes, areas, regions, and active/inactive status.",
   hrisSetup:
-    "HRIS owns branches and employee profiles. Use Revalida only to assign reps and score events.",
+    "HRIS owns branches and employee profiles, including Sword Duels rep slots from the employee directory. Use Revalida to score and publish events.",
 };
 
 export const ADMIN_ROUND_HINTS = {
@@ -107,6 +107,10 @@ export const ADMIN_ROSTER_HINTS = {
     "You have unsaved name edits — save before leaving or your changes will be lost.",
   devImport:
     "Development only: reload bundled sample branches from the server — not your uploaded CSV.",
+  employeeCsvTemplate:
+    "Sample row with all HR columns. Fill in Excel, then File → Save As → CSV UTF-8.",
+  importEmployeesCsv:
+    "Upserts employee profiles by employee number. Optional branch_code sets home branch when it matches the master list.",
 };
 
 export const ADMIN_ADVANCEMENT_HINTS = {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { EmployeesDirectoryEditor } from "@/components/admin/EmployeesDirectoryEditor";
 import { ImportEmployeesDirectory } from "@/components/admin/ImportEmployeesDirectory";
 import { SetupBanner } from "@/components/SetupBanner";
@@ -46,7 +47,9 @@ export default async function HrisEmployeesPage() {
 
       <ImportEmployeesDirectory />
 
-      <EmployeesDirectoryEditor employees={employees} branches={branches} />
+      <Suspense fallback={<p className="text-sm text-sd-muted">Loading directory…</p>}>
+        <EmployeesDirectoryEditor employees={employees} branches={branches} />
+      </Suspense>
     </div>
   );
 }

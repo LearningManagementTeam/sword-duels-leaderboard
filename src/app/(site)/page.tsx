@@ -1,7 +1,6 @@
 import { HomeEventTimeline } from "@/components/home/HomeEventTimeline";
 import { HomeFeaturedHero } from "@/components/home/HomeFeaturedHero";
 import { HomeProgramsStrip } from "@/components/home/HomeProgramsStrip";
-import { SdPublicJourneyBar } from "@/components/sword-duels/SdPublicJourneyBar";
 import { CollapsibleCompetitionMap } from "@/components/home/CollapsibleCompetitionMap";
 import { CollapsibleFullTournamentMap } from "@/components/home/CollapsibleFullTournamentMap";
 import { HomeCarouselSection } from "@/components/home/HomeCarouselSection";
@@ -105,19 +104,12 @@ export default async function HomePage() {
         sdJourney={sdJourney}
       />
 
-      {featured === "sword_duels" &&
-        sdJourney &&
-        sdJourney.totalAreas > 0 && (
-          <div className="mx-auto max-w-3xl">
-            <SdPublicJourneyBar journey={sdJourney} />
-          </div>
-        )}
-
       {!configured && <SetupBanner />}
 
       <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
         <HomeProgramsStrip
           featured={featured}
+          mapConfig={mapConfig}
           sdJourney={sdJourney}
           ncStatusLine={ncStatusLine}
         />

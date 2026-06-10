@@ -13,6 +13,7 @@ import {
 import { SdTvAreaRotator } from "@/components/sword-duels/SdTvAreaRotator";
 import { SdTvNationalsRotator } from "@/components/sword-duels/SdTvNationalsRotator";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
+import { NATIONALS_TV_UNAVAILABLE } from "@/lib/products/sword-duels/public-setup-messages";
 import { loadNationalsPublicView } from "@/lib/products/sword-duels/load-nationals-public-view";
 import { loadV2NationalsPublicView } from "@/lib/products/sword-duels/load-v2-nationals-public-view";
 import {
@@ -93,7 +94,7 @@ export default async function SwordDuelsTvPage({
       } catch {
         return nationalsTvShell(
           <p className="text-sd-muted">
-            Nationals tables not ready. Run migration 030.{" "}
+            {NATIONALS_TV_UNAVAILABLE}{" "}
             <Link href={SWORD_DUELS_PUBLIC} className="sd-link">
               Back
             </Link>
@@ -130,7 +131,7 @@ export default async function SwordDuelsTvPage({
     } catch {
       return nationalsTvShell(
         <p className="text-sd-muted">
-          Nationals tables not ready. Run migrations 019/020.{" "}
+          {NATIONALS_TV_UNAVAILABLE}{" "}
           <Link href={SWORD_DUELS_PUBLIC} className="sd-link">
             Back
           </Link>

@@ -21,12 +21,16 @@ For database changes → use skill **sword-duels-supabase** (MCP `apply_migratio
 
 For admin panel work (rounds, publish, advancement, audit) → read skill **sword-duels-admin**.
 
+For HRIS setup (branches, employees, photos, rep assign from directory) → read skill **hris-journey-audit**.
+
+For full cross-product UX audits → **sword-duels-ecosystem-audit** → `findings-2026-06-10-full-journey.md`.
+
 ## Quick reference
 
 | Surface | URL |
 |---------|-----|
 | Public | `/`, `/june`, `/july`, `/august`, `/tv`, `/preview/*` |
-| Admin | `/admin/login`, `/admin/branches`, `/admin/representatives`, `/admin/rounds` |
+| Admin | `/admin` (hub), `/admin/hris/*`, `/admin/revalida`, `/admin/national-competitions/*`, `/admin/sword-duels/*` |
 | Live | sword-duels-leaderboard.vercel.app |
 
 ## Admin data entry

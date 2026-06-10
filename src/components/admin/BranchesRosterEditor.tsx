@@ -14,6 +14,7 @@ import {
 import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge";
 import { hrisPath } from "@/lib/admin-routes";
 import { ADMIN_ROSTER_HINTS } from "@/lib/admin-action-hints";
+import { useAdminUrlFilters } from "@/lib/use-admin-url-filters";
 import { normalizeBranchCode } from "@/lib/branch-roster";
 import { REGIONS, REGION_LABELS, type Region } from "@/lib/scoring-config";
 import type { Branch } from "@/lib/types";
@@ -41,6 +42,12 @@ const EMPTY_NEW: BranchRosterUpdate = {
   area: "",
   region: "luzon",
 };
+
+const BRANCH_URL_FILTERS = {
+  q: { default: "", debounce: true },
+  area: { default: "" },
+  status: { default: "all" },
+} as const;
 
 function branchToRow(b: Branch): RowState {
   return {
@@ -84,11 +91,10 @@ export function BranchesRosterEditor({
     setBaseline(initialRows);
   }, [initialRows]);
 
-  const [search, setSearch] = useState("");
-  const [areaFilter, setAreaFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">(
-    "all"
-  );
+  const { filters, setFilter } = useAdminUrlFilters(BRANCH_URL_FILTERS);
+  const search = filters.q ?? "";
+  const areaFilter = filters.area ?? "";
+  const statusFilter = (filters.status ?? "all") as "all" | "active" | "inactive";
   const [showAddForm, setShowAddForm] = useState(false);
   const [newBranch, setNewBranch] = useState({ ...EMPTY_NEW });
   const [pendingDeactivate, setPendingDeactivate] = useState<RowState | null>(
@@ -269,12 +275,12 @@ export function BranchesRosterEditor({
           type="search"
           placeholder="Search code, name, or area…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => setFilter("q", e.target.value)}
           className="min-w-[200px] flex-1 rounded-lg sd-input px-3 py-2 text-sm"
         />
         <select
           value={areaFilter}
-          onChange={(e) => setAreaFilter(e.target.value)}
+          onChange={(e) => setFilter("area", e.target.value)}
           className="rounded-lg sd-input px-3 py-2 text-sm"
         >
           <option value="">All areas</option>
@@ -287,7 +293,7 @@ export function BranchesRosterEditor({
         <select
           value={statusFilter}
           onChange={(e) =>
-            setStatusFilter(e.target.value as "all" | "active" | "inactive")
+            setFilter("status", e.target.value as "all" | "active" | "inactive")
           }
           className="rounded-lg sd-input px-3 py-2 text-sm"
         >

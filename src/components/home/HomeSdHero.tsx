@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HomeSponsorLogoSection } from "@/components/home/HomeSponsorLogoSection";
+import { SdPublicJourneyBar } from "@/components/sword-duels/SdPublicJourneyBar";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import type { BrandingConfig } from "@/lib/branding";
 import type { SdPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
@@ -8,7 +9,6 @@ import { getSdPublicOverview } from "@/lib/products/sword-duels/public-queries";
 import {
   getRecentAreaChampions,
   sdJourneyHeadline,
-  sdJourneyShortPath,
   sdJourneySubline,
 } from "@/lib/products/sword-duels/recent-area-champions";
 import type { SiteHomeConfig } from "@/lib/site-home-config";
@@ -135,9 +135,9 @@ export async function HomeSdHero({ branding, journey, homeConfig }: Props) {
             TV view →
           </Link>
         </div>
-        <p className="text-center text-xs text-sd-muted/70">
-          {sdJourneyShortPath(journey?.tournamentFormat)}
-        </p>
+        {journey && journey.totalAreas > 0 && (
+          <SdPublicJourneyBar journey={journey} variant="embedded" />
+        )}
       </div>
     </section>
   );

@@ -9,7 +9,17 @@ import { EmploymentStatusBadge } from "@/components/admin/EmploymentStatusBadge"
 import { RepAvatar } from "@/components/ui/RepAvatar";
 import { deleteEmployeesAction } from "@/lib/actions/admin";
 import { nationalCompetitionsPath } from "@/lib/admin-routes";
-import type { EmployeeAdminRow, EmploymentStatus, HrisBranchOption } from "@/lib/employee-types";
+import { useAdminUrlFilters } from "@/lib/use-admin-url-filters";
+import type {
+  EmployeeAdminRow,
+  EmployeeRepAssignment,
+  EmploymentStatus,
+  HrisBranchOption,
+} from "@/lib/employee-types";
+
+function repAssignmentsKey(assignments: EmployeeRepAssignment[]): string {
+  return assignments.map((a) => `${a.branch_id}:${a.slot}`).join("|");
+}
 import { resolveEmployeePhotoUrl } from "@/lib/employee-photo-storage";
 
 type ModalState =
@@ -17,28 +27,67 @@ type ModalState =
   | { mode: "edit"; employeeId: string }
   | null;
 
+const EMPLOYEE_URL_FILTERS = {
+  q: { default: "", debounce: true },
+  filter: { default: "all" },
+} as const;
+
 interface Props {
   employees: EmployeeAdminRow[];
   branches: HrisBranchOption[];
 }
 
-export function EmployeesDirectoryEditor({ employees, branches }: Props) {
+export function EmployeesDirectoryEditor({
+  employees,
+  branches,
+}: Props) {
   const router = useRouter();
+  const { filters, setFilter } = useAdminUrlFilters(EMPLOYEE_URL_FILTERS);
+  const search = filters.q ?? "";
+  const statusFilter = (filters.filter ?? "all") as
+    | EmploymentStatus
+    | "all"
+    | "not_rep";
   const selectAllRef = useRef<HTMLInputElement>(null);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    EmploymentStatus | "all" | "not_rep"
-  >("all");
   const [modal, setModal] = useState<ModalState>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
+  const [repAssignmentOverrides, setRepAssignmentOverrides] = useState<
+    Record<string, EmployeeRepAssignment[]>
+  >({});
+
+  const displayEmployees = useMemo(() => {
+    return employees.map((row) => {
+      const override = repAssignmentOverrides[row.id];
+      return override ? { ...row, rep_assignments: override } : row;
+    });
+  }, [employees, repAssignmentOverrides]);
+
+  useEffect(() => {
+    setRepAssignmentOverrides((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [id, override] of Object.entries(prev)) {
+        const server = employees.find((e) => e.id === id);
+        if (
+          !server ||
+          repAssignmentsKey(server.rep_assignments) ===
+            repAssignmentsKey(override)
+        ) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [employees]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return employees.filter((row) => {
+    return displayEmployees.filter((row) => {
       if (statusFilter === "not_rep") {
         if (row.rep_assignments.length > 0) return false;
       } else if (statusFilter !== "all" && row.employment_status !== statusFilter) {
@@ -58,7 +107,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
         )
       );
     });
-  }, [employees, search, statusFilter]);
+  }, [displayEmployees, search, statusFilter]);
 
   const stats = useMemo(() => {
     let active = 0;
@@ -69,7 +118,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
     let withPhoto = 0;
     let provisionalId = 0;
 
-    for (const row of employees) {
+    for (const row of displayEmployees) {
       if (row.employment_status === "active") active++;
       else if (row.employment_status === "on_leave") onLeave++;
       else if (row.employment_status === "resigned") resigned++;
@@ -86,7 +135,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
     }
 
     return {
-      total: employees.length,
+      total: displayEmployees.length,
       active,
       onLeave,
       resigned,
@@ -95,7 +144,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
       withPhoto,
       provisionalId,
     };
-  }, [employees]);
+  }, [displayEmployees]);
 
   const filteredIds = useMemo(
     () => new Set(filtered.map((row) => row.id)),
@@ -126,8 +175,18 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
 
   const selectedEmployee =
     modal?.mode === "edit"
-      ? employees.find((e) => e.id === modal.employeeId) ?? null
+      ? displayEmployees.find((e) => e.id === modal.employeeId) ?? null
       : null;
+
+  function handleRepAssignmentsChange(
+    employeeId: string,
+    repAssignments: EmployeeRepAssignment[]
+  ) {
+    setRepAssignmentOverrides((prev) => ({
+      ...prev,
+      [employeeId]: repAssignments,
+    }));
+  }
 
   function openCreate() {
     setModal({ mode: "create" });
@@ -232,7 +291,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
         </p>
       </div>
 
-      {employees.length > 0 && (
+      {displayEmployees.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="sd-inset rounded-lg p-3">
               <p className="text-[10px] font-medium uppercase tracking-wide text-sd-muted">
@@ -294,13 +353,14 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
           type="search"
           placeholder="Search name, employee no., home branch…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => setFilter("q", e.target.value)}
           className="min-w-[200px] flex-1 rounded-lg sd-input px-3 py-2 text-sm"
         />
         <select
           value={statusFilter}
           onChange={(e) =>
-            setStatusFilter(
+            setFilter(
+              "filter",
               e.target.value as EmploymentStatus | "all" | "not_rep"
             )
           }
@@ -352,7 +412,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
         </AdminConfirmPanel>
       )}
 
-      {employees.length === 0 ? (
+      {displayEmployees.length === 0 ? (
         <p className="text-sm text-sd-muted">
           No employee profiles yet. Click <strong>Add employee</strong> or assign
           reps on the Representatives page.
@@ -497,7 +557,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
         <EmployeeProfileModal
           mode={modal.mode}
           employee={modal.mode === "edit" ? selectedEmployee : null}
-          existingEmployees={employees}
+          existingEmployees={displayEmployees}
           branches={branches}
           onClose={closeModal}
           onSaved={(msg) => {
@@ -508,6 +568,7 @@ export function EmployeesDirectoryEditor({ employees, branches }: Props) {
             setMessage(msg);
             setError(true);
           }}
+          onRepAssignmentsChange={handleRepAssignmentsChange}
           navigation={
             modal.mode === "edit"
               ? {

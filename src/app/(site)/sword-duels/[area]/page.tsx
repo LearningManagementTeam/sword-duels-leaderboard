@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SdAreaSchedulePanel } from "@/components/sword-duels/SdAreaSchedulePanel";
 import { AreaGroupSplitPanel } from "@/components/sword-duels/AreaGroupSplitPanel";
 import { AreaGroupStandingsPanel } from "@/components/sword-duels/AreaGroupStandingsPanel";
+import { AreaGroupStickySummary } from "@/components/sword-duels/AreaGroupStickySummary";
 import { AreaTournamentMap } from "@/components/sword-duels/AreaTournamentMap";
 import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
@@ -113,9 +114,25 @@ export default async function SwordDuelsAreaPublicPage({
         </p>
       </div>
 
+      <AreaGroupStickySummary
+        bracket={bracket}
+        groupSets={groupSets}
+        publicScores={publicScores}
+        championName={championName}
+        phaseLabel={summary.label}
+      />
+
       <AreaGroupSplitPanel
         bracket={bracket}
         groupSortMode={event.group_sort_mode}
+      />
+
+      <AreaGroupStandingsPanel
+        bracket={bracket}
+        groupSets={groupSets}
+        publicScores={publicScores}
+        defaultOpen={groupSets.some((s) => s.status === "published")}
+        prominent={groupSets.some((s) => s.status === "published")}
       />
 
       <SdAreaSchedulePanel
@@ -128,13 +145,6 @@ export default async function SwordDuelsAreaPublicPage({
         bracket={bracket}
         sets={sets}
         scoresBySetId={publicScores}
-      />
-
-      <AreaGroupStandingsPanel
-        bracket={bracket}
-        groupSets={groupSets}
-        publicScores={publicScores}
-        defaultOpen={groupSets.some((s) => s.status === "published")}
       />
 
       <SwordDuelsPublicFooter

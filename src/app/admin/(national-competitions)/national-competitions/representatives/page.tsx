@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { RepresentativesEditor } from "@/components/admin/RepresentativesEditor";
 import { SetupBanner } from "@/components/SetupBanner";
 import { getBranchesForRepresentatives } from "@/lib/data/admin-queries";
@@ -36,12 +37,14 @@ export default async function RepresentativesPage() {
 
       {!configured && <SetupBanner />}
 
-      <RepresentativesEditor
-        key={`reps-${data.total}-${data.withReps}-${employees.length}`}
-        branches={data.branches}
-        employees={employees}
-        initialWithReps={data.withReps}
-      />
+      <Suspense fallback={<p className="text-sm text-sd-muted">Loading representatives…</p>}>
+        <RepresentativesEditor
+          key={`reps-${data.total}-${data.withReps}-${employees.length}`}
+          branches={data.branches}
+          employees={employees}
+          initialWithReps={data.withReps}
+        />
+      </Suspense>
     </div>
   );
 }

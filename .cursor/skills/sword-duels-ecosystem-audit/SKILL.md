@@ -12,11 +12,11 @@ description: >-
 
 Run when the user asks to audit **Sword Duels** (not National Competitions June/July/August boards).
 
-**Related skills:** [sword-duels-neon-glass](../sword-duels-neon-glass/SKILL.md), [public-viewer-journey](../public-viewer-journey/SKILL.md), [sword-duels-admin/journey-audit](../sword-duels-admin/journey-audit.md), [sword-duels-supabase](../sword-duels-supabase/SKILL.md).
+**Related skills:** [sword-duels-neon-glass](../sword-duels-neon-glass/SKILL.md), [public-viewer-journey](../public-viewer-journey/SKILL.md), [sword-duels-admin/journey-audit](../sword-duels-admin/journey-audit.md), [hris-journey-audit](../hris-journey-audit/SKILL.md), [sword-duels-supabase](../sword-duels-supabase/SKILL.md).
 
 **Operator runbook:** [docs/SD-DAILY-OPERATIONS.md](../../docs/SD-DAILY-OPERATIONS.md)
 
-**Latest snapshot:** [findings-2026-06.md](findings-2026-06.md) — update after each full audit.
+**Latest snapshot:** [findings-2026-06-10-full-journey.md](findings-2026-06-10-full-journey.md) (full cross-product). Prior SD-only: [findings-2026-06.md](findings-2026-06.md).
 
 ## Tournament journey (canonical)
 

@@ -304,6 +304,43 @@ export interface SdDashboardArea {
   areaChampionName: string | null;
 }
 
+/** Most recently scored area (for dashboard resume shortcut). */
+export async function getLastSdScoredArea(
+  eventId: string
+): Promise<{ area: string } | null> {
+  const service = await createServiceClient();
+
+  const { data: scoreRow } = await service
+    .from("sd_set_scores")
+    .select("updated_at, set_id")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!scoreRow?.set_id) {
+    const { data: auditRow } = await service
+      .from("audit_log")
+      .select("details")
+      .in("action", ["save_sd_set_scores", "publish_sd_set"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const area = (auditRow?.details as { area?: string } | null)?.area?.trim();
+    return area ? { area } : null;
+  }
+
+  const { data: setRow } = await service
+    .from("sd_sets")
+    .select("area, event_id")
+    .eq("id", scoreRow.set_id)
+    .maybeSingle();
+
+  if (!setRow || setRow.event_id !== eventId) return null;
+  const area = String(setRow.area).trim();
+  return area ? { area } : null;
+}
+
 export async function getSdDashboard(eventId: string): Promise<{
   event: SdEvent;
   areas: SdDashboardArea[];

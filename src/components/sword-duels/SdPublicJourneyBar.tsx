@@ -5,6 +5,8 @@ import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 
 interface Props {
   journey: SdPublicJourneyState;
+  /** `embedded` — step pills only (home hero, no duplicate progress panel). */
+  variant?: "panel" | "embedded";
 }
 
 const V1_STEPS = [
@@ -44,7 +46,54 @@ function activeStep(journey: SdPublicJourneyState): JourneyStepId {
   return "areas";
 }
 
-export function SdPublicJourneyBar({ journey }: Props) {
+type JourneyStep = { id: JourneyStepId; label: string; href: string };
+
+function JourneyStepPills({
+  journey,
+  steps,
+  current,
+}: {
+  journey: SdPublicJourneyState;
+  steps: readonly JourneyStep[];
+  current: JourneyStepId;
+}) {
+  return (
+    <ol className="flex flex-wrap justify-center gap-2">
+      {steps.map((step, i) => {
+        const isCurrent = step.id === current;
+        const isPast =
+          (step.id === "areas" && journey.areasComplete) ||
+          (step.id === "wildcard" && journey.nationalsPhase === "knockout") ||
+          (step.id === "regionals" && journey.regionalsComplete) ||
+          (step.id === "knockout" && journey.knockoutComplete);
+
+        return (
+          <li key={step.id} className="flex items-center gap-2">
+            {i > 0 && (
+              <span className="text-sd-muted/30" aria-hidden>
+                →
+              </span>
+            )}
+            <Link
+              href={step.href}
+              className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset transition ${
+                isCurrent
+                  ? "bg-lime-400/20 text-lime-100 ring-lime-400/45"
+                  : isPast
+                    ? "bg-emerald-500/10 text-emerald-200/80 ring-emerald-400/25"
+                    : "bg-sd-deep/40 text-sd-muted/70 ring-emerald-500/15 hover:text-white"
+              }`}
+            >
+              {step.label}
+            </Link>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+export function SdPublicJourneyBar({ journey, variant = "panel" }: Props) {
   const isV2 = isRegionalAverageFormat(journey.tournamentFormat);
   const steps = isV2 ? V2_STEPS : V1_STEPS;
   const current = activeStep(journey);
@@ -52,6 +101,14 @@ export function SdPublicJourneyBar({ journey }: Props) {
     journey.totalAreas > 0
       ? Math.round((journey.areasPublished / journey.totalAreas) * 100)
       : 0;
+
+  if (variant === "embedded") {
+    return (
+      <div className="pt-2">
+        <JourneyStepPills journey={journey} steps={steps} current={current} />
+      </div>
+    );
+  }
 
   const statusLine = journey.areasComplete
     ? journey.knockoutComplete
@@ -93,39 +150,7 @@ export function SdPublicJourneyBar({ journey }: Props) {
         </div>
       )}
 
-      <ol className="flex flex-wrap gap-2">
-        {steps.map((step, i) => {
-          const isCurrent = step.id === current;
-          const isPast =
-            (step.id === "areas" && journey.areasComplete) ||
-            (step.id === "wildcard" &&
-              journey.nationalsPhase === "knockout") ||
-            (step.id === "regionals" && journey.regionalsComplete) ||
-            (step.id === "knockout" && journey.knockoutComplete);
-
-          return (
-            <li key={step.id} className="flex items-center gap-2">
-              {i > 0 && (
-                <span className="text-sd-muted/30" aria-hidden>
-                  →
-                </span>
-              )}
-              <Link
-                href={step.href}
-                className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset transition ${
-                  isCurrent
-                    ? "bg-lime-400/20 text-lime-100 ring-lime-400/45"
-                    : isPast
-                      ? "bg-emerald-500/10 text-emerald-200/80 ring-emerald-400/25"
-                      : "bg-sd-deep/40 text-sd-muted/70 ring-emerald-500/15 hover:text-white"
-                }`}
-              >
-                {step.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ol>
+      <JourneyStepPills journey={journey} steps={steps} current={current} />
     </section>
   );
 }

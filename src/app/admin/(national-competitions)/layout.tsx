@@ -9,6 +9,8 @@ import {
   NATIONAL_COMPETITIONS_ADMIN,
   REVALIDA_HUB,
 } from "@/lib/admin-routes";
+import { getCompetitionMap } from "@/lib/data/content-queries";
+import { resolvePublicStandingsHref } from "@/lib/public-standings-route";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,10 @@ export default async function NationalCompetitionsAdminLayout({
   children: React.ReactNode;
 }) {
   await requireAdminLayoutAccess();
+  const competitionMap = await getCompetitionMap().catch(() => null);
+  const liveBoardHref = competitionMap
+    ? resolvePublicStandingsHref(competitionMap)
+    : "/june/luzon";
 
   return (
     <div className="relative min-h-screen text-emerald-50">
@@ -51,8 +57,14 @@ export default async function NationalCompetitionsAdminLayout({
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <AdminGlobalLinks />
+              <Link
+                href={liveBoardHref}
+                className="text-sm text-sd-muted/80 hover:text-emerald-200"
+              >
+                View live board
+              </Link>
               <Link href="/" className="text-sm text-sd-muted hover:text-white">
-                Public site
+                Site home
               </Link>
               <form action={signOut}>
                 <button
