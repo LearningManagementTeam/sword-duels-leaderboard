@@ -121,10 +121,10 @@ export function SdAreaSchedulesEditor({
         <div>
           <h2 className="text-lg font-semibold text-white">Area battle dates</h2>
           <p className="mt-1 text-sm text-sd-muted">
-            Group A, Group B, and area final times feed the home page{" "}
-            <strong className="text-white">Upcoming</strong> column and each
-            area&apos;s public schedule panel. Past dates for unpublished sets
-            show as &quot;Awaiting results&quot; on the area map.
+            Set the host/trainer name and Group A, Group B, and area final times
+            per area. Names appear on the public area leaderboard; dates feed the
+            home page <strong className="text-white">Upcoming</strong> column
+            and each area&apos;s schedule panel.
           </p>
         </div>
 
@@ -134,10 +134,11 @@ export function SdAreaSchedulesEditor({
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[48rem] text-left text-sm">
+            <table className="w-full min-w-[56rem] text-left text-sm">
               <thead>
                 <tr className="border-b border-emerald-500/15 text-xs uppercase tracking-wide text-sd-muted">
                   <th className="px-2 py-2">Area</th>
+                  <th className="px-2 py-2">Host / Trainer</th>
                   <th className="px-2 py-2">Group A</th>
                   <th className="px-2 py-2">Group B</th>
                   <th className="px-2 py-2">Area final</th>
@@ -153,6 +154,20 @@ export function SdAreaSchedulesEditor({
                     >
                       <td className="px-2 py-3 font-medium text-white">
                         {area}
+                      </td>
+                      <td className="px-2 py-3">
+                        <label className="sr-only">{area} Host / Trainer</label>
+                        <input
+                          type="text"
+                          value={dates.hostTrainer ?? ""}
+                          onChange={(e) =>
+                            updateArea(area, {
+                              hostTrainer: e.target.value.trim() || undefined,
+                            })
+                          }
+                          placeholder="Name for public board"
+                          className="w-full min-w-[10rem] rounded sd-input px-2 py-1.5 text-xs"
+                        />
                       </td>
                       {(
                         [
@@ -192,7 +207,8 @@ export function SdAreaSchedulesEditor({
             <h2 className="text-lg font-semibold text-white">Bulk CSV import</h2>
             <p className="mt-1 text-sm text-sd-muted">
               Columns: <code className="text-fuchsia-200/80">area</code>,{" "}
-              <code className="text-fuchsia-200/80">group_a</code>,{" "}
+              <code className="text-fuchsia-200/80">host_trainer</code>{" "}
+              (optional), <code className="text-fuchsia-200/80">group_a</code>,{" "}
               <code className="text-fuchsia-200/80">group_b</code>,{" "}
               <code className="text-fuchsia-200/80">area_final</code>. Dates
               merge into existing rows; save to publish.

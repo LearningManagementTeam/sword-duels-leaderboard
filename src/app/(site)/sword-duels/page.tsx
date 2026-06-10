@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
+import { SdAreaHostTrainerLine } from "@/components/sword-duels/SdAreaHostTrainerLine";
 import { SdPublicAreaStatus } from "@/components/sword-duels/SdPublicAreaStatus";
 import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
@@ -9,6 +10,8 @@ import {
   getSdPublicAreaSummary,
   resolveAreaChampionDisplayName,
 } from "@/lib/products/sword-duels/public-area-summary";
+import { resolveAreaHostTrainer } from "@/lib/products/sword-duels/area-schedules";
+import { getSdAreaSchedules } from "@/lib/data/content-queries";
 import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
 import {
   areaSetsForBracket,
@@ -35,11 +38,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function SwordDuelsHomePage() {
   const configured = isSupabaseConfigured();
-  const [data, journey] = await Promise.all([
+  const [data, journey, schedules] = await Promise.all([
     configured ? getSdPublicOverview() : Promise.resolve(null),
     configured
       ? loadPublicJourneyState().catch(() => null)
       : Promise.resolve(null),
+    configured ? getSdAreaSchedules() : Promise.resolve({ byArea: {}, nationals: {} }),
   ]);
   const shareCopy = journeyShareCopy(journey);
   return (
@@ -69,6 +73,7 @@ export default async function SwordDuelsHomePage() {
               b
             );
             const summary = getSdPublicAreaSummary(areaSets, championName);
+            const hostTrainer = resolveAreaHostTrainer(schedules, b.area);
 
             return (
               <Link
@@ -80,6 +85,7 @@ export default async function SwordDuelsHomePage() {
                 <p className="mt-1 text-sm text-sd-muted">
                   {REGION_LABELS[b.region as Region]} · {b.branchCount} branches
                 </p>
+                <SdAreaHostTrainerLine name={hostTrainer} compact />
                 <SdPublicAreaStatus
                   label={summary.label}
                   phase={summary.phase}

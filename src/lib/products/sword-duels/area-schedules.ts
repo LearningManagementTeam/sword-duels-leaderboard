@@ -16,6 +16,8 @@ export interface SdAreaScheduleDates {
   groupA?: string;
   groupB?: string;
   areaFinal?: string;
+  /** Display name for the area host / trainer (informational on public boards). */
+  hostTrainer?: string;
 }
 
 export interface SdNationalsScheduleDates {
@@ -69,7 +71,15 @@ export function parseSdAreaSchedulesBody(raw: unknown): SdAreaSchedulesConfig {
       if (typeof row.areaFinal === "string" && row.areaFinal.trim()) {
         dates.areaFinal = row.areaFinal.trim();
       }
-      if (dates.groupA || dates.groupB || dates.areaFinal) {
+      if (typeof row.hostTrainer === "string" && row.hostTrainer.trim()) {
+        dates.hostTrainer = row.hostTrainer.trim();
+      }
+      if (
+        dates.groupA ||
+        dates.groupB ||
+        dates.areaFinal ||
+        dates.hostTrainer
+      ) {
         byArea[area] = dates;
       }
     }
@@ -262,4 +272,12 @@ export function upcomingFromSdAreaSchedules(
 export function formatAreaScheduleWhen(iso?: string): string | null {
   if (!iso) return null;
   return formatScheduleDateTime(iso);
+}
+
+export function resolveAreaHostTrainer(
+  config: SdAreaSchedulesConfig,
+  area: string
+): string | null {
+  const name = config.byArea[area]?.hostTrainer?.trim();
+  return name || null;
 }

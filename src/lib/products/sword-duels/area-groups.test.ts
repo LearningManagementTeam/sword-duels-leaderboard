@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { splitAreaIntoGroups } from "./area-groups";
+import { splitAreaIntoGroups, validateAreaGroupAssignment } from "./area-groups";
 import type { Branch } from "@/lib/types";
 
 function branch(
@@ -58,5 +58,23 @@ describe("splitAreaIntoGroups", () => {
     const { groupA, groupB } = splitAreaIntoGroups(branches);
     expect(groupA).toHaveLength(4);
     expect(groupB).toHaveLength(3);
+  });
+});
+
+describe("validateAreaGroupAssignment", () => {
+  const all = ["a", "b", "c", "d"];
+
+  it("accepts a complete split", () => {
+    expect(validateAreaGroupAssignment(all, ["a", "b"], ["c", "d"])).toBeNull();
+  });
+
+  it("rejects unassigned branches", () => {
+    expect(validateAreaGroupAssignment(all, ["a"], ["b"])).toMatch(/not assigned/);
+  });
+
+  it("rejects overlap", () => {
+    expect(validateAreaGroupAssignment(all, ["a", "b"], ["b", "c"])).toMatch(
+      /both/
+    );
   });
 });

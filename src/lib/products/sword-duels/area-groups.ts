@@ -70,6 +70,51 @@ export function splitAreaIntoGroups(
   return { groupA, groupB };
 }
 
+/** Areas with hand-picked Group A/B (stored on sd_events.manual_area_groups). */
+export function parseManualAreaGroups(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+    .map((s) => s.trim());
+}
+
+export function isManualAreaGroup(
+  manualAreas: readonly string[],
+  area: string
+): boolean {
+  const key = area.trim();
+  return manualAreas.some((a) => a.trim() === key);
+}
+
+export function validateAreaGroupAssignment(
+  allBranchIds: string[],
+  groupAIds: string[],
+  groupBIds: string[]
+): string | null {
+  const allSet = new Set(allBranchIds);
+  const bSet = new Set(groupBIds);
+
+  for (const id of groupAIds) {
+    if (bSet.has(id)) return "A branch cannot be in both Group A and Group B.";
+    if (!allSet.has(id)) return "Group A includes a branch that is not in this area.";
+  }
+  for (const id of groupBIds) {
+    if (!allSet.has(id)) return "Group B includes a branch that is not in this area.";
+  }
+
+  const assigned = new Set([...groupAIds, ...groupBIds]);
+  if (assigned.size !== allBranchIds.length) {
+    const missing = allBranchIds.filter((id) => !assigned.has(id));
+    return `${missing.length} branch(es) are not assigned to a group.`;
+  }
+
+  if (groupAIds.length === 0 || groupBIds.length === 0) {
+    return "Each group needs at least one branch.";
+  }
+
+  return null;
+}
+
 export function buildAreaBrackets(
   branches: Branch[],
   mode: SdGroupSortMode = "branch_code"

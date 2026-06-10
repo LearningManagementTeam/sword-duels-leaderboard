@@ -33,8 +33,8 @@ export default async function SwordDuelsSchedulesPage() {
       <div className="sd-page-header">
         <h1>Area schedules</h1>
         <p>
-          Set Group A, Group B, and area final times per area. These appear on
-          the public home timeline and each area&apos;s live map page.
+          Set host/trainer names and Group A, Group B, and area final times per
+          area. Names and schedules appear on the public Sword Duels leaderboard.
         </p>
       </div>
       <SdAreaSchedulesEditor

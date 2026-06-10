@@ -12,7 +12,9 @@ Each **area** selects **one area representative** through a three-set bracket.
 
 Branches are loaded from the master roster (CSV / admin import). Each branch has an `area` field.
 
-Within one area, branches are **sorted by branch code** and split in half:
+Within one area, branches are **sorted by branch code** (or branch name) and split in half by default. Operators can **manually assign** Group A / B per area in **Admin → Sword Duels → Areas → [area]** before group battles are published; manual areas are preserved when re-syncing from branches.
+
+Default automatic split:
 
 | Group | Branches |
 |-------|----------|

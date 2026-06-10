@@ -13,6 +13,8 @@ import { isAreaSetType } from "./format-guards";
 import { normalizeSdTournamentFormat } from "./tournament-format";
 import {
   buildAreaBrackets,
+  isManualAreaGroup,
+  parseManualAreaGroups,
   type SdGroupSortMode,
 } from "./area-groups";
 import type {
@@ -39,25 +41,47 @@ export async function getSdEvent(): Promise<SdEvent | null> {
 
   let group_sort_mode: SdGroupSortMode = "branch_code";
   let tournament_format = normalizeSdTournamentFormat("classic_v1");
-  const { data: modeRow, error: modeError } = await service
+  let manual_area_groups: string[] = [];
+  let modeRow: {
+    group_sort_mode?: string | null;
+    tournament_format?: string | null;
+    manual_area_groups?: unknown;
+  } | null = null;
+
+  const modeQuery = await service
     .from("sd_events")
-    .select("group_sort_mode, tournament_format")
+    .select("group_sort_mode, tournament_format, manual_area_groups")
     .eq("id", data.id)
     .maybeSingle();
 
-  if (!modeError && modeRow) {
+  if (modeQuery.error?.code === "42703") {
+    const fallback = await service
+      .from("sd_events")
+      .select("group_sort_mode, tournament_format")
+      .eq("id", data.id)
+      .maybeSingle();
+    modeRow = fallback.data;
+  } else if (!modeQuery.error) {
+    modeRow = modeQuery.data;
+  }
+
+  if (modeRow) {
     if (modeRow.group_sort_mode) {
       group_sort_mode = modeRow.group_sort_mode as SdGroupSortMode;
     }
     tournament_format = normalizeSdTournamentFormat(
       modeRow.tournament_format as string | null
     );
+    if (modeRow.manual_area_groups != null) {
+      manual_area_groups = parseManualAreaGroups(modeRow.manual_area_groups);
+    }
   }
 
   return {
     ...data,
     group_sort_mode,
     tournament_format,
+    manual_area_groups,
   } as SdEvent;
 }
 
@@ -80,6 +104,12 @@ export async function getAllBranches(): Promise<Branch[]> {
   }
 
   return enrichBranchesWithRepEmployees((activeQuery.data ?? []) as Branch[]);
+}
+
+export async function getSdAreaBranches(area: string): Promise<Branch[]> {
+  const all = await getAllBranches();
+  const key = area.trim();
+  return all.filter((b) => b.area.trim() === key);
 }
 
 interface AreaGroupRow {
@@ -302,6 +332,7 @@ export interface SdDashboardArea {
   groupBPublished: boolean;
   finalPublished: boolean;
   areaChampionName: string | null;
+  isManual: boolean;
 }
 
 /** Most recently scored area (for dashboard resume shortcut). */
@@ -353,6 +384,8 @@ export async function getSdDashboard(eventId: string): Promise<{
   const branches = await getAllBranches();
   const branchById = new Map(branches.map((b) => [b.id, b]));
 
+  const manualAreas = event.manual_area_groups ?? [];
+
   const areas: SdDashboardArea[] = brackets.map((b) => {
     const areaSets = sets.filter((s) => s.area === b.area);
     const ga = areaSets.find((s) => s.set_type === "group_a");
@@ -373,6 +406,7 @@ export async function getSdDashboard(eventId: string): Promise<{
       areaChampionName: champ
         ? champ.representative_1?.trim() || champ.branch_name
         : null,
+      isManual: isManualAreaGroup(manualAreas, b.area),
     };
   });
 

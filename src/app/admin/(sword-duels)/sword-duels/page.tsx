@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SetupBanner } from "@/components/SetupBanner";
+import { SdAreaGroupModeBadge } from "@/components/sword-duels/SdAreaGroupModeBadge";
 import { SdGroupSortSettings } from "@/components/sword-duels/SdGroupSortSettings";
 import { SdNationalsPhaseStrip } from "@/components/sword-duels/SdNationalsPhaseStrip";
 import { SdTournamentFormatSettings } from "@/components/sword-duels/SdTournamentFormatSettings";
@@ -108,7 +109,10 @@ export default async function SwordDuelsDashboardPage() {
             currentFormat={event.tournament_format ?? "classic_v1"}
             hasPublishedScores={hasPublishedScores}
           />
-          <SdGroupSortSettings currentMode={event.group_sort_mode ?? "branch_code"} />
+          <SdGroupSortSettings
+            currentMode={event.group_sort_mode ?? "branch_code"}
+            manualAreaCount={(event.manual_area_groups ?? []).length}
+          />
         </>
       )}
 
@@ -218,6 +222,8 @@ export default async function SwordDuelsDashboardPage() {
             ) : (
               <p className="mt-1 text-sm text-sd-muted">
                 {areas.length} areas ·{" "}
+                {areas.filter((a) => a.isManual).length} manual ·{" "}
+                {areas.filter((a) => !a.isManual).length} auto ·{" "}
                 {
                   areas.filter((a) => getSdAreaStatus(a).phase === "area_champion")
                     .length
@@ -243,6 +249,21 @@ export default async function SwordDuelsDashboardPage() {
             </Link>
           </div>
         </div>
+        {areas.length > 0 && (
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {areas.map((a) => (
+              <li key={a.area}>
+                <Link
+                  href={swordDuelsPath("areas", areaSlug(a.area))}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-emerald-500/10 bg-black/20 px-3 py-2 text-sm transition hover:border-cyan-400/25 hover:bg-cyan-500/5"
+                >
+                  <span className="truncate font-medium text-white">{a.area}</span>
+                  <SdAreaGroupModeBadge isManual={a.isManual} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

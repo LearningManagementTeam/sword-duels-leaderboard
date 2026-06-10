@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SdAreaHostTrainerLine } from "@/components/sword-duels/SdAreaHostTrainerLine";
 import { SdAreaSchedulePanel } from "@/components/sword-duels/SdAreaSchedulePanel";
 import { AreaGroupSplitPanel } from "@/components/sword-duels/AreaGroupSplitPanel";
 import { AreaGroupStandingsPanel } from "@/components/sword-duels/AreaGroupStandingsPanel";
@@ -7,19 +8,25 @@ import { AreaGroupStickySummary } from "@/components/sword-duels/AreaGroupSticky
 import { AreaTournamentMap } from "@/components/sword-duels/AreaTournamentMap";
 import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
-import { areaSlug, decodeAreaSlug } from "@/lib/products/sword-duels/area-groups";
+import {
+  areaSlug,
+  decodeAreaSlug,
+  isManualAreaGroup,
+} from "@/lib/products/sword-duels/area-groups";
 import {
   getSdPublicAreaSummary,
   resolveAreaChampionDisplayName,
 } from "@/lib/products/sword-duels/public-area-summary";
 import {
   publishStateForArea,
+  resolveAreaHostTrainer,
 } from "@/lib/products/sword-duels/area-schedules";
 import { getSdAreaSchedules } from "@/lib/data/content-queries";
 import {
   filterPublicScores,
   getSdPublicArea,
 } from "@/lib/products/sword-duels/public-queries";
+import { getSdEvent } from "@/lib/products/sword-duels/queries";
 import {
   areaShareCopy,
   buildSdPageMetadata,
@@ -66,9 +73,10 @@ export default async function SwordDuelsAreaPublicPage({
 }) {
   const { area: areaParam } = await params;
   const area = decodeAreaSlug(areaParam);
-  const [ctx, schedules] = await Promise.all([
+  const [ctx, schedules, sdEvent] = await Promise.all([
     getSdPublicArea(area),
     getSdAreaSchedules(),
+    getSdEvent(),
   ]);
 
   if (!ctx) {
@@ -95,6 +103,10 @@ export default async function SwordDuelsAreaPublicPage({
   const groupSets = sets.filter(
     (s) => s.set_type === "group_a" || s.set_type === "group_b"
   );
+  const hostTrainer = resolveAreaHostTrainer(schedules, area);
+  const isManual = sdEvent
+    ? isManualAreaGroup(sdEvent.manual_area_groups ?? [], area)
+    : false;
 
   return (
     <div className="space-y-8">
@@ -104,6 +116,7 @@ export default async function SwordDuelsAreaPublicPage({
         </Link>
         <h1>{area}</h1>
         <p>Live tournament map — updates when the committee publishes each set.</p>
+        <SdAreaHostTrainerLine name={hostTrainer} />
         <p className="mt-2">
           <Link
             href={`${SWORD_DUELS_PUBLIC}/tv?area=${encodeURIComponent(area)}`}
@@ -125,6 +138,7 @@ export default async function SwordDuelsAreaPublicPage({
       <AreaGroupSplitPanel
         bracket={bracket}
         groupSortMode={event.group_sort_mode}
+        isManual={isManual}
       />
 
       <AreaGroupStandingsPanel

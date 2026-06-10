@@ -12,9 +12,13 @@ import {
 
 interface Props {
   currentMode: SdGroupSortMode;
+  manualAreaCount?: number;
 }
 
-export function SdGroupSortSettings({ currentMode }: Props) {
+export function SdGroupSortSettings({
+  currentMode,
+  manualAreaCount = 0,
+}: Props) {
   const [mode, setMode] = useState<SdGroupSortMode>(currentMode);
   const [savedMode, setSavedMode] = useState<SdGroupSortMode>(currentMode);
   const [message, setMessage] = useState<string | null>(null);
@@ -64,11 +68,23 @@ export function SdGroupSortSettings({ currentMode }: Props) {
           <p className="mt-1 max-w-xl text-sm text-sd-muted">
             Pulls branches from the master roster (with area assigned), sorts them
             using the option below, splits each area into Group A and Group B, and
-            creates scoring sets.
+            creates scoring sets. Areas you assigned manually on an area page are
+            skipped — use <strong className="text-white">Reset to auto split</strong>{" "}
+            there to include them again.
           </p>
           <p className="mt-2 text-xs text-sd-glow/80">
             Active sort:{" "}
             <strong className="text-white">{SD_GROUP_SORT_LABELS[savedMode]}</strong>
+            {manualAreaCount > 0 && (
+              <>
+                {" "}
+                ·{" "}
+                <strong className="text-violet-100">
+                  {manualAreaCount} manual area{manualAreaCount === 1 ? "" : "s"}
+                </strong>{" "}
+                skipped on sync
+              </>
+            )}
           </p>
         </div>
         <button

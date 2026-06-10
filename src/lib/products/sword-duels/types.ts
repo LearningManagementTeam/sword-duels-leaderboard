@@ -14,6 +14,8 @@ export interface SdEvent {
   name: string;
   group_sort_mode: SdGroupSortMode;
   tournament_format: SdTournamentFormat;
+  /** Area names with operator-assigned groups (sync skips these). */
+  manual_area_groups: string[];
 }
 
 export interface SdAreaGroupBranch extends BranchRepresentativeFields {

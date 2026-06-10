@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
-import { AreaGroupSplitPanel } from "@/components/sword-duels/AreaGroupSplitPanel";
+import { AreaGroupAssignmentEditor } from "@/components/sword-duels/admin/AreaGroupAssignmentEditor";
+import { isManualAreaGroup } from "@/lib/products/sword-duels/area-groups";
 import { AreaTournamentMap } from "@/components/sword-duels/AreaTournamentMap";
 import {
   SdAreaScoreStickyNav,
@@ -10,6 +11,7 @@ import { SdSetScoresForm } from "@/components/sword-duels/SdSetScoresForm";
 import { decodeAreaSlug } from "@/lib/products/sword-duels/area-groups";
 import { SD_SET_FLOW } from "@/lib/products/sword-duels/scoring-config";
 import {
+  getSdAreaBranches,
   getSdAreaContext,
   getSdEvent,
   participantsForSetType,
@@ -46,6 +48,20 @@ export default async function SwordDuelsAreaPage({
   }
 
   const { bracket, sets, scoreMap } = ctx;
+  const areaBranches = await getSdAreaBranches(area);
+  const isManual = isManualAreaGroup(event.manual_area_groups ?? [], area);
+  const groupLockReason = (() => {
+    const ga = sets.find((s) => s.set_type === "group_a");
+    const gb = sets.find((s) => s.set_type === "group_b");
+    if (ga?.status === "published" || gb?.status === "published") {
+      return "Group A or Group B is already published — unpublish before changing groups.";
+    }
+    const fin = sets.find((s) => s.set_type === "area_final");
+    if (fin?.status === "published") {
+      return "Area final is published — groups are locked.";
+    }
+    return null;
+  })();
   const missingSets = sets.some((s) => !s.id);
   const isV2 = isRegionalAverageFormat(event.tournament_format);
   const areaFinalUnpublishWarning = isV2
@@ -104,9 +120,19 @@ export default async function SwordDuelsAreaPage({
         </p>
       </div>
 
-      <AreaGroupSplitPanel
+      <AreaGroupAssignmentEditor
+        area={area}
+        areaBranches={areaBranches.map((b) => ({
+          id: b.id,
+          branch_code: b.branch_code,
+          branch_name: b.branch_name,
+          representative_1: b.representative_1,
+          representative_2: b.representative_2,
+        }))}
         bracket={bracket}
-        groupSortMode={event.group_sort_mode}
+        groupSortMode={event.group_sort_mode ?? "branch_code"}
+        isManual={isManual}
+        lockedReason={groupLockReason}
       />
 
       {missingSets ? (

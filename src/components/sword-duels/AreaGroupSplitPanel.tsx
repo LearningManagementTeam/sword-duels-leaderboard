@@ -108,20 +108,26 @@ function GroupColumn({
 export function AreaGroupSplitPanel({
   bracket,
   groupSortMode = "branch_code",
+  isManual = false,
 }: {
   bracket: SdAreaBracket;
   groupSortMode?: SdGroupSortMode;
+  isManual?: boolean;
 }) {
   return (
     <section className="sd-neon-panel space-y-3 p-4 sm:p-5">
       <div>
         <h2 className="text-base font-semibold text-white">Group assignment</h2>
         <p className="mt-1 text-sm text-sd-muted">
-          {SD_GROUP_SPLIT_RULES[groupSortMode]}
+          {isManual
+            ? "Groups were assigned by the committee for this area."
+            : SD_GROUP_SPLIT_RULES[groupSortMode]}
         </p>
-        <p className="mt-1 text-xs text-sd-glow/75">
-          Current order: {SD_GROUP_SORT_LABELS[groupSortMode]}
-        </p>
+        {!isManual && (
+          <p className="mt-1 text-xs text-sd-glow/75">
+            Current order: {SD_GROUP_SORT_LABELS[groupSortMode]}
+          </p>
+        )}
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <GroupColumn label="Group A — Set 1 battle" branches={bracket.groupA} accent="cyan" />

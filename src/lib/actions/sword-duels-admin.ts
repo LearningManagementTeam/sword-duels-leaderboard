@@ -4,9 +4,17 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC, swordDuelsPath } from "@/lib/admin-routes";
 import { requireAdminEmail } from "@/lib/admin-auth";
-import { areaSlug, buildAreaBrackets } from "@/lib/products/sword-duels/area-groups";
+import {
+  areaSlug,
+  buildAreaBrackets,
+  isManualAreaGroup,
+  parseManualAreaGroups,
+  splitAreaIntoGroups,
+  validateAreaGroupAssignment,
+} from "@/lib/products/sword-duels/area-groups";
 import type { SdGroupSortMode } from "@/lib/products/sword-duels/area-groups";
 import {
+  getSdAreaBranches,
   getSdAreaContext,
   getSdEvent,
   participantsForSetType,
@@ -154,21 +162,38 @@ export async function syncSdBrackets(
     sortMode
   );
 
-  await service.from("sd_area_groups").delete().eq("event_id", event.id);
+  const { data: eventMeta } = await service
+    .from("sd_events")
+    .select("manual_area_groups")
+    .eq("id", event.id)
+    .maybeSingle();
 
-  const rows = brackets.flatMap((b) =>
-    [...b.groupA, ...b.groupB].map((g) => ({
+  const manualAreas = parseManualAreaGroups(eventMeta?.manual_area_groups);
+  let syncedBranchCount = 0;
+
+  for (const b of brackets) {
+    if (isManualAreaGroup(manualAreas, b.area)) continue;
+
+    const { error: delError } = await service
+      .from("sd_area_groups")
+      .delete()
+      .eq("event_id", event.id)
+      .eq("area", b.area);
+    if (delError) throw new Error(delError.message);
+
+    const rows = [...b.groupA, ...b.groupB].map((g) => ({
       event_id: event.id,
       area: b.area,
       branch_id: g.branch_id,
       group_label: g.group_label,
       sort_order: g.sort_order,
-    }))
-  );
+    }));
 
-  if (rows.length > 0) {
-    const { error } = await service.from("sd_area_groups").insert(rows);
-    if (error) throw new Error(error.message);
+    if (rows.length > 0) {
+      const { error } = await service.from("sd_area_groups").insert(rows);
+      if (error) throw new Error(error.message);
+      syncedBranchCount += rows.length;
+    }
   }
 
   for (const b of brackets) {
@@ -199,11 +224,238 @@ export async function syncSdBrackets(
 
   await logAudit(email, "sync_sd_brackets", event.id, {
     areaCount: brackets.length,
-    branchCount: rows.length,
+    branchCount: syncedBranchCount,
+    manualAreaCount: manualAreas.length,
     group_sort_mode: sortMode,
   });
   scheduleSdRevalidation();
   return { areaCount: brackets.length, group_sort_mode: sortMode };
+}
+
+function areaGroupBattlesLocked(sets: { set_type: string; status: string }[]): string | null {
+  const ga = sets.find((s) => s.set_type === "group_a");
+  const gb = sets.find((s) => s.set_type === "group_b");
+  if (ga?.status === "published" || gb?.status === "published") {
+    return "Group A or Group B is already published — unpublish those sets before changing groups.";
+  }
+  const fin = sets.find((s) => s.set_type === "area_final");
+  if (fin?.status === "published") {
+    return "Area final is published — groups cannot be changed.";
+  }
+  return null;
+}
+
+async function persistAreaGroupRows(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  eventId: string,
+  area: string,
+  groupAIds: string[],
+  groupBIds: string[]
+) {
+  const { error: delError } = await service
+    .from("sd_area_groups")
+    .delete()
+    .eq("event_id", eventId)
+    .eq("area", area);
+  if (delError) throw new Error(delError.message);
+
+  const rows = [
+    ...groupAIds.map((branch_id, i) => ({
+      event_id: eventId,
+      area,
+      branch_id,
+      group_label: "a" as const,
+      sort_order: i + 1,
+    })),
+    ...groupBIds.map((branch_id, i) => ({
+      event_id: eventId,
+      area,
+      branch_id,
+      group_label: "b" as const,
+      sort_order: i + 1,
+    })),
+  ];
+
+  if (rows.length === 0) return;
+
+  const { error } = await service.from("sd_area_groups").insert(rows);
+  if (error) throw new Error(error.message);
+}
+
+async function markAreaManualGroups(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  eventId: string,
+  area: string,
+  manual: boolean
+) {
+  const { data: row } = await service
+    .from("sd_events")
+    .select("manual_area_groups")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  let areas = parseManualAreaGroups(row?.manual_area_groups);
+  const key = area.trim();
+
+  if (manual) {
+    if (!areas.some((a) => a.trim() === key)) areas = [...areas, key];
+  } else {
+    areas = areas.filter((a) => a.trim() !== key);
+  }
+
+  const { error } = await service
+    .from("sd_events")
+    .update({ manual_area_groups: areas })
+    .eq("id", eventId);
+
+  if (error?.code === "42703") return;
+  if (error) throw new Error(error.message);
+}
+
+async function clearDraftGroupSetScores(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  eventId: string,
+  area: string
+) {
+  const { data: sets } = await service
+    .from("sd_sets")
+    .select("id, set_type, status")
+    .eq("event_id", eventId)
+    .eq("area", area)
+    .in("set_type", ["group_a", "group_b"]);
+
+  const setIds = (sets ?? [])
+    .filter((s) => s.status !== "published")
+    .map((s) => s.id as string);
+
+  if (setIds.length === 0) return;
+
+  await service.from("sd_set_scores").delete().in("set_id", setIds);
+  await service
+    .from("sd_sets")
+    .update({ winner_branch_id: null })
+    .in("id", setIds);
+}
+
+export async function saveSdAreaGroupAssignment(
+  area: string,
+  groupAIds: string[],
+  groupBIds: string[]
+): Promise<SdActionResult & { message?: string }> {
+  const { email } = await requireAdmin();
+  const event = await getSdEvent();
+  if (!event) return { ok: false, error: "Sword Duels event not found." };
+
+  const areaBranches = await getSdAreaBranches(area);
+  if (areaBranches.length === 0) {
+    return { ok: false, error: "No active branches found for this area." };
+  }
+
+  const validationError = validateAreaGroupAssignment(
+    areaBranches.map((b) => b.id),
+    groupAIds,
+    groupBIds
+  );
+  if (validationError) return { ok: false, error: validationError };
+
+  const ctx = await getSdAreaContext(event.id, area);
+  if (!ctx) {
+    return {
+      ok: false,
+      error: "Area brackets not initialized. Sync from branches on the dashboard first.",
+    };
+  }
+
+  const lockError = areaGroupBattlesLocked(ctx.sets);
+  if (lockError) return { ok: false, error: lockError };
+
+  const service = await createServiceClient();
+
+  try {
+    await persistAreaGroupRows(service, event.id, area, groupAIds, groupBIds);
+    await markAreaManualGroups(service, event.id, area, true);
+    await clearDraftGroupSetScores(service, event.id, area);
+
+    for (const setType of ["group_a", "group_b", "area_final"] as const) {
+      await ensureSdSet(event.id, area, setType);
+    }
+
+    await logAudit(email, "save_sd_area_groups", event.id, {
+      area,
+      group_a_count: groupAIds.length,
+      group_b_count: groupBIds.length,
+      manual: true,
+    });
+
+    scheduleSdRevalidation({ area, brackets: true });
+    return {
+      ok: true,
+      message: `Saved manual groups for ${area} (${groupAIds.length} in A, ${groupBIds.length} in B).`,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Failed to save group assignment.",
+    };
+  }
+}
+
+export async function resetSdAreaAutoGroups(
+  area: string
+): Promise<SdActionResult & { message?: string }> {
+  const { email } = await requireAdmin();
+  const event = await getSdEvent();
+  if (!event) return { ok: false, error: "Sword Duels event not found." };
+
+  const areaBranches = await getSdAreaBranches(area);
+  if (areaBranches.length === 0) {
+    return { ok: false, error: "No active branches found for this area." };
+  }
+
+  const ctx = await getSdAreaContext(event.id, area);
+  if (ctx) {
+    const lockError = areaGroupBattlesLocked(ctx.sets);
+    if (lockError) return { ok: false, error: lockError };
+  }
+
+  const { groupA, groupB } = splitAreaIntoGroups(
+    areaBranches,
+    event.group_sort_mode ?? "branch_code"
+  );
+
+  const service = await createServiceClient();
+
+  try {
+    await persistAreaGroupRows(
+      service,
+      event.id,
+      area,
+      groupA.map((b) => b.branch_id),
+      groupB.map((b) => b.branch_id)
+    );
+    await markAreaManualGroups(service, event.id, area, false);
+    await clearDraftGroupSetScores(service, event.id, area);
+
+    for (const setType of ["group_a", "group_b", "area_final"] as const) {
+      await ensureSdSet(event.id, area, setType);
+    }
+
+    await logAudit(email, "reset_sd_area_groups_auto", event.id, {
+      area,
+      group_sort_mode: event.group_sort_mode,
+    });
+
+    scheduleSdRevalidation({ area, brackets: true });
+    return {
+      ok: true,
+      message: `Reset ${area} to automatic split (${groupA.length} / ${groupB.length}).`,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Failed to reset groups.",
+    };
+  }
 }
 
 export async function ensureSdSet(

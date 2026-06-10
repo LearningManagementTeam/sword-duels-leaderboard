@@ -5,6 +5,7 @@ export interface SdAreaScheduleCsvRow {
   groupA?: string;
   groupB?: string;
   areaFinal?: string;
+  hostTrainer?: string;
 }
 
 export interface SdAreaScheduleCsvResult {
@@ -62,6 +63,13 @@ export function parseSdAreaSchedulesCsv(text: string): SdAreaScheduleCsvResult {
   const finIdx = header.findIndex(
     (h) => h === "area_final" || h === "areafinal" || h === "final"
   );
+  const hostIdx = header.findIndex(
+    (h) =>
+      h === "host_trainer" ||
+      h === "hosttrainer" ||
+      h === "host_trainer_name" ||
+      h === "host / trainer"
+  );
 
   if (areaIdx === -1) {
     return {
@@ -82,6 +90,8 @@ export function parseSdAreaSchedulesCsv(text: string): SdAreaScheduleCsvResult {
     const groupB = gbIdx >= 0 ? parseDateCell(cells[gbIdx] ?? "") : undefined;
     const areaFinal =
       finIdx >= 0 ? parseDateCell(cells[finIdx] ?? "") : undefined;
+    const hostTrainer =
+      hostIdx >= 0 ? cells[hostIdx]?.trim() || undefined : undefined;
 
     if (gaIdx >= 0 && cells[gaIdx]?.trim() && !groupA) {
       errors.push(`Row ${i + 1}: invalid group_a date for ${area}.`);
@@ -93,7 +103,7 @@ export function parseSdAreaSchedulesCsv(text: string): SdAreaScheduleCsvResult {
       errors.push(`Row ${i + 1}: invalid area_final date for ${area}.`);
     }
 
-    rows.push({ area, groupA, groupB, areaFinal });
+    rows.push({ area, groupA, groupB, areaFinal, hostTrainer });
   }
 
   return { rows, errors };
@@ -111,6 +121,7 @@ export function mergeCsvIntoSdAreaSchedules(
       groupA: row.groupA ?? existing.groupA,
       groupB: row.groupB ?? existing.groupB,
       areaFinal: row.areaFinal ?? existing.areaFinal,
+      hostTrainer: row.hostTrainer ?? existing.hostTrainer,
     };
   }
 
