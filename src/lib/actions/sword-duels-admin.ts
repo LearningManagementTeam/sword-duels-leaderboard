@@ -1170,11 +1170,69 @@ export async function saveSdAreaSchedulesForm(
 ): Promise<void> {
   const { email } = await requireAdmin();
   const service = await createServiceClient();
+  await persistSdAreaSchedulesWithCalendar(service, email, config);
+}
+
+export async function saveSdAreaBattleScheduleAction(
+  area: string,
+  dates: import("@/lib/products/sword-duels/area-schedules").SdAreaScheduleDates
+): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
+  try {
+    const { email } = await requireAdmin();
+    const service = await createServiceClient();
+    const { SD_AREA_SCHEDULES_SLUG, parseSdAreaSchedulesBody } = await import(
+      "@/lib/products/sword-duels/area-schedules"
+    );
+
+    const { data: row } = await service
+      .from("site_content")
+      .select("body")
+      .eq("slug", SD_AREA_SCHEDULES_SLUG)
+      .maybeSingle();
+
+    const config = parseSdAreaSchedulesBody(row?.body);
+    config.byArea[area] = dates;
+
+    await persistSdAreaSchedulesWithCalendar(service, email, config, area);
+
+    const synced = [
+      dates.groupA && "Set 1",
+      dates.groupB && "Set 2",
+      dates.areaFinal && "area final",
+    ].filter(Boolean);
+
+    return {
+      ok: true,
+      message:
+        synced.length > 0
+          ? `Saved ${area} schedule (${synced.join(", ")}) and updated the event calendar.`
+          : `Cleared ${area} battle times on the event calendar.`,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Save failed.",
+    };
+  }
+}
+
+async function persistSdAreaSchedulesWithCalendar(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  email: string,
+  config: import("@/lib/products/sword-duels/area-schedules").SdAreaSchedulesConfig,
+  auditArea?: string
+): Promise<void> {
   const { SD_AREA_SCHEDULES_SLUG } = await import(
     "@/lib/products/sword-duels/area-schedules"
   );
+  const { EVENTS_CALENDAR_SLUG, parseEventsCalendarBody } = await import(
+    "@/lib/events-calendar"
+  );
+  const { mergeAllAreaSchedulesIntoCalendar } = await import(
+    "@/lib/products/sword-duels/sync-area-schedules-calendar"
+  );
 
-  const { error } = await service.from("site_content").upsert(
+  const { error: scheduleError } = await service.from("site_content").upsert(
     {
       slug: SD_AREA_SCHEDULES_SLUG,
       body: config,
@@ -1183,11 +1241,48 @@ export async function saveSdAreaSchedulesForm(
     },
     { onConflict: "slug" }
   );
+  if (scheduleError) throw new Error(scheduleError.message);
 
-  if (error) throw new Error(error.message);
+  const { data: calendarRow } = await service
+    .from("site_content")
+    .select("body")
+    .eq("slug", EVENTS_CALENDAR_SLUG)
+    .maybeSingle();
+
+  const calendar = parseEventsCalendarBody(calendarRow?.body);
+  const merged = mergeAllAreaSchedulesIntoCalendar(calendar, config.byArea);
+
+  const calendarPayload = {
+    events: merged.events.map((e) => ({
+      id: e.id,
+      kind: e.kind,
+      title: e.title.trim(),
+      startAt: e.startAt,
+      published: e.published,
+      program: e.program,
+      ...(e.endAt ? { endAt: e.endAt } : {}),
+      ...(e.timeLabel ? { timeLabel: e.timeLabel.trim() } : {}),
+      ...(e.areas?.length ? { areas: e.areas } : {}),
+      ...(e.setLabel ? { setLabel: e.setLabel.trim() } : {}),
+      ...(e.description ? { description: e.description.trim() } : {}),
+    })),
+  };
+
+  const { error: calendarError } = await service.from("site_content").upsert(
+    {
+      slug: EVENTS_CALENDAR_SLUG,
+      body: calendarPayload,
+      updated_at: new Date().toISOString(),
+      updated_by_email: email,
+    },
+    { onConflict: "slug" }
+  );
+  if (calendarError) throw new Error(calendarError.message);
 
   await logAudit(email, "save_sd_area_schedules", SD_AREA_SCHEDULES_SLUG, {
     areas: Object.keys(config.byArea).length,
+    area: auditArea,
+    calendarSynced: true,
   });
 
   scheduleSdRevalidation({ home: true });

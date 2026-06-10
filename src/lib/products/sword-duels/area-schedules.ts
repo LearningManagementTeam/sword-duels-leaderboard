@@ -16,8 +16,11 @@ export interface SdAreaScheduleDates {
   groupA?: string;
   groupB?: string;
   areaFinal?: string;
-  /** Display name for the area host / trainer (informational on public boards). */
+  /** Default host / trainer when per-set host is blank. */
   hostTrainer?: string;
+  hostGroupA?: string;
+  hostGroupB?: string;
+  hostAreaFinal?: string;
 }
 
 export interface SdNationalsScheduleDates {
@@ -50,6 +53,8 @@ const SET_DATE_KEYS: Record<
   area_final: "areaFinal",
 };
 
+export { SET_DATE_KEYS };
+
 export function parseSdAreaSchedulesBody(raw: unknown): SdAreaSchedulesConfig {
   if (!raw || typeof raw !== "object") {
     return { ...DEFAULT_SD_AREA_SCHEDULES, byArea: {}, nationals: {} };
@@ -74,11 +79,23 @@ export function parseSdAreaSchedulesBody(raw: unknown): SdAreaSchedulesConfig {
       if (typeof row.hostTrainer === "string" && row.hostTrainer.trim()) {
         dates.hostTrainer = row.hostTrainer.trim();
       }
+      if (typeof row.hostGroupA === "string" && row.hostGroupA.trim()) {
+        dates.hostGroupA = row.hostGroupA.trim();
+      }
+      if (typeof row.hostGroupB === "string" && row.hostGroupB.trim()) {
+        dates.hostGroupB = row.hostGroupB.trim();
+      }
+      if (typeof row.hostAreaFinal === "string" && row.hostAreaFinal.trim()) {
+        dates.hostAreaFinal = row.hostAreaFinal.trim();
+      }
       if (
         dates.groupA ||
         dates.groupB ||
         dates.areaFinal ||
-        dates.hostTrainer
+        dates.hostTrainer ||
+        dates.hostGroupA ||
+        dates.hostGroupB ||
+        dates.hostAreaFinal
       ) {
         byArea[area] = dates;
       }
@@ -278,6 +295,45 @@ export function resolveAreaHostTrainer(
   config: SdAreaSchedulesConfig,
   area: string
 ): string | null {
-  const name = config.byArea[area]?.hostTrainer?.trim();
-  return name || null;
+  const dates = config.byArea[area];
+  if (!dates) return null;
+  return (
+    dates.hostTrainer?.trim() ||
+    dates.hostGroupA?.trim() ||
+    dates.hostGroupB?.trim() ||
+    dates.hostAreaFinal?.trim() ||
+    null
+  );
+}
+
+export function resolveHostForSetFromDates(
+  dates: SdAreaScheduleDates,
+  setType: SdAreaSetType
+): string | null {
+  const perSet =
+    setType === "group_a"
+      ? dates.hostGroupA
+      : setType === "group_b"
+        ? dates.hostGroupB
+        : dates.hostAreaFinal;
+  const specific = perSet?.trim();
+  if (specific) return specific;
+  return dates.hostTrainer?.trim() || null;
+}
+
+export function resolveBattleScheduleForSet(
+  config: SdAreaSchedulesConfig | undefined,
+  area: string,
+  setType: SdAreaSetType
+): { scheduledAt?: string; hostTrainer: string | null } {
+  if (!config) {
+    return { hostTrainer: null };
+  }
+  const dates = config.byArea[area] ?? {};
+  const key = SET_DATE_KEYS[setType];
+  const scheduledAt = dates[key];
+  return {
+    scheduledAt,
+    hostTrainer: resolveHostForSetFromDates(dates, setType),
+  };
 }

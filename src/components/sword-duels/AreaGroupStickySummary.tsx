@@ -1,12 +1,16 @@
 import { computeSetResults } from "@/lib/products/sword-duels/scoring";
+import type { SdAreaSchedulesConfig } from "@/lib/products/sword-duels/area-schedules";
 import type {
   SdAreaBracket,
   SdAreaSet,
   SdSetScore,
 } from "@/lib/products/sword-duels/types";
 import { SD_AREA_SET_LABELS } from "@/lib/products/sword-duels/types";
+import { SdBattleScheduleMeta } from "./SdBattleScheduleMeta";
 
 interface Props {
+  area: string;
+  scheduleConfig?: SdAreaSchedulesConfig;
   bracket: SdAreaBracket;
   groupSets: SdAreaSet[];
   publicScores: Map<string, SdSetScore[]>;
@@ -27,6 +31,8 @@ function groupLeader(
 }
 
 export function AreaGroupStickySummary({
+  area,
+  scheduleConfig,
   bracket,
   groupSets,
   publicScores,
@@ -57,17 +63,25 @@ export function AreaGroupStickySummary({
           {leaders.map(({ set, leader }) => (
             <div
               key={set.id}
-              className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-lg bg-emerald-950/50 px-3 py-2 ring-1 ring-emerald-500/15 sm:min-w-[10rem] sm:flex-none"
+              className="flex min-w-0 flex-1 flex-col gap-1 rounded-lg bg-emerald-950/50 px-3 py-2 ring-1 ring-emerald-500/15 sm:min-w-[10rem] sm:flex-none"
             >
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-sd-muted/80">
-                {SD_AREA_SET_LABELS[set.set_type]}
-              </span>
-              <span className="min-w-0 truncate text-sm font-medium text-white">
-                {leader.active_representative_name ?? leader.branch_name}
-                <span className="ml-1.5 tabular-nums text-lime-300">
-                  {leader.points}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-sd-muted/80">
+                  {SD_AREA_SET_LABELS[set.set_type]}
                 </span>
-              </span>
+                <span className="min-w-0 truncate text-sm font-medium text-white">
+                  {leader.active_representative_name ?? leader.branch_name}
+                  <span className="ml-1.5 tabular-nums text-lime-300">
+                    {leader.points}
+                  </span>
+                </span>
+              </div>
+              <SdBattleScheduleMeta
+                area={area}
+                setType={set.set_type}
+                scheduleConfig={scheduleConfig}
+                compact
+              />
             </div>
           ))}
         </div>

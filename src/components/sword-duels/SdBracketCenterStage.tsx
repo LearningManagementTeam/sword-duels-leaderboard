@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { PlayoffSlot } from "@/lib/playoff-map";
 import { SD_BRACKET_COPY } from "@/lib/products/sword-duels/bracket-copy";
 import { SdBracketConvergeConnectors } from "./SdBracketConnectors";
@@ -13,6 +14,7 @@ interface Props {
   finalRevealed: boolean;
   areaName: string;
   tvMode?: boolean;
+  scheduleMeta?: ReactNode;
 }
 
 export function SdBracketCenterStage({
@@ -23,6 +25,7 @@ export function SdBracketCenterStage({
   finalRevealed,
   areaName,
   tvMode = false,
+  scheduleMeta,
 }: Props) {
   const trophySize = tvMode ? 56 : 44;
   const vsSize = tvMode ? "text-4xl" : "text-3xl";
@@ -53,6 +56,7 @@ export function SdBracketCenterStage({
               {SD_BRACKET_COPY.battleLive}
             </span>
           )}
+          {scheduleMeta}
         </div>
 
         {finalReady ? (

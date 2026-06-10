@@ -1,9 +1,10 @@
 import {
   areaScheduleRows,
-  formatAreaScheduleWhen,
+  resolveAreaHostTrainer,
   type SdAreaSchedulesConfig,
   type SdAreaSetPublishState,
 } from "@/lib/products/sword-duels/area-schedules";
+import { SdBattleScheduleMeta } from "./SdBattleScheduleMeta";
 
 interface Props {
   area: string;
@@ -13,7 +14,9 @@ interface Props {
 
 export function SdAreaSchedulePanel({ area, config, publishState }: Props) {
   const rows = areaScheduleRows(area, config, publishState);
-  const hasAny = rows.some((r) => r.scheduledAt || r.status === "published");
+  const hostTrainer = resolveAreaHostTrainer(config, area);
+  const hasAny =
+    rows.some((r) => r.scheduledAt || r.status === "published") || hostTrainer;
 
   if (!hasAny) return null;
 
@@ -32,11 +35,13 @@ export function SdAreaSchedulePanel({ area, config, publishState }: Props) {
           >
             <div>
               <p className="font-medium text-white">{row.title}</p>
-              {row.scheduledAt && (
-                <p className="mt-0.5 text-xs text-sd-muted">
-                  {formatAreaScheduleWhen(row.scheduledAt)}
-                </p>
-              )}
+              <SdBattleScheduleMeta
+                area={area}
+                setType={row.setType}
+                scheduleConfig={config}
+                compact
+                className="mt-1"
+              />
             </div>
             <span
               className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-inset ${

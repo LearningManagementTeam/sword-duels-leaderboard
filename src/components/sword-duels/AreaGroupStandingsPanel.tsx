@@ -1,13 +1,17 @@
 import { computeSetResults } from "@/lib/products/sword-duels/scoring";
+import type { SdAreaSchedulesConfig } from "@/lib/products/sword-duels/area-schedules";
 import type {
   SdAreaBracket,
   SdAreaSet,
   SdSetScore,
 } from "@/lib/products/sword-duels/types";
 import { SD_AREA_SET_LABELS } from "@/lib/products/sword-duels/types";
+import { SdBattleScheduleMeta } from "./SdBattleScheduleMeta";
 import { SdCollapsibleSection } from "./SdCollapsibleSection";
 
 interface Props {
+  area: string;
+  scheduleConfig?: SdAreaSchedulesConfig;
   bracket: SdAreaBracket;
   groupSets: SdAreaSet[];
   publicScores: Map<string, SdSetScore[]>;
@@ -17,10 +21,15 @@ interface Props {
 }
 
 function StandingsGrid({
+  area,
+  scheduleConfig,
   bracket,
   groupSets,
   publicScores,
-}: Pick<Props, "bracket" | "groupSets" | "publicScores">) {
+}: Pick<
+  Props,
+  "area" | "scheduleConfig" | "bracket" | "groupSets" | "publicScores"
+>) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
         {groupSets.map((set) => {
@@ -39,6 +48,13 @@ function StandingsGrid({
                 <h3 className="text-sm font-semibold text-white">
                   {SD_AREA_SET_LABELS[set.set_type]}
                 </h3>
+                <SdBattleScheduleMeta
+                  area={area}
+                  setType={set.set_type}
+                  scheduleConfig={scheduleConfig}
+                  compact
+                  className="mt-1"
+                />
               </div>
               {!published ? (
                 <p className="px-4 py-3 text-sm text-sd-muted">
@@ -79,6 +95,8 @@ function StandingsGrid({
 }
 
 export function AreaGroupStandingsPanel({
+  area,
+  scheduleConfig,
   bracket,
   groupSets,
   publicScores,
@@ -97,6 +115,8 @@ export function AreaGroupStandingsPanel({
           </p>
         </div>
         <StandingsGrid
+          area={area}
+          scheduleConfig={scheduleConfig}
           bracket={bracket}
           groupSets={groupSets}
           publicScores={publicScores}
@@ -116,6 +136,8 @@ export function AreaGroupStandingsPanel({
       defaultOpen={defaultOpen}
     >
       <StandingsGrid
+        area={area}
+        scheduleConfig={scheduleConfig}
         bracket={bracket}
         groupSets={groupSets}
         publicScores={publicScores}

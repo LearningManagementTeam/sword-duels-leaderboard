@@ -27,6 +27,7 @@ import {
   parseNationalsTvView,
   type SdNationalsTvView,
 } from "@/lib/products/sword-duels/tournament-format";
+import { getSdAreaSchedules } from "@/lib/data/content-queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +63,10 @@ export default async function SwordDuelsTvPage({
   const params = await searchParams;
   const mode = params.mode ?? "areas";
   const rotateSec = parseInt(params.rotate ?? "0", 10);
-  const overview = await getSdPublicOverview();
+  const [overview, schedules] = await Promise.all([
+    getSdPublicOverview(),
+    getSdAreaSchedules(),
+  ]);
 
   if (!overview || overview.brackets.length === 0) {
     return (
@@ -189,6 +193,7 @@ export default async function SwordDuelsTvPage({
             bracket={ctx.bracket}
             sets={ctx.sets}
             scoresBySetId={publicScores}
+            scheduleConfig={schedules}
             tvMode
             fullscreen
           />
@@ -315,6 +320,7 @@ export default async function SwordDuelsTvPage({
         bracket={ctx.bracket}
         sets={ctx.sets}
         scoresBySetId={publicScores}
+        scheduleConfig={schedules}
         tvMode
         fullscreen
       />

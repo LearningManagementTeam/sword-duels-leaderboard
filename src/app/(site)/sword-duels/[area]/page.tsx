@@ -128,6 +128,8 @@ export default async function SwordDuelsAreaPublicPage({
       </div>
 
       <AreaGroupStickySummary
+        area={area}
+        scheduleConfig={schedules}
         bracket={bracket}
         groupSets={groupSets}
         publicScores={publicScores}
@@ -142,6 +144,8 @@ export default async function SwordDuelsAreaPublicPage({
       />
 
       <AreaGroupStandingsPanel
+        area={area}
+        scheduleConfig={schedules}
         bracket={bracket}
         groupSets={groupSets}
         publicScores={publicScores}
@@ -159,6 +163,7 @@ export default async function SwordDuelsAreaPublicPage({
         bracket={bracket}
         sets={sets}
         scoresBySetId={publicScores}
+        scheduleConfig={schedules}
       />
 
       <SwordDuelsPublicFooter

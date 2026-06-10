@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { buildAreaTournamentMap } from "@/lib/products/sword-duels/tournament-map";
+import type { SdAreaSchedulesConfig } from "@/lib/products/sword-duels/area-schedules";
 import type {
   SdAreaBracket,
   SdAreaSet,
@@ -13,11 +14,13 @@ import { SdBracketFanConnectors, bracketTrackHeight } from "./SdBracketConnector
 import { SdBracketCenterStage } from "./SdBracketCenterStage";
 import { SdSpotPedestal } from "./SdSpotPedestal";
 import { SdBracketSlot } from "./SdBracketSlot";
+import { SdBattleScheduleMeta } from "./SdBattleScheduleMeta";
 
 interface Props {
   bracket: SdAreaBracket;
   sets: SdAreaSet[];
   scoresBySetId: Map<string, SdSetScore[]>;
+  scheduleConfig?: SdAreaSchedulesConfig;
   tvMode?: boolean;
   /** Hide TV link and footer in fullscreen TV shell */
   fullscreen?: boolean;
@@ -28,11 +31,13 @@ function WingHeader({
   subtitle,
   align,
   tvMode,
+  meta,
 }: {
   label: string;
   subtitle: string;
   align: "left" | "right";
   tvMode?: boolean;
+  meta?: ReactNode;
 }) {
   return (
     <div className={`mb-3 ${align === "right" ? "text-right" : "text-left"}`}>
@@ -46,6 +51,7 @@ function WingHeader({
       <p className={`mt-1 text-sd-muted/65 ${tvMode ? "text-xs" : "text-[10px]"}`}>
         {subtitle}
       </p>
+      {meta}
     </div>
   );
 }
@@ -53,10 +59,12 @@ function WingHeader({
 function BracketGrid({
   model,
   bracket,
+  scheduleConfig,
   tvMode = false,
 }: {
   model: ReturnType<typeof buildAreaTournamentMap>;
   bracket: SdAreaBracket;
+  scheduleConfig?: SdAreaSchedulesConfig;
   tvMode?: boolean;
 }) {
   const groupAField = model.columns.find((c) => c.id === "group_a_field")!;
@@ -110,6 +118,16 @@ function BracketGrid({
             subtitle={`${bracket.groupA.length} branches → Spot 1`}
             align="left"
             tvMode={tvMode}
+            meta={
+              <SdBattleScheduleMeta
+                area={model.area}
+                setType="group_a"
+                scheduleConfig={scheduleConfig}
+                compact
+                align="left"
+                className="mt-1.5"
+              />
+            }
           />
           <div
             className="flex items-center gap-0"
@@ -152,6 +170,16 @@ function BracketGrid({
           finalRevealed={areaFinal.isRevealed}
           areaName={model.area}
           tvMode={tvMode}
+          scheduleMeta={
+            <SdBattleScheduleMeta
+              area={model.area}
+              setType="area_final"
+              scheduleConfig={scheduleConfig}
+              compact
+              align="center"
+              className="mt-2 max-w-[12rem] text-center"
+            />
+          }
         />
 
         {/* Group B wing (mirrored) */}
@@ -161,6 +189,16 @@ function BracketGrid({
             subtitle={`${bracket.groupB.length} branches → Spot 2`}
             align="right"
             tvMode={tvMode}
+            meta={
+              <SdBattleScheduleMeta
+                area={model.area}
+                setType="group_b"
+                scheduleConfig={scheduleConfig}
+                compact
+                align="right"
+                className="mt-1.5"
+              />
+            }
           />
           <div
             className="flex items-center gap-0"
@@ -268,6 +306,7 @@ export function AreaTournamentMap({
   bracket,
   sets,
   scoresBySetId,
+  scheduleConfig,
   tvMode = false,
   fullscreen = false,
 }: Props) {
@@ -276,7 +315,12 @@ export function AreaTournamentMap({
   if (tvMode) {
     return (
       <MapShell model={model} bracket={bracket} tvMode fullscreen={fullscreen}>
-        <BracketGrid model={model} bracket={bracket} tvMode />
+        <BracketGrid
+          model={model}
+          bracket={bracket}
+          scheduleConfig={scheduleConfig}
+          tvMode
+        />
       </MapShell>
     );
   }
@@ -284,9 +328,17 @@ export function AreaTournamentMap({
   return (
     <MapShell model={model} bracket={bracket}>
       <div className="hidden lg:block">
-        <BracketGrid model={model} bracket={bracket} />
+        <BracketGrid
+          model={model}
+          bracket={bracket}
+          scheduleConfig={scheduleConfig}
+        />
       </div>
-      <SdMobileBracketJourney model={model} bracket={bracket} />
+      <SdMobileBracketJourney
+        model={model}
+        bracket={bracket}
+        scheduleConfig={scheduleConfig}
+      />
     </MapShell>
   );
 }

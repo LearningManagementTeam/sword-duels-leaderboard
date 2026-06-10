@@ -1,27 +1,32 @@
 import type { ReactNode } from "react";
 import type { PlayoffSlot } from "@/lib/playoff-map";
+import type { SdAreaSchedulesConfig } from "@/lib/products/sword-duels/area-schedules";
 import type { AreaTournamentMapModel } from "@/lib/products/sword-duels/tournament-map";
 import type { SdAreaBracket } from "@/lib/products/sword-duels/types";
 import { SdBracketCenterStage } from "./SdBracketCenterStage";
 import { SdBracketSlot } from "./SdBracketSlot";
 import { SdSpotPedestal } from "./SdSpotPedestal";
 import { SdTrophyIcon } from "./SdTrophyIcon";
+import { SdBattleScheduleMeta } from "./SdBattleScheduleMeta";
 
 interface Props {
   model: AreaTournamentMapModel;
   bracket: SdAreaBracket;
+  scheduleConfig?: SdAreaSchedulesConfig;
 }
 
 function StageCard({
   step,
   title,
   subtitle,
+  meta,
   children,
   accent,
 }: {
   step: number;
   title: string;
   subtitle?: string;
+  meta?: ReactNode;
   children: ReactNode;
   accent: "a" | "b" | "final" | "gold";
 }) {
@@ -43,6 +48,7 @@ function StageCard({
           {subtitle && (
             <p className="mt-0.5 text-xs text-sd-muted/75">{subtitle}</p>
           )}
+          {meta}
         </div>
       </div>
       {children}
@@ -63,7 +69,11 @@ function FieldList({ slots }: { slots: PlayoffSlot[] }) {
 }
 
 /** Vertical battle-path bracket for mobile — no horizontal cramming. */
-export function SdMobileBracketJourney({ model, bracket }: Props) {
+export function SdMobileBracketJourney({
+  model,
+  bracket,
+  scheduleConfig,
+}: Props) {
   const groupAField = model.columns.find((c) => c.id === "group_a_field")!;
   const groupAWinner = model.columns.find((c) => c.id === "group_a_winner")!;
   const groupBField = model.columns.find((c) => c.id === "group_b_field")!;
@@ -94,6 +104,15 @@ export function SdMobileBracketJourney({ model, bracket }: Props) {
         title="Set 1 · Group A"
         subtitle={`${bracket.groupA.length} branches fight for Spot 1`}
         accent="a"
+        meta={
+          <SdBattleScheduleMeta
+            area={model.area}
+            setType="group_a"
+            scheduleConfig={scheduleConfig}
+            compact
+            className="mt-2"
+          />
+        }
       >
         <FieldList slots={groupAField.slots} />
         <div className="mt-4 border-t border-cyan-500/20 pt-3">
@@ -111,6 +130,15 @@ export function SdMobileBracketJourney({ model, bracket }: Props) {
         title="Set 2 · Group B"
         subtitle={`${bracket.groupB.length} branches fight for Spot 2`}
         accent="b"
+        meta={
+          <SdBattleScheduleMeta
+            area={model.area}
+            setType="group_b"
+            scheduleConfig={scheduleConfig}
+            compact
+            className="mt-2"
+          />
+        }
       >
         <FieldList slots={groupBField.slots} />
         <div className="mt-4 border-t border-lime-500/20 pt-3">
@@ -128,6 +156,15 @@ export function SdMobileBracketJourney({ model, bracket }: Props) {
         title="Area final"
         subtitle="Spot 1 vs Spot 2"
         accent="final"
+        meta={
+          <SdBattleScheduleMeta
+            area={model.area}
+            setType="area_final"
+            scheduleConfig={scheduleConfig}
+            compact
+            className="mt-2"
+          />
+        }
       >
         <SdBracketCenterStage
           finalReady={finalReady}

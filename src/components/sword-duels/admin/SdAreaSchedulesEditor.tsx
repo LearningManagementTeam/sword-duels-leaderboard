@@ -15,24 +15,15 @@ import { sortAreasByNumber } from "@/lib/products/sword-duels/area-groups";
 import { isRegionalAverageFormat } from "@/lib/products/sword-duels/tournament-format";
 import type { SdTournamentFormat } from "@/lib/products/sword-duels/tournament-format";
 import { SdButton } from "@/components/ui/SdButton";
+import {
+  fromDatetimeLocalValue,
+  toDatetimeLocalValue,
+} from "@/lib/products/sword-duels/area-schedule-input";
 
 interface Props {
   areas: string[];
   initial: SdAreaSchedulesConfig;
   tournamentFormat?: SdTournamentFormat | null;
-}
-
-function toDatetimeLocalValue(iso?: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function fromDatetimeLocalValue(value: string): string | undefined {
-  if (!value) return undefined;
-  return new Date(value).toISOString();
 }
 
 function emptyDates(): SdAreaScheduleDates {

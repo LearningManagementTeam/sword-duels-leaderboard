@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import { AreaBattleSchedulesEditor } from "@/components/sword-duels/admin/AreaBattleSchedulesEditor";
 import { AreaGroupAssignmentEditor } from "@/components/sword-duels/admin/AreaGroupAssignmentEditor";
+import { getSdAreaSchedules } from "@/lib/data/content-queries";
 import { isManualAreaGroup } from "@/lib/products/sword-duels/area-groups";
 import { AreaTournamentMap } from "@/components/sword-duels/AreaTournamentMap";
 import {
@@ -48,6 +50,8 @@ export default async function SwordDuelsAreaPage({
   }
 
   const { bracket, sets, scoreMap } = ctx;
+  const schedules = await getSdAreaSchedules();
+  const areaSchedule = schedules.byArea[area] ?? {};
   const areaBranches = await getSdAreaBranches(area);
   const isManual = isManualAreaGroup(event.manual_area_groups ?? [], area);
   const groupLockReason = (() => {
@@ -120,6 +124,8 @@ export default async function SwordDuelsAreaPage({
         </p>
       </div>
 
+      <AreaBattleSchedulesEditor area={area} initial={areaSchedule} />
+
       <AreaGroupAssignmentEditor
         area={area}
         areaBranches={areaBranches.map((b) => ({
@@ -148,6 +154,7 @@ export default async function SwordDuelsAreaPage({
           bracket={bracket}
           sets={sets}
           scoresBySetId={scoreMap}
+          scheduleConfig={schedules}
         />
       )}
 
