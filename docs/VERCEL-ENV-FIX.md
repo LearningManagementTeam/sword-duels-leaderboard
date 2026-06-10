@@ -8,13 +8,14 @@ Vercel tried to build the site but the **Supabase URL** environment variable was
 
 1. Open [vercel.com](https://vercel.com) → your project **sword-duels-leaderboard**
 2. Top menu → **Settings** → **Environment Variables**
-3. Check these **three** rows exist (names must match **exactly**):
+3. Check these **four** rows exist (names must match **exactly**):
 
 | Name | Correct value looks like |
 |------|---------------------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://abcdefghijk.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Long text starting with `eyJ…` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Long text starting with `eyJ…` (different from anon) |
+| `SITE_ACCESS_PASSWORD` | Strong site password (8+ chars) — see [SITE-ACCESS.md](./SITE-ACCESS.md) |
 
 4. Common mistakes — **avoid**:
    - Extra spaces before/after the value
