@@ -7,6 +7,7 @@ import {
   formatCalendarEventTitle,
   nextCalendarEvent,
   publishedCalendarEvents,
+  resolveCalendarEventTimeLabel,
   type EventsCalendarConfig,
 } from "@/lib/events-calendar";
 import {
@@ -88,7 +89,7 @@ function upcomingFromEventsCalendar(
       id: `calendar-${event.id}`,
       program: event.program,
       title: formatCalendarEventTitle(event),
-      detail: event.timeLabel,
+      detail: resolveCalendarEventTimeLabel(event),
       occurredAt:
         event.startAt.length === 10
           ? `${event.startAt}T08:00:00+08:00`

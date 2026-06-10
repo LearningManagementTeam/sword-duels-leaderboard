@@ -8,6 +8,7 @@ import {
   eventsOnDate,
   formatCalendarDateRange,
   nextCalendarEvent,
+  resolveCalendarEventTimeLabel,
   type CalendarEvent,
   type CalendarEventKind,
 } from "@/lib/events-calendar";
@@ -53,6 +54,7 @@ function EventCard({
   compact?: boolean;
 }) {
   const styles = CALENDAR_KIND_STYLES[event.kind];
+  const timeLabel = resolveCalendarEventTimeLabel(event);
   return (
     <article
       className={`rounded-xl border border-emerald-500/15 bg-sd-deep/40 p-3 ring-1 ring-inset ring-emerald-500/10 ${styles.glow}`}
@@ -76,7 +78,7 @@ function EventCard({
       </h3>
       <p className="mt-1 text-xs text-sd-muted">
         {formatCalendarDateRange(event)}
-        {event.timeLabel ? ` · ${event.timeLabel}` : ""}
+        {timeLabel ? ` · ${timeLabel}` : ""}
       </p>
       {event.areas && event.areas.length > 0 && (
         <p className="mt-2 text-xs text-cyan-100/80">
@@ -131,6 +133,9 @@ export function EventsCalendarInteractive({
 
   const dayEvents = selectedDay ? eventsOnDate(events, selectedDay) : [];
   const nextEvent = nextCalendarEvent(events);
+  const nextTimeLabel = nextEvent
+    ? resolveCalendarEventTimeLabel(nextEvent)
+    : undefined;
   const countdown = nextEvent ? countdownToEvent(nextEvent) : null;
 
   const kindCounts = useMemo(() => {
@@ -166,7 +171,7 @@ export function EventsCalendarInteractive({
             </p>
             <p className="text-sm text-sd-muted">
               {formatCalendarDateRange(nextEvent)}
-              {nextEvent.timeLabel ? ` · ${nextEvent.timeLabel}` : ""}
+              {nextTimeLabel ? ` · ${nextTimeLabel}` : ""}
             </p>
           </div>
           <div className="text-right">

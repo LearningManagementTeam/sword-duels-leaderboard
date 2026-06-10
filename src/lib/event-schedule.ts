@@ -101,7 +101,9 @@ export function prunePastScheduleEntries(
 }
 
 export function formatScheduleDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-PH", {
+  const d = new Date(iso.length === 10 ? `${iso}T12:00:00+08:00` : iso);
+  return d.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
     dateStyle: "medium",
     timeStyle: "short",
   });

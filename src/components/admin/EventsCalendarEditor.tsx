@@ -21,6 +21,7 @@ import {
   type EventsCalendarConfig,
 } from "@/lib/events-calendar";
 import { sortAreasByNumber } from "@/lib/products/sword-duels/area-groups";
+import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/lib/products/sword-duels/area-schedule-input";
 import type { EventScheduleProgram } from "@/lib/event-schedule";
 
 interface Props {
@@ -39,14 +40,6 @@ const KIND_OPTIONS: CalendarEventKind[] = [
 
 function toDateInput(iso: string): string {
   return iso.slice(0, 10);
-}
-
-function toDatetimeLocal(iso: string): string {
-  if (iso.length === 10) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function downloadCsv(filename: string, content: string) {
@@ -507,12 +500,12 @@ export function EventsCalendarEditor({ initial, areas }: Props) {
                 <input
                   type="datetime-local"
                   className="sd-input mt-1 w-full"
-                  value={toDatetimeLocal(selected.startAt)}
+                  value={toDatetimeLocalValue(selected.startAt)}
                   onChange={(e) => {
                     if (!e.target.value) return;
-                    updateEvent(selected.id, {
-                      startAt: new Date(e.target.value).toISOString(),
-                    });
+                    const startAt = fromDatetimeLocalValue(e.target.value);
+                    if (!startAt) return;
+                    updateEvent(selected.id, { startAt });
                   }}
                 />
               </label>

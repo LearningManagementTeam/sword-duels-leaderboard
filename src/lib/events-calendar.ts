@@ -1,5 +1,6 @@
 import type { EventScheduleProgram } from "@/lib/event-schedule";
 import { compareAreaNames } from "@/lib/products/sword-duels/area-groups";
+import { formatScheduleTimeLabel } from "@/lib/products/sword-duels/area-schedule-input";
 
 export const EVENTS_CALENDAR_SLUG = "events_calendar";
 
@@ -95,9 +96,33 @@ export const CALENDAR_KIND_STYLES: Record<
 };
 
 function parseDayKey(iso: string): number {
-  const datePart = iso.slice(0, 10);
-  const [y, m, d] = datePart.split("-").map(Number);
-  return y * 10000 + m * 100 + d;
+  if (iso.length === 10) {
+    const [y, m, d] = iso.split("-").map(Number);
+    return y * 10000 + m * 100 + d;
+  }
+  const d = new Date(iso);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const pick = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return (
+    Number(pick("year")) * 10000 +
+    Number(pick("month")) * 100 +
+    Number(pick("day"))
+  );
+}
+
+/** Prefer live PH formatting from startAt so stale timeLabel rows still display correctly. */
+export function resolveCalendarEventTimeLabel(
+  event: CalendarEvent
+): string | undefined {
+  if (event.startAt.length > 10) {
+    return formatScheduleTimeLabel(event.startAt);
+  }
+  return event.timeLabel;
 }
 
 export function parseEventsCalendarBody(raw: unknown): EventsCalendarConfig {
@@ -236,6 +261,7 @@ export function formatCalendarDate(iso: string): string {
     iso.length === 10 ? `${iso}T12:00:00+08:00` : iso
   );
   return d.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
     weekday: "short",
     month: "short",
     day: "numeric",
