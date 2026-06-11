@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SdCalendarDayBattles } from "@/components/sword-duels/SdCalendarDayBattles";
 import {
   CALENDAR_KIND_LABELS,
   CALENDAR_KIND_STYLES,
@@ -12,6 +13,8 @@ import {
   type CalendarEvent,
   type CalendarEventKind,
 } from "@/lib/events-calendar";
+import type { SdAreaSchedulesConfig } from "@/lib/products/sword-duels/area-schedules";
+import type { SdCalendarAreaBracket } from "@/lib/products/sword-duels/calendar-day-battles";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -36,6 +39,9 @@ interface Props {
   selectedDay?: Date | null;
   onSelectDay?: (day: Date | null) => void;
   initialMonth?: { year: number; month: number };
+  /** Area brackets + schedules enable branch-centric day view (public calendar). */
+  areaBrackets?: SdCalendarAreaBracket[];
+  areaSchedules?: SdAreaSchedulesConfig;
 }
 
 function sameDay(a: Date, b: Date): boolean {
@@ -98,6 +104,8 @@ export function EventsCalendarInteractive({
   selectedDay: controlledDay,
   onSelectDay,
   initialMonth,
+  areaBrackets,
+  areaSchedules,
 }: Props) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(
@@ -132,6 +140,13 @@ export function EventsCalendarInteractive({
   }, [viewYear, viewMonth]);
 
   const dayEvents = selectedDay ? eventsOnDate(events, selectedDay) : [];
+  const otherDayEvents = dayEvents.filter((e) => !e.id.startsWith("sd-battle-"));
+  const showBranchDayView =
+    mode === "public" &&
+    selectedDay &&
+    areaBrackets &&
+    areaBrackets.length > 0 &&
+    areaSchedules;
   const nextEvent = nextCalendarEvent(events);
   const nextTimeLabel = nextEvent
     ? resolveCalendarEventTimeLabel(nextEvent)
@@ -315,13 +330,20 @@ export function EventsCalendarInteractive({
                 month: "long",
                 day: "numeric",
                 year: "numeric",
+                timeZone: "Asia/Manila",
               })
             : "Pick a day"}
         </h2>
-        {dayEvents.length === 0 ? (
-          <p className="mt-3 text-sm text-sd-muted">
-            No events on this day.
-          </p>
+        {showBranchDayView ? (
+          <div className="mt-4">
+            <SdCalendarDayBattles
+              selectedDay={selectedDay}
+              brackets={areaBrackets}
+              schedules={areaSchedules}
+            />
+          </div>
+        ) : dayEvents.length === 0 ? (
+          <p className="mt-3 text-sm text-sd-muted">No events on this day.</p>
         ) : (
           <ul className="mt-4 space-y-3">
             {dayEvents.map((event) => (
@@ -331,6 +353,20 @@ export function EventsCalendarInteractive({
             ))}
           </ul>
         )}
+        {showBranchDayView && otherDayEvents.length > 0 ? (
+          <div className="mt-6">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-sd-muted">
+              Also on this day
+            </h3>
+            <ul className="space-y-3">
+              {otherDayEvents.map((event) => (
+                <li key={event.id}>
+                  <EventCard event={event} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
     </div>
   );

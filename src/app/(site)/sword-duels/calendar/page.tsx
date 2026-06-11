@@ -2,11 +2,17 @@ import type { Metadata } from "next";
 import { EventsCalendarInteractive } from "@/components/events-calendar/EventsCalendarInteractive";
 import { SwordDuelsPublicFooter } from "@/components/sword-duels/SwordDuelsPublicFooter";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
-import { getEventsCalendar } from "@/lib/data/content-queries";
+import { getEventsCalendar, getSdAreaSchedules } from "@/lib/data/content-queries";
 import {
   buildDefaultEventsCalendar2026,
   publishedCalendarEvents,
 } from "@/lib/events-calendar";
+import { serializeBracketsForCalendar } from "@/lib/products/sword-duels/calendar-day-battles";
+import { DEFAULT_SD_AREA_SCHEDULES } from "@/lib/products/sword-duels/area-schedules";
+import {
+  getSdAreaBrackets,
+  getSdEvent,
+} from "@/lib/products/sword-duels/queries";
 import {
   buildSdPageMetadata,
 } from "@/lib/products/sword-duels/share-metadata";
@@ -28,6 +34,16 @@ export default async function SwordDuelsCalendarPublicPage() {
     calendar.events.length > 0 ? calendar : buildDefaultEventsCalendar2026();
   const events = publishedCalendarEvents(source);
 
+  const event = await getSdEvent();
+  const [brackets, schedules] = event
+    ? await Promise.all([
+        getSdAreaBrackets(event.id),
+        getSdAreaSchedules(),
+      ])
+    : [[], DEFAULT_SD_AREA_SCHEDULES];
+
+  const areaBrackets = serializeBracketsForCalendar(brackets);
+
   return (
     <div className="space-y-6">
       <header className="sd-page-header">
@@ -36,8 +52,8 @@ export default async function SwordDuelsCalendarPublicPage() {
         </p>
         <h1>Event calendar</h1>
         <p>
-          Tap a day to see prep blocks, branch duels, selections, and the road
-          to the regional finale. Times are in Philippine time.
+          Tap a day, then find your branch to see your area, set, and battle
+          time. Times are in Philippine time.
         </p>
       </header>
 
@@ -52,6 +68,8 @@ export default async function SwordDuelsCalendarPublicPage() {
           events={events}
           mode="public"
           initialMonth={{ year: 2026, month: 5 }}
+          areaBrackets={areaBrackets}
+          areaSchedules={schedules}
         />
       )}
 
