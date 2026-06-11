@@ -24,6 +24,8 @@ interface Props {
   tvMode?: boolean;
   /** Hide TV link and footer in fullscreen TV shell */
   fullscreen?: boolean;
+  /** Minimal chrome when nested inside another section (e.g. full-journey test page). */
+  embedded?: boolean;
 }
 
 function WingHeader({
@@ -243,19 +245,24 @@ function MapShell({
   bracket,
   tvMode,
   fullscreen,
+  embedded,
 }: {
   children: ReactNode;
   model: ReturnType<typeof buildAreaTournamentMap>;
   bracket: SdAreaBracket;
   tvMode?: boolean;
   fullscreen?: boolean;
+  embedded?: boolean;
 }) {
   return (
     <section
-      className={`sd-neon-panel overflow-hidden ${
-        tvMode ? "p-6 sm:p-8" : "p-4 sm:p-6"
+      className={`overflow-hidden ${
+        embedded
+          ? ""
+          : `sd-neon-panel ${tvMode ? "p-6 sm:p-8" : "p-4 sm:p-6"}`
       } ${fullscreen ? "border-0 shadow-none" : ""}`}
     >
+      {!embedded && (
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="inline-flex items-stretch overflow-hidden rounded-lg shadow-lg">
@@ -291,8 +298,9 @@ function MapShell({
           </Link>
         )}
       </div>
+      )}
       {children}
-      {!fullscreen && (
+      {!fullscreen && !embedded && (
         <p className="mt-5 text-center text-[10px] text-sd-muted/55">
           High score or best 2 survivors per set · Map updates when admin publishes
           each battle
@@ -309,12 +317,13 @@ export function AreaTournamentMap({
   scheduleConfig,
   tvMode = false,
   fullscreen = false,
+  embedded = false,
 }: Props) {
   const model = buildAreaTournamentMap({ bracket, sets, scoresBySetId });
 
   if (tvMode) {
     return (
-      <MapShell model={model} bracket={bracket} tvMode fullscreen={fullscreen}>
+      <MapShell model={model} bracket={bracket} tvMode fullscreen={fullscreen} embedded={embedded}>
         <BracketGrid
           model={model}
           bracket={bracket}
@@ -326,7 +335,7 @@ export function AreaTournamentMap({
   }
 
   return (
-    <MapShell model={model} bracket={bracket}>
+    <MapShell model={model} bracket={bracket} embedded={embedded}>
       <div className="hidden lg:block">
         <BracketGrid
           model={model}
