@@ -1,6 +1,5 @@
 import { HomeEventTimeline } from "@/components/home/HomeEventTimeline";
 import { HomeFeaturedHero } from "@/components/home/HomeFeaturedHero";
-import { HomeProgramsStrip } from "@/components/home/HomeProgramsStrip";
 import { CollapsibleCompetitionMap } from "@/components/home/CollapsibleCompetitionMap";
 import { CollapsibleFullTournamentMap } from "@/components/home/CollapsibleFullTournamentMap";
 import { HomeCarouselSection } from "@/components/home/HomeCarouselSection";
@@ -16,7 +15,6 @@ import {
   getSiteHomeConfig,
 } from "@/lib/data/content-queries";
 import { loadHomeEventTimeline } from "@/lib/home-event-timeline";
-import { loadNcHomeStatusLine } from "@/lib/home-nc-status";
 import { SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
 import { loadPublicJourneyState } from "@/lib/products/sword-duels/public-journey";
 import {
@@ -62,14 +60,13 @@ export default async function HomePage() {
       getNcPhaseSchedules(),
       getEventsCalendar(),
     ]);
-  const [branding, homeConfig, sdJourney, ncStatusLine, timeline] =
+  const [branding, homeConfig, sdJourney, timeline] =
     await Promise.all([
       getBranding(),
       getSiteHomeConfig(),
       configured
         ? loadPublicJourneyState().catch(() => null)
         : Promise.resolve(null),
-      loadNcHomeStatusLine(mapConfig),
       loadHomeEventTimeline(
         eventSchedule,
         sdAreaSchedules,
@@ -107,12 +104,6 @@ export default async function HomePage() {
       {!configured && <SetupBanner />}
 
       <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
-        <HomeProgramsStrip
-          featured={featured}
-          mapConfig={mapConfig}
-          sdJourney={sdJourney}
-          ncStatusLine={ncStatusLine}
-        />
         <HomeEventTimeline
           upcoming={timeline.upcoming}
           recent={timeline.recent}
