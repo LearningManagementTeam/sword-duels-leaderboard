@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { AdminAuthError, requireAdminEmail } from "@/lib/admin-auth";
+import { adminApiGuardResponse, requireAdminEmailApi } from "@/lib/admin-auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   persistEmployeePhotoRemove,
@@ -34,7 +34,7 @@ async function logAudit(
 
 export async function POST(request: Request) {
   try {
-    const email = await requireAdminEmail();
+    const email = await requireAdminEmailApi();
     const formData = await request.formData();
     const employeeId = formData.get("employeeId");
     const file = formData.get("file");
@@ -63,12 +63,8 @@ export async function POST(request: Request) {
     revalidateEmployeePhotoPaths();
     return NextResponse.json(result);
   } catch (e) {
-    if (e instanceof AdminAuthError) {
-      return NextResponse.json(
-        { ok: false, error: e.message },
-        { status: e.status }
-      );
-    }
+    const guard = adminApiGuardResponse(e);
+    if (guard) return guard;
     return NextResponse.json(
       {
         ok: false,
@@ -81,7 +77,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const email = await requireAdminEmail();
+    const email = await requireAdminEmailApi();
     const { searchParams } = new URL(request.url);
     const employeeId = searchParams.get("employeeId");
 
@@ -101,12 +97,8 @@ export async function DELETE(request: Request) {
     revalidateEmployeePhotoPaths();
     return NextResponse.json(result);
   } catch (e) {
-    if (e instanceof AdminAuthError) {
-      return NextResponse.json(
-        { ok: false, error: e.message },
-        { status: e.status }
-      );
-    }
+    const guard = adminApiGuardResponse(e);
+    if (guard) return guard;
     return NextResponse.json(
       {
         ok: false,

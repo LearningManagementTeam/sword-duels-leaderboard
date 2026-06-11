@@ -7,6 +7,7 @@ import {
   SITE_ACCESS_COOKIE,
   siteAccessTokenForPassword,
 } from "@/lib/site-access";
+import { enforceSiteAccessRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   if (!isSiteAccessEnabled()) {
@@ -14,6 +15,15 @@ export async function POST(request: Request) {
       { ok: false, error: "Site access lock is not configured." },
       { status: 503 }
     );
+  }
+
+  const rateLimited = await enforceSiteAccessRateLimit(request);
+  if (rateLimited) {
+    const url = new URL("/site-access", request.url);
+    url.searchParams.set("error", "rate_limit");
+    return NextResponse.redirect(url, {
+      headers: { "Retry-After": String(rateLimited.retryAfterSeconds) },
+    });
   }
 
   const expected = getSiteAccessPassword()!;

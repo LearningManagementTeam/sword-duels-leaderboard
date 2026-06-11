@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AdminAuthError, requireAdminEmail } from "@/lib/admin-auth";
+import { adminApiGuardResponse, requireAdminEmailApi } from "@/lib/admin-auth";
 import { extractRosterEmployeesFromImages } from "@/lib/extract-roster-vision";
 
 function filesFromFormData(formData: FormData) {
@@ -17,7 +17,7 @@ function filesFromFormData(formData: FormData) {
 
 export async function POST(request: Request) {
   try {
-    await requireAdminEmail();
+    await requireAdminEmailApi({ heavy: true });
 
     const formData = await request.formData();
     const files = filesFromFormData(formData);
@@ -57,12 +57,8 @@ export async function POST(request: Request) {
       failedFiles: result.failedFiles,
     });
   } catch (e) {
-    if (e instanceof AdminAuthError) {
-      return NextResponse.json(
-        { ok: false, error: e.message },
-        { status: e.status }
-      );
-    }
+    const guard = adminApiGuardResponse(e);
+    if (guard) return guard;
 
     return NextResponse.json(
       {

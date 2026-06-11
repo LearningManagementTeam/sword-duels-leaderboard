@@ -41,6 +41,10 @@ Two layers: **site password** (view) + **admin account** (operate).
 
 Old browser sessions may work until their cookie expires (~7 days) or they clear cookies. For immediate lockout after a leak, deploy a new password and ask managers to clear site cookies or use a private browser window.
 
+## Rate limiting (optional)
+
+Production can enable Upstash Redis so password-guess floods and abusive API traffic are throttled. See [RATE-LIMITING.md](./RATE-LIMITING.md). Without Upstash env vars, nothing changes.
+
 ## Disable the gate
 
 Remove `SITE_ACCESS_PASSWORD` from Vercel (or set it empty), then redeploy. The site becomes publicly reachable again.

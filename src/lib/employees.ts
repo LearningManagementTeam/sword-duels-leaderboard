@@ -333,6 +333,53 @@ export async function linkBranchRepresentativesFromPayload(
   );
 }
 
+/** Merge CSV row into existing branch reps — fills empty fields only; skips unchanged rows. */
+export async function linkBranchRepresentativesMergedFromCsvRow(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  branchId: string,
+  branchCode: string,
+  existing: import("@/lib/representative-fields").BranchRepresentativeFields,
+  row: import("@/lib/representatives-csv").RepresentativeCsvRow,
+  updatedAt?: string
+): Promise<"updated" | "skipped"> {
+  const { mergeRepSlotInputs, repSlotFromCsvRow, repSlotInputFromBranchFields } =
+    await import("@/lib/representatives-csv");
+
+  const existingSlot1 = repSlotInputFromBranchFields(existing, 1);
+  const existingSlot2 = repSlotInputFromBranchFields(existing, 2);
+  const slot1 = mergeRepSlotInputs(existingSlot1, repSlotFromCsvRow(row, 1));
+  const slot2 = mergeRepSlotInputs(existingSlot2, repSlotFromCsvRow(row, 2));
+
+  if (
+    repSlotInputsEqual(slot1, existingSlot1) &&
+    repSlotInputsEqual(slot2, existingSlot2)
+  ) {
+    return "skipped";
+  }
+
+  await linkBranchRepresentatives(
+    service,
+    branchId,
+    branchCode,
+    { slot1, slot2 },
+    updatedAt
+  );
+  return "updated";
+}
+
+function repSlotInputsEqual(
+  a: RepSlotInput | null,
+  b: RepSlotInput | null
+): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return (
+    a.full_name.trim() === b.full_name.trim() &&
+    a.employee_no.trim() === b.employee_no.trim() &&
+    a.position.trim() === b.position.trim()
+  );
+}
+
 const BRANCH_REP_ASSIGN_SELECT =
   "id, branch_code, representative_1_employee_id, representative_2_employee_id";
 

@@ -15,10 +15,10 @@ import { branchUpsertPayload, countRowsWithRepresentatives } from "@/lib/branch-
 import { parseEmployeeDirectoryCsv } from "@/lib/employees-csv";
 import {
   parseRepresentativesCsv,
-  representativeCsvRowToPayload,
 } from "@/lib/representatives-csv";
 import {
   representativeDbUpdate,
+  BRANCH_WITH_REPS_SELECT,
   type RepresentativeSavePayload,
 } from "@/lib/representative-fields";
 import { resolveParticipantBranchIds, assertSeasonParticipantsReady } from "@/lib/season-participants";
@@ -930,7 +930,8 @@ export async function importRepresentativesFromCsv(csvText: string) {
   const service = await createServiceClient();
   const { data: branches } = await service
     .from("branches")
-    .select("id, branch_code");
+    .select(BRANCH_WITH_REPS_SELECT)
+    .eq("is_active", true);
 
   const codeToBranch = new Map(
     (branches ?? []).map((b) => [b.branch_code.toLowerCase(), b])
@@ -939,7 +940,10 @@ export async function importRepresentativesFromCsv(csvText: string) {
   const notFound: string[] = [];
   const now = new Date().toISOString();
   let updated = 0;
-  const { linkBranchRepresentativesFromPayload } = await import("@/lib/employees");
+  let skipped = 0;
+  const { linkBranchRepresentativesMergedFromCsvRow } = await import(
+    "@/lib/employees"
+  );
 
   for (const row of rows) {
     const branch = codeToBranch.get(row.branch_code.toLowerCase());
@@ -948,20 +952,22 @@ export async function importRepresentativesFromCsv(csvText: string) {
       continue;
     }
     try {
-      await linkBranchRepresentativesFromPayload(
+      const result = await linkBranchRepresentativesMergedFromCsvRow(
         service,
         branch.id,
         branch.branch_code,
-        representativeCsvRowToPayload(row),
+        branch,
+        row,
         now
       );
+      if (result === "updated") updated++;
+      else skipped++;
     } catch (e) {
       return {
         ok: false as const,
         errors: [e instanceof Error ? e.message : "Failed to import representatives"],
       };
     }
-    updated++;
   }
 
   const resultErrors: string[] = [];

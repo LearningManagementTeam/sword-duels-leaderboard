@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC, swordDuelsPath } from "@/lib/admin-routes";
 import { requireAdminEmail } from "@/lib/admin-auth";
+import { BRANCH_WITH_REPS_SELECT } from "@/lib/representative-fields";
 import {
   areaSlug,
   buildAreaBrackets,
@@ -48,7 +49,6 @@ import {
 import { getSdNationalsContext } from "@/lib/products/sword-duels/nationals-queries";
 import {
   parseRepresentativesCsv,
-  representativeCsvRowToPayload,
 } from "@/lib/representatives-csv";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -924,7 +924,7 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
   const service = await createServiceClient();
   const { data: branches } = await service
     .from("branches")
-    .select("id, branch_code")
+    .select(BRANCH_WITH_REPS_SELECT)
     .eq("is_active", true);
 
   const codeToBranch = new Map(
@@ -934,7 +934,10 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
   const notFound: string[] = [];
   const now = new Date().toISOString();
   let updated = 0;
-  const { linkBranchRepresentativesFromPayload } = await import("@/lib/employees");
+  let skipped = 0;
+  const { linkBranchRepresentativesMergedFromCsvRow } = await import(
+    "@/lib/employees"
+  );
 
   for (const row of rows) {
     const branch = codeToBranch.get(row.branch_code.toLowerCase());
@@ -944,20 +947,22 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
     }
 
     try {
-      await linkBranchRepresentativesFromPayload(
+      const result = await linkBranchRepresentativesMergedFromCsvRow(
         service,
         branch.id,
         branch.branch_code,
-        representativeCsvRowToPayload(row),
+        branch,
+        row,
         now
       );
+      if (result === "updated") updated++;
+      else skipped++;
     } catch (e) {
       return {
         ok: false,
         errors: [e instanceof Error ? e.message : "Import failed"],
       };
     }
-    updated++;
   }
 
   const warnings: string[] = [];
@@ -966,15 +971,21 @@ export async function importSdRepresentativesFromCsv(csvText: string): Promise<{
       `Unknown branch_code (import branches first): ${notFound.slice(0, 5).join(", ")}${notFound.length > 5 ? ` (+${notFound.length - 5} more)` : ""}`
     );
   }
+  if (skipped > 0) {
+    warnings.push(
+      `Skipped ${skipped} branch${skipped === 1 ? "" : "es"} — representatives already complete.`
+    );
+  }
 
   await logAudit(email, "import_sd_representatives", null, {
     updated,
+    skipped,
     row_count: rows.length,
   });
 
   scheduleSdRevalidation({ brackets: true });
 
-  if (updated === 0) {
+  if (updated === 0 && skipped === 0) {
     return { ok: false, errors: warnings.length ? warnings : ["No rows imported."] };
   }
 

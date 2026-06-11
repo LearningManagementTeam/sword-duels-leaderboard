@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AdminAuthError, requireAdminEmail } from "@/lib/admin-auth";
+import { AdminAuthError, RateLimitError, requireAdminEmailApi } from "@/lib/admin-auth";
 import { standingsToCsv } from "@/lib/export-csv";
 import { getPublishedStandings, getSeasonBySlug } from "@/lib/data/queries";
 import type { Region, SeasonSlug } from "@/lib/scoring-config";
@@ -11,8 +11,17 @@ export async function GET(
   context: { params: Promise<{ season: string }> }
 ) {
   try {
-    await requireAdminEmail();
+    await requireAdminEmailApi();
   } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: err.message },
+        {
+          status: 429,
+          headers: { "Retry-After": String(err.retryAfterSeconds) },
+        }
+      );
+    }
     if (err instanceof AdminAuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AdminAuthError, requireAdminEmail } from "@/lib/admin-auth";
+import { adminApiGuardResponse, requireAdminEmailApi } from "@/lib/admin-auth";
 import {
   parseSponsorLogoSlot,
   removeSponsorLogoSlot,
@@ -32,7 +32,7 @@ async function logSponsorLogoAudit(
 
 export async function POST(request: Request) {
   try {
-    const email = await requireAdminEmail();
+    const email = await requireAdminEmailApi();
     const formData = await request.formData();
     const file = formData.get("file");
     const slot = parseSponsorLogoSlot(formData.get("slot"));
@@ -54,12 +54,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (e) {
-    if (e instanceof AdminAuthError) {
-      return NextResponse.json(
-        { ok: false, error: e.message },
-        { status: e.status }
-      );
-    }
+    const guard = adminApiGuardResponse(e);
+    if (guard) return guard;
     const message = e instanceof Error ? e.message : "Upload failed";
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
@@ -67,7 +63,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const email = await requireAdminEmail();
+    const email = await requireAdminEmailApi();
     const slotRaw = new URL(request.url).searchParams.get("slot");
     const slot = parseSponsorLogoSlot(slotRaw);
 
@@ -76,12 +72,8 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json(result);
   } catch (e) {
-    if (e instanceof AdminAuthError) {
-      return NextResponse.json(
-        { ok: false, error: e.message },
-        { status: e.status }
-      );
-    }
+    const guard = adminApiGuardResponse(e);
+    if (guard) return guard;
     const message = e instanceof Error ? e.message : "Remove failed";
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }

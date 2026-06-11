@@ -41,6 +41,13 @@ export default async function SiteAccessPage({
           </p>
         )}
 
+        {error === "rate_limit" && (
+          <p className="rounded-lg bg-amber-950/50 px-3 py-2 text-sm text-amber-100 ring-1 ring-amber-500/30">
+            Too many attempts from this network. Wait a few minutes, then try
+            again.
+          </p>
+        )}
+
         <form action="/api/site-access" method="POST" className="space-y-4">
           <input type="hidden" name="returnTo" value={destination} />
           <div>

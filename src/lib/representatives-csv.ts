@@ -344,7 +344,7 @@ export function repSlotFromCsvRow(
   const email = slot === 1 ? row.representative_1_email : row.representative_2_email;
 
   const fullName = name?.trim() ?? "";
-  const no = employeeNo?.trim() ?? "";
+  const no = isBlankEmployeeNo(employeeNo) ? "" : (employeeNo?.trim() ?? "");
 
   if (!fullName && !no) return null;
 
@@ -360,4 +360,58 @@ export function repSlotFromCsvRow(
   if (email !== undefined) result.email = email;
 
   return result;
+}
+
+function isBlankEmployeeNo(value: string | undefined): boolean {
+  const v = value?.trim().toLowerCase() ?? "";
+  return !v || v === "n/a" || v === "na" || v === "pending";
+}
+
+export function repSlotInputFromBranchFields(
+  branch: import("@/lib/representative-fields").BranchRepresentativeFields,
+  slot: 1 | 2
+): import("@/lib/employees").RepSlotInput | null {
+  const name =
+    slot === 1 ? branch.representative_1 : branch.representative_2;
+  const employeeNo =
+    slot === 1
+      ? branch.representative_1_employee_no
+      : branch.representative_2_employee_no;
+  const position =
+    slot === 1
+      ? branch.representative_1_position
+      : branch.representative_2_position;
+
+  const fullName = name?.trim() ?? "";
+  const no = isBlankEmployeeNo(employeeNo ?? undefined)
+    ? ""
+    : (employeeNo?.trim() ?? "");
+
+  if (!fullName && !no) return null;
+
+  return {
+    full_name: fullName || no,
+    employee_no: no,
+    position: position?.trim() ?? "",
+  };
+}
+
+/** Fill gaps only — keep existing rep fields when already set. */
+export function mergeRepSlotInputs(
+  existing: import("@/lib/employees").RepSlotInput | null,
+  incoming: import("@/lib/employees").RepSlotInput | null
+): import("@/lib/employees").RepSlotInput | null {
+  if (!incoming) return existing;
+  if (!existing) return incoming;
+  return {
+    full_name: existing.full_name.trim() || incoming.full_name.trim(),
+    employee_no: existing.employee_no.trim() || incoming.employee_no.trim(),
+    position: existing.position.trim() || incoming.position.trim(),
+    nickname: existing.nickname?.trim() || incoming.nickname?.trim(),
+    date_hired: existing.date_hired?.trim() || incoming.date_hired?.trim(),
+    contact_number:
+      existing.contact_number?.trim() || incoming.contact_number?.trim(),
+    email: existing.email?.trim() || incoming.email?.trim(),
+    home_branch_id: existing.home_branch_id ?? incoming.home_branch_id,
+  };
 }
