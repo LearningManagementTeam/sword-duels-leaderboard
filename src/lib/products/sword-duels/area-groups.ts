@@ -164,6 +164,28 @@ export function sortAreasByNumber(areas: string[]): string[] {
   return [...areas].sort(compareAreaNames);
 }
 
+export function areaNavigationNeighbors(
+  areas: string[],
+  current: string
+): {
+  prev: string | null;
+  next: string | null;
+  index: number;
+  total: number;
+} {
+  const sorted = sortAreasByNumber(areas);
+  const index = sorted.indexOf(current);
+  if (index < 0) {
+    return { prev: null, next: null, index: -1, total: sorted.length };
+  }
+  return {
+    prev: index > 0 ? sorted[index - 1]! : null,
+    next: index < sorted.length - 1 ? sorted[index + 1]! : null,
+    index,
+    total: sorted.length,
+  };
+}
+
 export type BranchListSortMode =
   | SdGroupSortMode
   | "area_then_code"

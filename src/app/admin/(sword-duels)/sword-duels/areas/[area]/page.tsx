@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import { AreaAdminPager } from "@/components/sword-duels/admin/AreaAdminPager";
 import { AreaBattleSchedulesEditor } from "@/components/sword-duels/admin/AreaBattleSchedulesEditor";
 import { AreaGroupAssignmentEditor } from "@/components/sword-duels/admin/AreaGroupAssignmentEditor";
 import { getSdAreaSchedules } from "@/lib/data/content-queries";
@@ -10,16 +11,16 @@ import {
   type SdAreaScoreNavItem,
 } from "@/components/sword-duels/SdAreaScoreStickyNav";
 import { SdSetScoresForm } from "@/components/sword-duels/SdSetScoresForm";
-import { decodeAreaSlug } from "@/lib/products/sword-duels/area-groups";
+import { decodeAreaSlug, areaNavigationNeighbors, areaSlug } from "@/lib/products/sword-duels/area-groups";
 import { SD_SET_FLOW } from "@/lib/products/sword-duels/scoring-config";
 import {
   getSdAreaBranches,
+  getSdAreaBrackets,
   getSdAreaContext,
   getSdEvent,
   participantsForSetType,
 } from "@/lib/products/sword-duels/queries";
 import { swordDuelsPath, SWORD_DUELS_ADMIN, SWORD_DUELS_PUBLIC } from "@/lib/admin-routes";
-import { areaSlug } from "@/lib/products/sword-duels/area-groups";
 import { isRegionalAverageFormat } from "@/lib/products/sword-duels/tournament-format";
 import type { SdAreaSetType } from "@/lib/products/sword-duels/types";
 
@@ -37,7 +38,12 @@ export default async function SwordDuelsAreaPage({
     return <p className="text-sd-muted">Event not found.</p>;
   }
 
-  const ctx = await getSdAreaContext(event.id, area);
+  const [ctx, brackets, schedules, areaBranches] = await Promise.all([
+    getSdAreaContext(event.id, area),
+    getSdAreaBrackets(event.id),
+    getSdAreaSchedules(),
+    getSdAreaBranches(area),
+  ]);
   if (!ctx) {
     return (
       <div className="space-y-4">
@@ -50,9 +56,11 @@ export default async function SwordDuelsAreaPage({
   }
 
   const { bracket, sets, scoreMap } = ctx;
-  const schedules = await getSdAreaSchedules();
   const areaSchedule = schedules.byArea[area] ?? {};
-  const areaBranches = await getSdAreaBranches(area);
+  const areaNav = areaNavigationNeighbors(
+    brackets.map((b) => b.area),
+    area
+  );
   const isManual = isManualAreaGroup(event.manual_area_groups ?? [], area);
   const groupLockReason = (() => {
     const ga = sets.find((s) => s.set_type === "group_a");
@@ -124,6 +132,13 @@ export default async function SwordDuelsAreaPage({
         </p>
       </div>
 
+      <AreaAdminPager
+        prevArea={areaNav.prev}
+        nextArea={areaNav.next}
+        index={areaNav.index}
+        total={areaNav.total}
+      />
+
       <AreaBattleSchedulesEditor area={area} initial={areaSchedule} />
 
       <AreaGroupAssignmentEditor
@@ -139,6 +154,13 @@ export default async function SwordDuelsAreaPage({
         groupSortMode={event.group_sort_mode ?? "branch_code"}
         isManual={isManual}
         lockedReason={groupLockReason}
+      />
+
+      <AreaAdminPager
+        prevArea={areaNav.prev}
+        nextArea={areaNav.next}
+        index={areaNav.index}
+        total={areaNav.total}
       />
 
       {missingSets ? (
